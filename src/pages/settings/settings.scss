@@ -1,0 +1,11 @@
+page-settings {
+  ion-icon[notify]::after {
+    content: '';
+    background-color: rgba(255,0,0,0.7);
+    width: 10px;
+    height: 10px;
+    border-radius: 5px;
+    position: absolute;
+    margin-left: -5px;
+  }
+}

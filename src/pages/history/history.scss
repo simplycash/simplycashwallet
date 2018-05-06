@@ -1,0 +1,14 @@
+page-history {
+  .pdelta {
+    color: green;
+  }
+  .pdelta:not(:empty):before {
+    content: "+";
+  }
+  .ndelta {
+
+  }
+  ion-item[unseen] {
+    font-weight: bold;
+  }
+}

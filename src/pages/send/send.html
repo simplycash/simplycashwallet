@@ -1,0 +1,66 @@
+<ion-header no-border>
+
+  <ion-navbar color="primary">
+    <ion-title>send</ion-title>
+  </ion-navbar>
+
+</ion-header>
+
+<ion-content>
+
+  <ion-list>
+    <ion-item *ngIf="labelValue">
+      <ion-label stacked color="primary">label</ion-label>
+      <ion-input
+        value="{{ labelValue }}"
+        type="text"
+        readonly></ion-input>
+    </ion-item>
+    <ion-item *ngIf="messageValue">
+      <ion-label stacked color="primary">message</ion-label>
+      <ion-input
+        value="{{ messageValue }}"
+        type="text"
+        readonly></ion-input>
+    </ion-item>
+    <ion-item *ngIf="!info || !info.bip70">
+      <ion-label stacked color="primary">bitcoin cash address</ion-label>
+      <ion-input
+        #address
+        value="{{ addressValue }}"
+        type="text"
+        [readonly]="addressValue ? '' : null"
+        [clearInput]="addressValue ? false : true"></ion-input>
+    </ion-item>
+    <ion-item *ngIf="rValue">
+      <ion-label stacked color="primary">request origin</ion-label>
+      <ion-input
+        value="{{ rValue }}"
+        type="text"
+        readonly></ion-input>
+    </ion-item>
+    <ion-item *ngIf="merchantValue">
+      <ion-label stacked color="primary">recipient</ion-label>
+      <ion-input
+        value="{{ merchantValue }}"
+        type="text"
+        readonly></ion-input>
+    </ion-item>
+    <ion-item *ngIf="memoValue">
+      <ion-label stacked color="primary">memo</ion-label>
+      <ion-input
+        value="{{ memoValue }}"
+        type="text"
+        readonly></ion-input>
+    </ion-item>
+    <my-amount #myAmount placeholder="blank to send max amount"></my-amount>
+  </ion-list>
+
+  <div text-center>
+    <button ion-button clear icon-left (click)="sign()">
+      <ion-icon name="create"></ion-icon>
+      sign
+    </button>
+  </div>
+
+</ion-content>

@@ -1,0 +1,9 @@
+my-amount {
+
+}
+.list-md > my-amount:last-child .item-block .item-inner {
+  border-bottom: 0px;
+}
+.list-ios > my-amount:last-child .item-block {
+  border-bottom: 0px;
+}

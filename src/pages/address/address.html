@@ -1,0 +1,30 @@
+<!--
+  Generated template for the AddressPage page.
+
+  See http://ionicframework.com/docs/components/#navigation for more info on
+  Ionic pages and navigation.
+-->
+<ion-header no-border>
+
+  <ion-navbar color="primary">
+    <ion-title>address</ion-title>
+  </ion-navbar>
+
+</ion-header>
+
+
+<ion-content padding>
+  <div *ngIf="qrCodeURL" text-center>
+    <p>{{ address }}</p>
+    <img class="qrcode" [src]="qrCodeURL"/>
+    <br>
+    <button ion-button icon-left (click)="copyToClipboard()" clear>
+      <ion-icon name="copy"></ion-icon>
+      copy
+    </button>
+    <button ion-button icon-left (click)="viewOnBlockExplorer()" clear>
+      <ion-icon name="globe"></ion-icon>
+      block explorer
+    </button>
+  </div>
+</ion-content>

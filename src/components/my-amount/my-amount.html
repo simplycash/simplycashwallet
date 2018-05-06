@@ -1,0 +1,15 @@
+<!-- Generated template for the MyAmountComponent component -->
+<ion-item>
+  <ion-label stacked color="primary">amount</ion-label>
+  <ion-input
+    #amount
+    type="number"
+    [placeholder]="placeholder || ''"
+    (input)="amountInput($event)"
+    (ionChange)="amountChange($event)"
+    (ionBlur)="setBlurTimer()"
+    clearInput=true></ion-input>
+    <button ion-button outline item-end (click)="changeUnit()">
+      {{ currentUnit }}
+    </button>
+</ion-item>

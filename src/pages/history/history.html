@@ -1,0 +1,34 @@
+<ion-header no-border>
+
+  <ion-navbar color="primary">
+    <ion-title>balance</ion-title>
+  </ion-navbar>
+
+</ion-header>
+
+<ion-content>
+  <ion-list no-lines>
+    <ion-item-group>
+      <ion-item-divider color="light">
+        wallet balance
+        <button ion-button outline item-end (click)="changeUnit()">
+          {{ currentUnit }}
+        </button>
+      </ion-item-divider>
+      <ion-item>
+        <span item-end>{{ balance | convertUnitPipe:currentUnit }}</span>
+      </ion-item>
+    </ion-item-group>
+    <ion-item-group *ngFor="let dateGroup of dateGroups">
+      <ion-item-divider color="light">{{ dateGroup.date }}</ion-item-divider>
+      <ion-item *ngFor="let tx of dateGroup.txs" (click)="showTx(tx.txid)" [attr.unseen]="tx.seen ? null : ''">
+        <span>{{ tx.time }}</span>
+        <span item-end [attr.class]="tx.delta > 0 ? 'pdelta' : 'ndelta'">{{ tx.delta | convertUnitPipe:currentUnit }}</span>
+      </ion-item>
+    </ion-item-group>
+    <!-- <ion-item *ngFor="let tx of txs" (click)="showTx(tx)">
+      <span>{{ tx.date }}</span>
+      <span item-end>{{ tx.value }}</span>
+    </ion-item> -->
+  </ion-list>
+</ion-content>

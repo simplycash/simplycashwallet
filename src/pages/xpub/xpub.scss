@@ -1,0 +1,9 @@
+page-xpub {
+  ion-content[transparent] {
+    opacity: 0
+  }
+  .qrcode {
+    width: 100%;
+    max-width: 200px;
+  }
+}

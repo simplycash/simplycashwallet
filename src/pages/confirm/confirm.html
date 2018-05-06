@@ -1,0 +1,102 @@
+<ion-header no-border>
+
+  <ion-navbar color="primary">
+    <ion-title>confirm</ion-title>
+  </ion-navbar>
+
+</ion-header>
+
+
+<ion-content>
+  <ion-list>
+
+    <ion-item *ngIf="info.label">
+      <ion-label stacked color="primary">label</ion-label>
+      <ion-input
+        value="{{ info.label }}"
+        type="text"
+        readonly></ion-input>
+    </ion-item>
+
+    <ion-item *ngIf="info.message">
+      <ion-label stacked color="primary">message</ion-label>
+      <ion-input
+        value="{{ info.message }}"
+        type="text"
+        readonly></ion-input>
+    </ion-item>
+
+    <ion-item *ngIf="!info.bip70">
+      <ion-label stacked color="primary">bitcoin cash address</ion-label>
+      <ion-input
+        #address
+        value="{{ info.outputs[0].address }}"
+        type="text"
+        readonly></ion-input>
+    </ion-item>
+
+    <ion-item *ngIf="info.r">
+      <ion-label stacked color="primary">request origin</ion-label>
+      <ion-input
+        value="{{ info.r }}"
+        type="text"
+        readonly></ion-input>
+    </ion-item>
+
+    <ion-item *ngIf="info.merchantName">
+      <ion-label stacked color="primary">recipient</ion-label>
+      <ion-input
+        value="{{ info.merchantName }}"
+        type="text"
+        readonly></ion-input>
+    </ion-item>
+
+    <ion-item *ngIf="info.memo">
+      <ion-label stacked color="primary">memo</ion-label>
+      <ion-input
+        value="{{ info.memo }}"
+        type="text"
+        readonly></ion-input>
+    </ion-item>
+
+    <ion-item>
+      <ion-label stacked color="primary">amount</ion-label>
+      <ion-input
+        value="{{ info.satoshis | convertUnitPipe:unit }}"
+        readonly></ion-input>
+        <button ion-button outline item-end (click)="changeUnit()">
+          {{ unit }}
+        </button>
+    </ion-item>
+
+    <ion-item>
+      <ion-label stacked color="primary">fee</ion-label>
+      <ion-input
+        value="{{ info.fee | convertUnitPipe:unit }}"
+        readonly></ion-input>
+    </ion-item>
+
+  </ion-list>
+  <div class="divider"></div>
+  <div class="align-center">
+    <button *ngIf="!info.paymentUrl"
+      class="send-btn"
+      ion-button icon-left color="secondary"
+      [disabled]="!isReady || !wallet.isOnline()"
+      (click)="broadcast($event)"
+      clear>
+      <ion-icon name="checkmark"></ion-icon>
+      broadcast
+    </button>
+    <button *ngIf="info.paymentUrl"
+      class="send-btn"
+      ion-button icon-left color="secondary"
+      [disabled]="!isReady || !wallet.isOnline()"
+      (click)="sendBIP70($event)"
+      clear>
+      <ion-icon name="checkmark"></ion-icon>
+      send
+    </button>
+  </div>
+
+</ion-content>

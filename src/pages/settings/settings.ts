@@ -1,0 +1,108 @@
+import { Component } from '@angular/core'
+import { TranslateService } from '@ngx-translate/core'
+import { AlertController, App, IonicPage, NavController, NavParams, ViewController } from 'ionic-angular'
+import { InAppBrowser } from '@ionic-native/in-app-browser'
+import { Wallet } from '../../providers/providers'
+
+/**
+* The Settings page is a simple form that syncs with a Settings provider
+* to enable the user to customize settings for the app.
+*
+*/
+@IonicPage()
+@Component({
+  selector: 'page-settings',
+  templateUrl: 'settings.html'
+})
+export class SettingsPage {
+  private currency: string
+  private supportedCurrencies: string[]
+  private useCashAddr: boolean
+  // private canUseFingerprint: boolean = false
+  // private useFingerprint: boolean
+
+  constructor(
+    public alertCtrl: AlertController,
+    public app: App,
+    private iab: InAppBrowser,
+    public navCtrl: NavController,
+    public navParams: NavParams,
+    public translate: TranslateService,
+    public viewCtrl: ViewController,
+    private wallet: Wallet
+  ) {
+    this.currency = this.wallet.getPreferedCurrency()
+    this.supportedCurrencies = this.wallet.getSupportedCurrencies()
+    this.useCashAddr = this.wallet.getPreferedAddressFormat() === 'cashaddr'
+    // this.useFingerprint = this.wallet.isUsingFingerprint()
+    // this.wallet.canUseFingerprint().then(() => {
+    //   this.canUseFingerprint = true
+    // }).catch((err: any) => {
+    //   this.canUseFingerprint = false
+    // })
+  }
+
+  pushSendPage() {
+    this.viewCtrl.dismiss()
+    this.app.getRootNav().push('SendPage')
+  }
+
+  pushHistoryPage() {
+    this.viewCtrl.dismiss()
+    this.app.getRootNav().push('HistoryPage')
+  }
+
+  pushMorePage() {
+    this.viewCtrl.dismiss()
+    this.app.getRootNav().push('MorePage')
+  }
+
+  setCurrency() {
+    return this.wallet.setPreferedCurrency(this.currency).catch((err: any) => {console.log(err)})
+  }
+
+  setAddressFormat() {
+    if (this.useCashAddr) {
+      return this.wallet.setPreferedAddressFormat('cashaddr').catch((err: any) => {console.log(err)})
+    } else {
+      return this.wallet.setPreferedAddressFormat('legacy').catch((err: any) => {console.log(err)})
+    }
+  }
+
+  // setFingerprint() {
+  //   if (this.useFingerprint === this.wallet.isUsingFingerprint()) {
+  //     return
+  //   }
+  //   if (!this.useFingerprint) {
+  //     return this.wallet.setUsingFingerprint(false).catch((err: any) => {
+  //       this.useFingerprint = this.wallet.isUsingFingerprint()
+  //     })
+  //   }
+  //   let reminderAlert = this.alertCtrl.create({
+  //     enableBackdropDismiss: false,
+  //     title: 'Warning!',
+  //     message: 'DO BACKUP YOUR RECOVERY PHRASE BEFORE ENABLING FINGERPRINT.<br>If for some reason the fingerprint data is lost or changed, you will need to recover this wallet using the recovery phrase.<br>The recovery phrase can be found in settings > more... > backup wallet',
+  //     buttons: [{
+  //       text: 'cancel',
+  //       handler: data => {
+  //         this.useFingerprint = false
+  //       }
+  //     },{
+  //       text: 'enable',
+  //       handler: data => {
+  //         reminderAlert.dismiss().then(() => {
+  //           this.wallet.setUsingFingerprint(true).catch((err: any) => {
+  //             // this.alertCtrl.create({
+  //             //   message: err
+  //             // }).present()
+  //             this.useFingerprint = this.wallet.isUsingFingerprint()
+  //           })
+  //         })
+  //         return false
+  //       }
+  //     }]
+  //   })
+  //   reminderAlert.present()
+  // }
+
+}

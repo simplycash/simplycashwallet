@@ -1,0 +1,51 @@
+<ion-header no-border  [attr.transparent]="isTransparent ? '' : null">
+
+  <ion-navbar color="primary">
+    <ion-title>simply cash</ion-title>
+    <ion-buttons end>
+      <button ion-button *ngIf="wallet.isConnecting() || wallet.isSyncing()">
+        <ion-spinner color="light"></ion-spinner>
+      </button>
+      <button ion-button icon-only (click)="showMenu($event)">
+        <ion-icon name="more"></ion-icon>
+      </button>
+    </ion-buttons>
+  </ion-navbar>
+
+</ion-header>
+
+
+<ion-content [attr.transparent]="isTransparent ? '' : null">
+
+  <ion-list>
+    <ion-item>
+      <ion-label stacked color="primary">my bitcoin cash address</ion-label>
+      <ion-input
+        [value]="address | convertAddressPipe:wallet.getPreferedAddressFormat()"
+        type="text"
+        (ionChange)="addressChange($event)"
+        readonly></ion-input>
+      <button ion-button item-end (click)="copyAddress()" outline>
+        copy
+      </button>
+    </ion-item>
+    <my-amount #myAmount (satoshisChange)="amountChange($event)"></my-amount>
+  </ion-list>
+  <div *ngIf="qrCodeURL" text-center>
+    <img class="qrcode" [src]="qrCodeURL" (click)="share()"/>
+  </div>
+
+  <ion-toolbar class="connection-toolbar" *ngIf="wallet.isOffline()">
+    <p><ion-icon name="alert" color="danger"></ion-icon> not connected</p>
+    <ion-buttons end>
+      <button ion-button color="primary" (click)="reconnect($event)">retry</button>
+    </ion-buttons>
+  </ion-toolbar>
+
+  <ion-fab class="camera-fab" [attr.elevated]="wallet.isOffline() ? '' : null">
+    <button ion-fab (touchstart)="startScan($event)" (touchend)="stopScan($event)" [disabled]=isToggling>
+      <ion-icon name="camera"></ion-icon>
+    </button>
+  </ion-fab>
+
+</ion-content>

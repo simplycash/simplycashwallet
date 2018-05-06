@@ -1,0 +1,36 @@
+page-home {
+  ion-header, ion-content {
+    opacity: 1;
+    -webkit-transition: opacity 0.2s;
+    transition: opacity 0.2s;
+  }
+  ion-header[transparent], ion-content[transparent] {
+    opacity: 0;
+  }
+  ion-fab.main-fab>button {
+    color: white;
+  }
+  .align-center {
+    text-align: center;
+  }
+  .address {
+    // margin: 20px 0;
+  }
+  .connection-toolbar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+  }
+  .camera-fab {
+    left: 15px;
+    bottom: 15px;
+  }
+  .camera-fab[elevated] {
+    bottom: 71px;
+  }
+  .qrcode {
+    width: 100%;
+    max-width: 200px;
+    box-shadow: 0 4px 6px 0 rgba(0, 0, 0, 0.14), 0 4px 5px rgba(0, 0, 0, 0.1);
+  }
+}

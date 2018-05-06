@@ -1,0 +1,47 @@
+<ion-header no-border>
+
+  <ion-navbar color="primary">
+    <ion-title>addresses</ion-title>
+  </ion-navbar>
+
+</ion-header>
+
+
+<ion-content>
+  <ion-toolbar color="primary">
+    <ion-segment [(ngModel)]="type" color="light">
+      <ion-segment-button value="receive">
+        receive
+      </ion-segment-button>
+      <ion-segment-button value="change">
+        change
+      </ion-segment-button>
+      <ion-segment-button value="unspent">
+        unspent
+      </ion-segment-button>
+    </ion-segment>
+  </ion-toolbar>
+
+  <div [ngSwitch]="type">
+
+    <ion-list *ngSwitchCase="'receive'" no-lines>
+      <ion-item *ngFor="let addr of receiveAddrs" (click)="pushAddressPage(addr)" [attr.current]="addr.address === currentReceiveAddr ? '' : null">
+        {{ addr.index }}&nbsp;{{ addr.address }}
+      </ion-item>
+    </ion-list>
+
+    <ion-list *ngSwitchCase="'change'" no-lines>
+      <ion-item *ngFor="let addr of changeAddrs" (click)="pushAddressPage(addr)" [attr.current]="addr.address === currentChangeAddr ? '' : null">
+        {{ addr.index }}&nbsp;{{ addr.address }}
+      </ion-item>
+    </ion-list>
+
+    <ion-list *ngSwitchCase="'unspent'" no-lines>
+      <ion-item *ngFor="let addr of unspentAddrs" (click)="pushAddressPage(addr)">
+        {{ addr.address }}<span item-end>{{ addr.balance }}</span>
+      </ion-item>
+    </ion-list>
+
+  </div>
+
+</ion-content>
