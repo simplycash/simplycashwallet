@@ -13,6 +13,8 @@ import io from 'socket.io-client'
 import * as protobuf from 'protobufjs'
 import * as asn1js from 'asn1js'
 import * as pkijs from 'pkijs'
+import * as crypto from 'crypto-browserify'
+import { Buffer } from 'buffer'
 
 
 @Injectable()
@@ -339,7 +341,16 @@ export class Wallet {
       transports:['polling', 'websocket']
     })
     this.socket.on('connect', () => {
-      this.apiWS('startwallet', {}, true).then(() => {
+      this.apiWS('challenge', {}, true).then((challenge: string) => {
+        let challengeBuffer: any = Buffer.from(challenge, 'hex')
+        let response: any
+        let x: string = ''
+        while (x !== '000') {
+          response = crypto.randomBytes(128)
+          x = crypto.createHash('sha256').update(challengeBuffer).update(response).digest('hex').slice(0, 3)
+        }
+        return this.apiWS('startwallet', {response: response.toString('hex')}, true)
+      }).then(() => {
         this.changeState(this.STATE.CONNECTED)
         return Promise.all([
           this.apiWS('address.subscribe'),
@@ -349,6 +360,7 @@ export class Wallet {
       }).then((results) => {
         this.updatePrice(results[1])
       }).catch((err) => {
+        console.log(err)
         this.socket.close()
         this.changeState(this.STATE.OFFLINE)
       })
