@@ -5,4 +5,4 @@ simply cash is built using [Ionic Framework](https://ionicframework.com)
 2. clone and cd into this directory
 3. `ionic cordova build android --prod`
 
-follow this [guide](https://ionicframework.com/docs/intro/deploying/) if you have difficulties deplying to android device
+follow this [guide](https://ionicframework.com/docs/intro/deploying/) if you have difficulties deploying to android device
