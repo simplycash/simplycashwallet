@@ -1,4 +1,4 @@
-import { Component, NgZone, ViewChild } from '@angular/core'
+import { ChangeDetectorRef, Component, NgZone, ViewChild } from '@angular/core'
 import { AlertController, App, IonicPage, LoadingController, NavController, NavParams, Platform, PopoverController, ToastController } from 'ionic-angular'
 import { QRScanner, QRScannerStatus } from '@ionic-native/qr-scanner'
 import { SocialSharing } from '@ionic-native/social-sharing'
@@ -24,8 +24,7 @@ export class HomePage {
 
   private pauseSub: any
   private scanSub: any
-  private canStart: boolean = true
-  private canStop: boolean = false
+  private scanState: string = 'stopped'
   private isTransparent: boolean = false
 
   private scanBeginTime: number
@@ -35,6 +34,7 @@ export class HomePage {
   constructor(
     public alertCtrl: AlertController,
     private app: App,
+    private ref: ChangeDetectorRef,
     private clipboard: Clipboard,
     // private keyboard: Keyboard,
     public loadingCtrl: LoadingController,
@@ -111,8 +111,7 @@ export class HomePage {
 
   startScan() {
     clearTimeout(this.destroyTimer)
-    this.canStart = true
-    this.canStop = false
+    this.scanState = 'starting'
     this.scanBeginTime = new Date().getTime()
     this.qrScanner.getStatus().then((status: QRScannerStatus) => {
       if (status.prepared) {
@@ -122,11 +121,12 @@ export class HomePage {
       }
     }).then((status: QRScannerStatus) => {
       if (status.authorized) {
-        if (!this.canStart || new Date().getTime() - this.scanBeginTime > 500) {
+        if (this.scanState === 'stopping' || new Date().getTime() - this.scanBeginTime > 500) {
+          this.scanState = 'stopped'
           this.qrScanner.destroy()
           return
         }
-        this.canStop = true
+        this.scanState = 'scanning'
         this.pauseSub = this.platform.pause.subscribe(() => {
           this.ngZone.run(() => {
             this.stopScan()
@@ -134,38 +134,51 @@ export class HomePage {
         })
         this.scanSub = this.qrScanner.scan().subscribe((text: string) => {
           this.ngZone.run(async () => {
-            if (this.handleQRText(text)) {
-              this.stopScan()
-            }
+            this.stopScan(true)
+            await this.handleQRText(text)
+            this.isTransparent = false
+            this.ref.detectChanges()
+            this.destroyTimer = setTimeout(() => {
+              this.qrScanner.destroy()
+            }, 500)
           })
         })
         this.isTransparent = true
         // this.statusBar.hide()
         this.qrScanner.show()
       } else if (status.denied) {
+        this.scanState = 'stopped'
         this.qrScanner.openSettings()
         // camera permission was permanently denied
         // you must use QRScanner.openSettings() method to guide the user to the settings page
         // then they can grant the permission from there
       } else {
+        this.scanState = 'stopped'
         // permission was denied, but not permanently. You can ask for permission again at a later time.
       }
     }).catch((e: any) => {
       console.log(e)
+      this.scanState = 'stopped'
     })
   }
 
-  stopScan() {
-    if (!this.canStop) {
-      this.canStart = false
+  stopScan(keepPreview?: boolean) {
+    if (this.scanState === 'stopped') {
       return
     }
-    this.isTransparent = false
+    if (this.scanState === 'starting') {
+      this.scanState = 'stopping'
+      return
+    }
+    this.scanState = 'stopped'
+    if (!keepPreview) {
+      this.isTransparent = false
+      this.destroyTimer = setTimeout(() => {
+        this.qrScanner.destroy()
+      }, 500)
+    }
     // this.statusBar.show()
     // this.qrScanner.hide()
-    this.destroyTimer = setTimeout(() => {
-      this.qrScanner.destroy()
-    }, 200)
     this.pauseSub.unsubscribe()
     this.scanSub.unsubscribe() // stop scanning
     this.scanEndTime = new Date().getTime()
@@ -188,40 +201,47 @@ export class HomePage {
     this.clipboard.copy(this.displayedAddress)
   }
 
-  handleQRText(text: string) {
-    if (this.handleURL(text)) {
+  async handleQRText(text: string) {
+    if (await this.handleURL(text)) {
       return true
     }
     if (this.wallet.validateWIF(text)) {
-      this.navCtrl.push('SweepPage', {
+      await this.navCtrl.push('SweepPage', {
         wif: text
       })
       return true
     }
+    await this.alertCtrl.create({
+      enableBackdropDismiss: false,
+      title: 'Invalid Data',
+      message: text,
+      buttons: ['ok']
+    }).present()
     return false
   }
 
-  handleURL(url: string) {
+  async handleURL(url: string) {
     let info: any = this.wallet.getRequestFromURL(url)
     if (typeof info === 'undefined') {
       return false
     }
     if (typeof info.url !== 'undefined') {
-      this.handleBIP70(info)
+      await this.handleBIP70(info)
       return true
+    } else {
+      return await this.handleRequest(info)
     }
-    return this.handleRequest(info)
   }
 
-  handleRequest(info: any) {
+  async handleRequest(info: any) {
     if (info.outputs.length === 0) {
       return false
     }
     if (info.outputs.map(output => output.satoshis).reduce((acc, curr) => acc + curr) > 0) {
-      this.sign(info)
+      await this.sign(info)
     } else {
       info.outputs = info.outputs.slice(0, 1)
-      this.navCtrl.push('SendPage', {
+      await this.navCtrl.push('SendPage', {
         info: info
       })
     }
@@ -247,7 +267,7 @@ export class HomePage {
     }
     await loader.dismiss()
     if (typeof errMessage === 'undefined') {
-      this.handleRequest(request)
+      return await this.handleRequest(request)
     } else {
       this.alertCtrl.create({
         enableBackdropDismiss: false,
@@ -274,10 +294,10 @@ export class HomePage {
       }
       setTimeout(() => {
         this.ngZone.run(async () => {
-          if (this.handleURL(url)) {
+          if (await this.handleURL(url)) {
             return
           }
-          this.alertCtrl.create({
+          await this.alertCtrl.create({
             enableBackdropDismiss: false,
             title: 'Invalid Data',
             message: url,
@@ -331,7 +351,7 @@ export class HomePage {
 
     try {
       let signedTx: { satoshis: number, hex: string, fee: number } = await this.wallet.makeSignedTx(info.outputs)
-      this.navCtrl.push('ConfirmPage', {
+      await this.navCtrl.push('ConfirmPage', {
         info: Object.assign(info, signedTx)
       })
     } catch (err) {

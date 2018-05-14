@@ -43,7 +43,7 @@
   </ion-toolbar>
 
   <ion-fab class="camera-fab" [attr.elevated]="wallet.isOffline() ? '' : null">
-    <button ion-fab (touchstart)="startScan($event)" (touchend)="stopScan($event)" [disabled]=isToggling>
+    <button ion-fab (touchstart)="startScan()" (touchend)="stopScan()" [disabled]=isToggling>
       <ion-icon name="camera"></ion-icon>
     </button>
   </ion-fab>

@@ -1,10 +1,22 @@
 page-home {
-  ion-header, ion-content {
+  ion-header {
+    -webkit-transform: translateY(0);
+    transform: translateY(0);
+
+    -webkit-transition: -webkit-transform 0.4s;
+    transition: transform 0.4s;
+  }
+  ion-content {
     opacity: 1;
+
     -webkit-transition: opacity 0.2s;
     transition: opacity 0.2s;
   }
-  ion-header[transparent], ion-content[transparent] {
+  ion-header[transparent] {
+    -webkit-transform: translateY(-56px);
+    transform: translateY(-56px);
+  }
+  ion-content[transparent] {
     opacity: 0;
   }
   ion-fab.main-fab>button {
