@@ -31,6 +31,9 @@ export class HomePage {
   private scanEndTime: number
   private destroyTimer: number
 
+  private hint: any
+  private hintTimer: number
+
   constructor(
     public alertCtrl: AlertController,
     private app: App,
@@ -183,11 +186,21 @@ export class HomePage {
     this.scanSub.unsubscribe() // stop scanning
     this.scanEndTime = new Date().getTime()
     if (this.scanEndTime - this.scanBeginTime < 500) {
-      this.toastCtrl.create({
-        message: 'hold to scan QR code',
-        duration: 3000,
-        position: 'middle'
-      }).present()
+      if (typeof this.hint === 'undefined') {
+        this.hint = this.toastCtrl.create({
+          message: 'hold to scan QR code',
+          position: 'middle'
+        })
+        this.hint.onWillDismiss(() => {
+          this.hint = undefined
+        })
+        this.hint.present()
+      } else {
+        clearTimeout(this.hintTimer)
+      }
+      this.hintTimer = setTimeout(() => {
+        this.hint.dismiss()
+      }, 3000)
     }
   }
 
