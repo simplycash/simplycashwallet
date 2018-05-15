@@ -340,30 +340,33 @@ export class Wallet {
       timeout: 10000,
       transports:['polling', 'websocket']
     })
-    this.socket.on('connect', () => {
-      this.apiWS('challenge', {}, true).then((challenge: string) => {
+    this.socket.on('connect', async () => {
+      try {
+        let challenge: any = await this.apiWS('challenge', {}, true)
         let challengeBuffer: any = Buffer.from(challenge, 'hex')
         let response: any
         let x: string = ''
+        let i: number = 0
         while (x !== '000') {
+          if (i++ % 100 === 0) {
+            await this.delay(0)
+          }
           response = crypto.randomBytes(128)
           x = crypto.createHash('sha256').update(challengeBuffer).update(response).digest('hex').slice(0, 3)
         }
-        return this.apiWS('startwallet', {response: response.toString('hex')}, true)
-      }).then(() => {
+        await this.apiWS('startwallet', {response: response.toString('hex')}, true)
         this.changeState(this.STATE.CONNECTED)
-        return Promise.all([
+        let results: any[] = await Promise.all([
           this.apiWS('address.subscribe'),
           this.apiWS('price.subscribe'),
           this.syncEverything(true)
         ])
-      }).then((results) => {
         this.updatePrice(results[1])
-      }).catch((err) => {
+      } catch (err) {
         console.log(err)
         this.socket.close()
         this.changeState(this.STATE.OFFLINE)
-      })
+      }
     })
     let timer: number
     this.socket.on('notification', (data) => {
@@ -540,24 +543,21 @@ export class Wallet {
     let newAddresses: any = { receive: [], change: [] }
     // let hdPublicKey: bitcoincash.HDPublicKey = this.getHDPublicKey()
     // let d: bitcoincash.HDPublicKey[] = [hdPublicKey.derive(0), hdPublicKey.derive(1)]
+
+    if (pair.receive === this.stored.addresses.receive.length - 1 && pair.change === this.stored.addresses.change.length - 1) {
+        return newAddresses
+    }
     let hdPrivateKey: bitcoincash.HDPrivateKey = this.getHDPrivateKeyFromMnemonic(await this.getMnemonic())
     let d: bitcoincash.HDPrivateKey[] = [hdPrivateKey.derive(0), hdPrivateKey.derive(1)]
     for (let i = this.stored.addresses.receive.length; i <= pair.receive; i++) {
-      await delay(0)
+      await this.delay(0)
       newAddresses.receive.push(d[0].derive(i).privateKey.toAddress().toString())
     }
     for (let i = this.stored.addresses.change.length; i <= pair.change; i++) {
-      await delay(0)
+      await this.delay(0)
       newAddresses.change.push(d[1].derive(i).privateKey.toAddress().toString())
     }
     return newAddresses
-    function delay(ms: number) {
-      return new Promise((resolve, reject) => {
-        setTimeout(() => {
-          resolve()
-        }, ms)
-      })
-    }
   }
 
   updatePrice(price: any) {
@@ -606,6 +606,14 @@ export class Wallet {
   }
 
   //helper
+
+  delay(ms: number) {
+    return new Promise((resolve, reject) => {
+      setTimeout(() => {
+        resolve()
+      }, ms)
+    })
+  }
 
   createMnemonic() {
     return new bitcoincash.Mnemonic().phrase
