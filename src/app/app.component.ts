@@ -32,6 +32,9 @@ export class MyApp {
     private wallet: Wallet
   ) {
     platform.ready().then(() => {
+      if (this.platform.is('android')) {
+        this.statusBar.backgroundColorByHexString("#00000000");
+      }
       try {
         this.localNotifications.on('click').subscribe((notification) => {
           if (

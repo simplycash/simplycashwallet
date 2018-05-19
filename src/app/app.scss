@@ -18,6 +18,13 @@ ion-app {
   background-color: transparent !important;
 }
 
+.platform-android {
+  ion-header {
+    padding-top: 20px;
+    background-color: color($colors, primary);
+  }
+}
+
 .content .scroll-content {
     overflow-y: auto;
 }

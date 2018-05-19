@@ -57,7 +57,6 @@ export class HomePage {
   }
 
   ionViewDidEnter() {
-    // this.handleURL('bitcoincash:?r=https://bitpay.com/i/3BV1vfZ3PsF3xG3sTAPUFh')
     this.wallet.subscribeUpdate(this.updateCallback)
     this.handleDeepLinks()
   }
