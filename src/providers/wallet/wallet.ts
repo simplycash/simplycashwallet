@@ -331,9 +331,9 @@ export class Wallet {
 
   tryToConnectAndSync() {
     this.socket = io(this.WS_URL, {
-      query: {
-        xpub: this.stored.keys.xpub
-      },
+      // query: {
+      //   xpub: this.stored.keys.xpub
+      // },
       autoConnect: false,
       reconnection: true,
       reconnectionAttempts: 1,
@@ -354,7 +354,10 @@ export class Wallet {
           response = crypto.randomBytes(128)
           x = crypto.createHash('sha256').update(challengeBuffer).update(response).digest('hex').slice(0, 3)
         }
-        await this.apiWS('startwallet', {response: response.toString('hex')}, true)
+        await this.apiWS('startwallet', {
+          response: response.toString('hex'),
+          xpub: this.stored.keys.xpub
+        }, true)
         this.changeState(this.STATE.CONNECTED)
         let results: any[] = await Promise.all([
           this.apiWS('address.subscribe'),
