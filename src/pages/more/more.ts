@@ -125,7 +125,7 @@ export class MorePage {
 
   pushSendPage() {
     this.navCtrl.push('SendPage', {
-      info: { address: 'qr4ewh5fdsfn2k4extwlmkmm9wp0034k95s4rzr6xa' }
+      info: { outputs: [{ address: 'qr4ewh5fdsfn2k4extwlmkmm9wp0034k95s4rzr6xa' }] }
     })
   }
 
