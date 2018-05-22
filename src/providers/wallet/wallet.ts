@@ -3,7 +3,7 @@ import { HttpClient } from '@angular/common/http'
 import 'rxjs/add/operator/catch'
 import 'rxjs/add/operator/toPromise'
 import { Storage } from '@ionic/storage'
-import { AlertController, App, Events, LoadingController, ToastController } from 'ionic-angular'
+import { AlertController, App, Events, LoadingController, Platform, ToastController } from 'ionic-angular'
 // import { KeychainTouchId } from '@ionic-native/keychain-touch-id'
 import { LocalNotifications } from '@ionic-native/local-notifications'
 import 'rxjs/add/operator/timeout'
@@ -32,6 +32,7 @@ export class Wallet {
 
   private supportedAddressFormats: string[] = ['legacy', 'cashaddr', 'bitpay']
 
+  private isPaused: boolean = false
   private socket: any
   private socketRequestId: number = 0
 
@@ -82,9 +83,20 @@ export class Wallet {
     // private keychainTouchId: KeychainTouchId,
     public loadingCtrl: LoadingController,
     private localNotifications: LocalNotifications,
+    private platform: Platform,
     public storage: Storage,
     private toastCtrl: ToastController
-  ) { }
+  ) {
+    this.platform.pause.subscribe(() =>{
+      this.isPaused = true
+    })
+    this.platform.resume.subscribe(() =>{
+      this.isPaused = false
+      if (this.isOffline()) {
+        this.tryToConnectAndSync()
+      }
+    })
+  }
 
   //fingerprint
 
@@ -391,8 +403,7 @@ export class Wallet {
       }
     })
     this.socket.on('disconnect', (reason) => {
-      if (reason === 'io server disconnect') {
-        // will not reconnect automatically
+      if (reason === 'io server disconnect' || this.isPaused) {
         this.socket.close()
         this.changeState(this.STATE.OFFLINE)
       }
