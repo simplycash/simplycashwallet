@@ -2,18 +2,16 @@
 
   <ion-navbar color="primary">
     <ion-title>balance</ion-title>
-    <ion-buttons end>
-      <button ion-button (click)="changeUnit()">
-        {{ currentUnit }}
-      </button>
-    </ion-buttons>
   </ion-navbar>
 
 </ion-header>
 
 <ion-content>
   <ion-list no-lines>
-    <ion-item color="primary">
+    <ion-item>
+      <button ion-button outline (click)="changeUnit()">
+        {{ currentUnit }}
+      </button>
       <span class="balance-span" item-end>{{ balance | convertUnitPipe:currentUnit }}</span>
     </ion-item>
     <ion-item-group *ngFor="let dateGroup of dateGroups">
