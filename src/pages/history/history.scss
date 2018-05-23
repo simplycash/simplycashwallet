@@ -1,4 +1,7 @@
 page-history {
+  .balance-span {
+    font-size: 3rem;
+  }
   .pdelta {
     color: green;
   }
@@ -10,5 +13,8 @@ page-history {
   }
   ion-item[unseen] {
     font-weight: bold;
+  }
+  ion-item-divider {
+    border-bottom: 0 !important;
   }
 }

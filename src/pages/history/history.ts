@@ -33,7 +33,7 @@ export class HistoryPage {
     }
   }
 
-  ionViewDidEnter() {
+  ionViewDidLoad() {
     this.wallet.subscribeUpdate(this.updateCallback)
     this.localNotifications.getAll().then((items: any) => {
       items.forEach((item: any) => {

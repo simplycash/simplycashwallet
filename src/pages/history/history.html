@@ -2,23 +2,20 @@
 
   <ion-navbar color="primary">
     <ion-title>balance</ion-title>
+    <ion-buttons end>
+      <button ion-button (click)="changeUnit()">
+        {{ currentUnit }}
+      </button>
+    </ion-buttons>
   </ion-navbar>
 
 </ion-header>
 
 <ion-content>
   <ion-list no-lines>
-    <ion-item-group>
-      <ion-item-divider color="light">
-        wallet balance
-        <button ion-button outline item-end (click)="changeUnit()">
-          {{ currentUnit }}
-        </button>
-      </ion-item-divider>
-      <ion-item>
-        <span item-end>{{ balance | convertUnitPipe:currentUnit }}</span>
-      </ion-item>
-    </ion-item-group>
+    <ion-item color="primary">
+      <span class="balance-span" item-end>{{ balance | convertUnitPipe:currentUnit }}</span>
+    </ion-item>
     <ion-item-group *ngFor="let dateGroup of dateGroups">
       <ion-item-divider color="light">{{ dateGroup.date }}</ion-item-divider>
       <ion-item *ngFor="let tx of dateGroup.txs" (click)="showTx(tx.txid)" [attr.unseen]="tx.seen ? null : ''">
