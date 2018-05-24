@@ -356,15 +356,18 @@ export class Wallet {
       try {
         let challenge: any = await this.apiWS('challenge', {}, true)
         let challengeBuffer: any = Buffer.from(challenge, 'hex')
-        let response: any
+        let response: any = Buffer.alloc(2)
         let x: string = ''
         let i: number = 0
-        while (x !== '000') {
-          if (i++ % 100 === 0) {
+        while (true) {
+          response.writeUInt16LE(i)
+          x = crypto.createHash('sha256').update(challengeBuffer).update(response).digest('hex').slice(0, 3)
+          if (x === '000') {
+            break
+          }
+          if (++i % 100 === 0) {
             await this.delay(0)
           }
-          response = crypto.randomBytes(128)
-          x = crypto.createHash('sha256').update(challengeBuffer).update(response).digest('hex').slice(0, 3)
         }
         await this.apiWS('startwallet', {
           response: response.toString('hex'),
