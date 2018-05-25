@@ -468,7 +468,7 @@ export class Wallet {
       let stillUnconfirmed: any[] = oldUnconfirmed.filter(otx => typeof newUnconfirmed.find(ntx => ntx.txid === otx.txid) !== 'undefined')
       let freshUnconfirmed: any[] = newUnconfirmed.filter(ntx => typeof stillUnconfirmed.find(stx => ntx.txid === stx.txid) === 'undefined')
       let newConfirmed: any[] = results[4].filter(tx => typeof tx.timestamp !== 'undefined')
-      let unseenTxids: string[] = this.getUnseenTxids()
+      let unseenTxids: string[] = this.getUnseenTxids().concat(newTxids)
       newHistory = freshUnconfirmed.concat(stillUnconfirmed).concat(newConfirmed).map((tx) => {
         return {
           txid: tx.txid,
