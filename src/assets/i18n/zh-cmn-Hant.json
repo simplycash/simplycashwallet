@@ -50,6 +50,7 @@
   "RECOVER_FAILED": "未能復原錢包",
   "RECOVER_SUCCESS": "成功復原錢包",
   "RECOVER_WALLET": "復原錢包",
+  "REQUEST_AMOUNT": "請求金額",
   "REQUEST_ORIGIN": "請求來源",
   "RETRY": "重試",
   "SEND": "發送",

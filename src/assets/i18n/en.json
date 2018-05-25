@@ -50,6 +50,7 @@
   "RECOVER_FAILED": "failed to recover wallet",
   "RECOVER_SUCCESS": "wallet has been recovered",
   "RECOVER_WALLET": "recover wallet",
+  "REQUEST_AMOUNT": "request amount",
   "REQUEST_ORIGIN": "request origin",
   "RETRY": "retry",
   "SEND": "send",

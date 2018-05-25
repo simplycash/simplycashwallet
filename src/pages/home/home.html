@@ -29,7 +29,7 @@
         {{ 'COPY' | translate }}
       </button>
     </ion-item>
-    <my-amount #myAmount (satoshisChange)="amountChange($event)"></my-amount>
+    <my-amount #myAmount label="{{ 'REQUEST_AMOUNT' | translate }}" (satoshisChange)="amountChange($event)"></my-amount>
   </ion-list>
   <div *ngIf="qrCodeURL" text-center>
     <img class="qrcode" [src]="qrCodeURL" (click)="share()"/>

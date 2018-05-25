@@ -6,6 +6,7 @@ import { Wallet } from '../../providers/providers'
   templateUrl: 'my-amount.html'
 })
 export class MyAmountComponent {
+  @Input() label: string
   @Input() placeholder: string
   @Output() satoshisChange = new EventEmitter()
   @ViewChild('amount') amountEl
