@@ -7,7 +7,7 @@
 <ion-header no-border>
 
   <ion-navbar color="primary">
-    <ion-title>address</ion-title>
+    <ion-title>{{ 'ADDRESS' | translate }}</ion-title>
   </ion-navbar>
 
 </ion-header>
@@ -20,11 +20,11 @@
     <br>
     <button ion-button icon-left (click)="copyToClipboard()" clear>
       <ion-icon name="copy"></ion-icon>
-      copy
+      {{ 'COPY' | translate }}
     </button>
     <button ion-button icon-left (click)="viewOnBlockExplorer()" clear>
       <ion-icon name="globe"></ion-icon>
-      block explorer
+      {{ 'BLOCK_EXPLORER' | translate }}
     </button>
   </div>
 </ion-content>

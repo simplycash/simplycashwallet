@@ -3,14 +3,14 @@
   <ion-list no-lines no-margin>
     <ion-item (click)="pushHistoryPage($event)">
       <ion-icon name="logo-bitcoin" item-end [attr.notify]="wallet.getUnseenTxids().length > 0 ? '' : null"></ion-icon>
-      balance
+      {{ 'BALANCE' | translate }}
     </ion-item>
     <ion-item (click)="pushSendPage($event)">
       <ion-icon name="paper-plane" item-end></ion-icon>
-      send
+      {{ 'SEND' | translate }}
     </ion-item>
     <ion-item>
-      <ion-label>currency</ion-label>
+      <ion-label>{{ 'CURRENCY' | translate }}</ion-label>
       <ion-select [(ngModel)]="currency" (ionChange)="setCurrency()">
         <ion-option *ngIf="supportedCurrencies.length === 0" [value]="currency">{{ currency }}</ion-option>
         <ion-option *ngFor="let curr of supportedCurrencies" [value]="curr">{{ curr }}</ion-option>
@@ -24,7 +24,7 @@
       <ion-label>fingerprint</ion-label>
       <ion-toggle [(ngModel)]="useFingerprint" (ionChange)="setFingerprint()"></ion-toggle>
     </ion-item> -->
-    <ion-item (click)="pushMorePage($event)">more...</ion-item>
+    <ion-item (click)="pushMorePage($event)">{{ 'MORE' | translate }}...</ion-item>
   </ion-list>
 
 <!-- </ion-content> -->

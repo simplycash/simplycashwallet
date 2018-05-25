@@ -1,7 +1,7 @@
 <ion-header no-border>
 
   <ion-navbar color="primary">
-    <ion-title>confirm</ion-title>
+    <ion-title>{{ "CONFIRM" | translate }}</ion-title>
   </ion-navbar>
 
 </ion-header>
@@ -11,7 +11,7 @@
   <ion-list>
 
     <ion-item *ngIf="info.label">
-      <ion-label stacked color="primary">label</ion-label>
+      <ion-label stacked color="primary">{{ 'LABEL' | translate }}</ion-label>
       <ion-input
         value="{{ info.label }}"
         type="text"
@@ -19,7 +19,7 @@
     </ion-item>
 
     <ion-item *ngIf="info.message">
-      <ion-label stacked color="primary">message</ion-label>
+      <ion-label stacked color="primary">{{ 'MESSAGE' | translate }}</ion-label>
       <ion-input
         value="{{ info.message }}"
         type="text"
@@ -27,7 +27,7 @@
     </ion-item>
 
     <ion-item *ngIf="!info.bip70">
-      <ion-label stacked color="primary">bitcoin cash address</ion-label>
+      <ion-label stacked color="primary">{{ 'BITCOIN_CASH_ADDRESS' | translate }}</ion-label>
       <ion-input
         #address
         value="{{ info.outputs[0].address }}"
@@ -36,7 +36,7 @@
     </ion-item>
 
     <ion-item *ngIf="info.r">
-      <ion-label stacked color="primary">request origin</ion-label>
+      <ion-label stacked color="primary">{{ 'REQUEST_ORIGIN' | translate }}</ion-label>
       <ion-input
         value="{{ info.r }}"
         type="text"
@@ -44,7 +44,7 @@
     </ion-item>
 
     <ion-item *ngIf="info.merchantName">
-      <ion-label stacked color="primary">recipient</ion-label>
+      <ion-label stacked color="primary">{{ 'RECIPIENT' | translate }}</ion-label>
       <ion-input
         value="{{ info.merchantName }}"
         type="text"
@@ -52,7 +52,7 @@
     </ion-item>
 
     <ion-item *ngIf="info.memo">
-      <ion-label stacked color="primary">memo</ion-label>
+      <ion-label stacked color="primary">{{ 'MEMO' | translate }}</ion-label>
       <ion-input
         value="{{ info.memo }}"
         type="text"
@@ -60,7 +60,7 @@
     </ion-item>
 
     <ion-item>
-      <ion-label stacked color="primary">amount</ion-label>
+      <ion-label stacked color="primary">{{ 'AMOUNT' | translate }}</ion-label>
       <ion-input
         value="{{ info.satoshis | convertUnitPipe:unit }}"
         readonly></ion-input>
@@ -70,7 +70,7 @@
     </ion-item>
 
     <ion-item>
-      <ion-label stacked color="primary">fee</ion-label>
+      <ion-label stacked color="primary">{{ 'FEE' | translate }}</ion-label>
       <ion-input
         value="{{ info.fee | convertUnitPipe:unit }}"
         readonly></ion-input>
@@ -86,7 +86,7 @@
       (click)="broadcast($event)"
       clear>
       <ion-icon name="checkmark"></ion-icon>
-      broadcast
+      {{ 'BROADCAST' | translate }}
     </button>
     <button *ngIf="info.paymentUrl"
       class="send-btn"
@@ -95,7 +95,7 @@
       (click)="sendBIP70($event)"
       clear>
       <ion-icon name="checkmark"></ion-icon>
-      send
+      {{ 'SEND' | translate }}
     </button>
   </div>
 

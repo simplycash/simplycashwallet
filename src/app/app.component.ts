@@ -1,4 +1,5 @@
 import { Component, NgZone, ViewChild } from '@angular/core'
+import { Globalization } from '@ionic-native/globalization';
 import { LocalNotifications } from '@ionic-native/local-notifications'
 import { SplashScreen } from '@ionic-native/splash-screen'
 import { StatusBar } from '@ionic-native/status-bar'
@@ -23,6 +24,7 @@ export class MyApp {
     private alertCtrl: AlertController,
     private app: App,
     private config: Config,
+    private globalization: Globalization,
     private localNotifications: LocalNotifications,
     private ngZone: NgZone,
     private platform: Platform,
@@ -63,35 +65,42 @@ export class MyApp {
     }).then(() => {
       this.splashScreen.hide()
     }).catch((err: any) => {
-      console.log(err)
+      this.alertCtrl.create({
+        enableBackdropDismiss: false,
+        title: this.translate.instant('ERROR'),
+        message: this.translate.instant('ERR_START_WALLET_FAILED'),
+        buttons: ['ok']
+      }).present()
     })
 
     this.initTranslate()
   }
 
-  initTranslate() {
-    // Set the default language for translation strings, and the current language.
+  async initTranslate() {
     this.translate.setDefaultLang('en')
-    // const browserLang = this.translate.getBrowserLang()
-
-    // if (browserLang) {
-    //   if (browserLang === 'zh') {
-    //     const browserCultureLang = this.translate.getBrowserCultureLang()
-    //
-    //     if (browserCultureLang.match(/-CN|CHS|Hans/i)) {
-    //       this.translate.use('zh-cmn-Hans')
-    //     } else if (browserCultureLang.match(/-TW|CHT|Hant/i)) {
-    //       this.translate.use('zh-cmn-Hant')
-    //     }
-    //   } else {
-    //     this.translate.use(this.translate.getBrowserLang())
-    //   }
-    // } else {
-      this.translate.use('en') // Set your language here
-    // }
-
-    this.translate.get(['BACK_BUTTON_TEXT']).subscribe(values => {
-      this.config.set('ios', 'backButtonText', values.BACK_BUTTON_TEXT)
-    })
+    let browserLang: string
+    let prefix: string
+    if (this.platform.is('cordova')) {
+      browserLang = (await this.globalization.getPreferredLanguage()).value || ''
+    } else {
+      browserLang = navigator.language || ''
+    }
+    prefix = browserLang.split('-')[0]
+    if (browserLang && ['en', 'zh'].indexOf(prefix) !== -1) {
+      if (prefix === 'zh') {
+        if (browserLang.match(/-TW|CHT|Hant|HK|yue/i)) {
+          this.translate.use('zh-cmn-Hant')
+        } else /*if (browserLang.match(/-CN|CHS|Hans/i))*/ {
+          this.translate.use('zh-cmn-Hans')
+        }
+      } else {
+        this.translate.use(prefix)
+      }
+    } else {
+      this.translate.use('en')
+    }
+    // this.translate.get(['BACK_BUTTON_TEXT']).subscribe(values => {
+    //   this.config.set('ios', 'backButtonText', values.BACK_BUTTON_TEXT)
+    // })
   }
 }

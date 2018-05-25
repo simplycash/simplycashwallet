@@ -1,6 +1,6 @@
 import { Component } from '@angular/core'
 import { AlertController, IonicPage, LoadingController, NavController, NavParams, ViewController } from 'ionic-angular'
-
+import { TranslateService } from '@ngx-translate/core';
 import { Wallet } from '../../providers/providers'
 
 @IonicPage()
@@ -21,6 +21,7 @@ export class ConfirmPage {
     public navCtrl: NavController,
     private navParams: NavParams,
     public viewCtrl: ViewController,
+    private translate: TranslateService,
     private wallet: Wallet
   ) {
     this.info = navParams.get('info')
@@ -39,7 +40,7 @@ export class ConfirmPage {
   async sendBIP70(ev: any) {
     this.isReady = false
     let loader = this.loadingCtrl.create({
-      content: "sending..."
+      content: this.translate.instant('SENDING')+"..."
     })
     try {
       if (this.info.expires > 0 && new Date().getTime() > this.info.expires * 1000) {
@@ -55,7 +56,7 @@ export class ConfirmPage {
       await loader.dismiss()
       let successAlert = this.alertCtrl.create({
         enableBackdropDismiss: false,
-        title: 'Success',
+        title: this.translate.instant('TX_COMPLETE'),
         message: memo,
         buttons: [{
           text: 'ok',
@@ -67,21 +68,21 @@ export class ConfirmPage {
           }
         }]
       })
-      successAlert.present()
+      await successAlert.present()
     } catch (err) {
       console.log(err)
       await loader.dismiss()
       let message: string
       if (err.message == 'expired') {
-        message = err.message
+        message = this.translate.instant('ERR_EXPIRED')
       } else if (err.status === 400) {
-        message = 'rejected'
+        message = this.translate.instant('ERR_REJECTED')
       } else {
-        message = 'failed to send'
+        message = this.translate.instant('ERR_SEND_FAILED')
       }
-      this.alertCtrl.create({
+      await this.alertCtrl.create({
         enableBackdropDismiss: false,
-        title: 'Error',
+        title: this.translate.instant('ERROR'),
         message: message,
         buttons: ['ok']
       }).present()
@@ -92,7 +93,7 @@ export class ConfirmPage {
   async broadcast(ev: any) {
     this.isReady = false
     let loader = this.loadingCtrl.create({
-      content: "broadcasting..."
+      content: this.translate.instant('BROADCASTING')+"..."
     })
     try {
       await loader.present()
@@ -100,8 +101,7 @@ export class ConfirmPage {
       await loader.dismiss()
       let successAlert = this.alertCtrl.create({
         enableBackdropDismiss: false,
-        title: 'Success',
-        message: 'transaction complete',
+        title: this.translate.instant('TX_COMPLETE'),
         buttons: [{
           text: 'ok',
           handler: () => {
@@ -112,21 +112,21 @@ export class ConfirmPage {
           }
         }]
       })
-      successAlert.present()
+      await successAlert.present()
     } catch (err) {
       console.log(err)
       await loader.dismiss()
       let message: string
       if (err.message == 'not connected') {
-        message = 'not connected to server'
+        message = this.translate.instant('ERR_NOT_CONNECTED')
       } else if (err.message == 'timeout') {
-        message = 'timeout'
+        message = this.translate.instant('ERR_TIMEOUT')
       } else {
-        message = 'invalid transaction'
+        message = this.translate.instant('ERR_INVALID_TX')
       }
-      this.alertCtrl.create({
+      await this.alertCtrl.create({
         enableBackdropDismiss: false,
-        title: 'Error',
+        title: this.translate.instant('ERROR'),
         message: message,
         buttons: ['ok']
       }).present()

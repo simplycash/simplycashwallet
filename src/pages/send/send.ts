@@ -1,7 +1,7 @@
 import { Component, ViewChild } from '@angular/core'
 import { AlertController, IonicPage, ModalController, NavController, NavParams, App, LoadingController, ToastController } from 'ionic-angular'
 // import { Keyboard } from '@ionic-native/keyboard'
-
+import { TranslateService } from '@ngx-translate/core';
 import { Wallet } from '../../providers/providers'
 
 @IonicPage()
@@ -28,6 +28,7 @@ export class SendPage {
     // private keyboard: Keyboard,
     public loadingCtrl: LoadingController,
     public modalCtrl: ModalController,
+    private translate: TranslateService,
     private wallet: Wallet
   ) {
     // this.keyboard.onKeyboardHide().subscribe(() => {
@@ -87,28 +88,40 @@ export class SendPage {
         output.address = address
       }
     } catch (err) {
+      let errMessage = err.message
+      if (err.message === 'not enough fund') {
+        errMessage = this.translate.instant('ERR_NOT_ENOUGH_FUND')
+      } else if (err.message === 'invalid address') {
+        errMessage = this.translate.instant('ERR_INVALID_ADDR')
+      } else if (err.message === 'invalid amount') {
+        errMessage = this.translate.instant('ERR_INVALID_AMOUNT')
+      }
       this.alertCtrl.create({
         enableBackdropDismiss: false,
-        title: 'Error',
-        message: err.message,
+        title: this.translate.instant('ERROR'),
+        message: errMessage,
         buttons: ['ok']
       }).present()
       return
     }
 
+    let loader = this.loadingCtrl.create({
+      content: this.translate.instant('SIGNING')+"..."
+    })
+    await loader.present()
+
     try {
       let signedTx: { satoshis: number, fee: number, hex: string } = await this.wallet.makeSignedTx([output], drain)
-      this.navCtrl.push('ConfirmPage', {
+      await loader.dismiss()
+      await this.navCtrl.push('ConfirmPage', {
         info: Object.assign(this.info || { outputs: [output] }, signedTx)
       })
     } catch (err) {
       console.log(err)
-      if (err.message === 'cancelled') {
-        return
-      }
-      this.alertCtrl.create({
+      await loader.dismiss()
+      await this.alertCtrl.create({
         enableBackdropDismiss: false,
-        title: 'Error',
+        title: this.translate.instant('ERROR'),
         message: err.message,
         buttons: ['ok']
       }).present()

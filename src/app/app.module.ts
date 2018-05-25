@@ -2,6 +2,7 @@ import { HttpClient, HttpClientModule } from '@angular/common/http';
 import { ErrorHandler, NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 import { Clipboard } from '@ionic-native/clipboard';
+import { Globalization } from '@ionic-native/globalization';
 import { InAppBrowser } from '@ionic-native/in-app-browser';
 import { LocalNotifications } from '@ionic-native/local-notifications';
 // import { KeychainTouchId } from '@ionic-native/keychain-touch-id';
@@ -48,6 +49,7 @@ export function createTranslateLoader(http: HttpClient) {
   providers: [
     Wallet,
     Clipboard,
+    Globalization,
     InAppBrowser,
     // KeychainTouchId,
     // Keyboard,

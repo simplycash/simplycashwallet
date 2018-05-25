@@ -1,7 +1,7 @@
 <ion-header no-border>
 
   <ion-navbar color="primary">
-    <ion-title>addresses</ion-title>
+    <ion-title>{{ 'ADDRESSES' | translate }}</ion-title>
   </ion-navbar>
 
 </ion-header>
@@ -11,13 +11,13 @@
   <ion-toolbar color="primary">
     <ion-segment [(ngModel)]="type" color="light">
       <ion-segment-button value="receive">
-        receive
+        {{ 'RECEIVE' | translate }}
       </ion-segment-button>
       <ion-segment-button value="change">
-        change
+        {{ 'CHANGE' | translate }}
       </ion-segment-button>
       <ion-segment-button value="unspent">
-        unspent
+        {{ 'UNSPENT' | translate }}
       </ion-segment-button>
     </ion-segment>
   </ion-toolbar>

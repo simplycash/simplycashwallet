@@ -1,5 +1,6 @@
 import { Component } from '@angular/core';
 import { AlertController, IonicPage, LoadingController, NavController, NavParams } from 'ionic-angular';
+import { TranslateService } from '@ngx-translate/core';
 import { Wallet } from '../../providers/providers'
 
 /**
@@ -27,13 +28,14 @@ export class SweepPage {
     private loadingCtrl: LoadingController,
     public navCtrl: NavController,
     public navParams: NavParams,
+    private translate: TranslateService,
     private wallet: Wallet
   ) {
   }
 
   async ionViewDidEnter() {
     let loader = this.loadingCtrl.create({
-      content: "loading balance..."
+      content: this.translate.instant('LOADING_BALANCE')+'...'
     })
     await loader.present()
     try {
@@ -50,13 +52,13 @@ export class SweepPage {
       console.log(err)
       let message: string
       if (err.message == 'not connected') {
-        message = 'failed to get address balance'
+        message = this.translate.instant('ERR_GET_ADDR_BALANCE_FAILED')
       } else {
-        message = 'failed to load WIF'
+        message = this.translate.instant('ERR_LOAD_WIF_FAILED')
       }
       let errorAlert = this.alertCtrl.create({
         enableBackdropDismiss: false,
-        title: 'Error',
+        title: this.translate.instant('ERROR'),
         message: message,
         buttons: [{
           text: 'ok',
@@ -80,9 +82,14 @@ export class SweepPage {
 
   async sweep() {
     this.isReady = false
+    let loader = this.loadingCtrl.create({
+      content: this.translate.instant('SIGNING')+"..."
+    })
+    await loader.present()
     try {
       let signedTx: any = await this.wallet.makeSweepTx(this.wif, this.wifInfo)
-      this.navCtrl.push('ConfirmPage', {
+      await loader.dismiss()
+      await this.navCtrl.push('ConfirmPage', {
         info: Object.assign({
           outputs: [{
             address: this.wallet.convertAddress('legacy', this.wallet.getPreferedAddressFormat(), this.wallet.getCacheReceiveAddress()),
@@ -92,15 +99,16 @@ export class SweepPage {
       })
     } catch (err) {
       console.log(err)
+      await loader.dismiss()
       let message: string
       if (err.message == 'not connected') {
-        message = 'not connected to server'
+        message = this.translate.instant('ERR_NOT_CONNECTED')
       } else {
-        message = 'failed to create transaction'
+        message = this.translate.instant('ERR_CREATE_TX_FAILED')
       }
-      this.alertCtrl.create({
+      await this.alertCtrl.create({
         enableBackdropDismiss: false,
-        title: 'Error',
+        title: this.translate.instant('ERROR'),
         message: message,
         buttons: ['ok']
       }).present()

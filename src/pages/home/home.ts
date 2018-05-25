@@ -5,7 +5,7 @@ import { SocialSharing } from '@ionic-native/social-sharing'
 import { StatusBar } from '@ionic-native/status-bar'
 import { Clipboard } from '@ionic-native/clipboard'
 // import { Keyboard } from '@ionic-native/keyboard'
-
+import { TranslateService } from '@ngx-translate/core';
 import { Wallet } from '../../providers/providers'
 
 @IonicPage()
@@ -49,6 +49,7 @@ export class HomePage {
     private socialSharing: SocialSharing,
     private statusBar: StatusBar,
     private toastCtrl: ToastController,
+    private translate: TranslateService,
     private wallet: Wallet
   ) {
     this.updateCallback = () => {
@@ -189,7 +190,7 @@ export class HomePage {
     if (this.scanEndTime - this.scanBeginTime < 500) {
       if (typeof this.hint === 'undefined') {
         this.hint = this.toastCtrl.create({
-          message: 'hold to scan QR code',
+          message: this.translate.instant('CAMERA_BUTTON_HINT'),
           position: 'middle'
         })
         this.hint.onWillDismiss(() => {
@@ -201,7 +202,7 @@ export class HomePage {
       }
       this.hintTimer = setTimeout(() => {
         this.hint.dismiss()
-      }, 3000)
+      }, 2000)
     }
   }
 
@@ -227,7 +228,7 @@ export class HomePage {
     }
     await this.alertCtrl.create({
       enableBackdropDismiss: false,
-      title: 'Invalid Data',
+      title: this.translate.instant('ERR_INVALID_DATA'),
       message: text,
       buttons: ['ok']
     }).present()
@@ -264,7 +265,7 @@ export class HomePage {
 
   async handleBIP70(info: any) {
     let loader = this.loadingCtrl.create({
-      content: "loading..."
+      content: this.translate.instant('LOADING')+"..."
     })
     await loader.present()
     let request: any
@@ -273,10 +274,12 @@ export class HomePage {
       request = await this.wallet.getRequestFromMerchant(info.url)
     } catch (err) {
       console.log(err)
-      if (err.message === 'unsupported network' || err.message === 'expired') {
-        errMessage = err.message
+      if (err.message === 'unsupported network') {
+        errMessage = this.translate.instant('ERR_UNSUPPORTED_NETWORK')
+      } else if (err.message === 'expired') {
+        errMessage = this.translate.instant('ERR_EXPIRED')
       } else {
-        errMessage = 'failed to get payment request'
+        errMessage = this.translate.instant('ERR_GET_REQUEST_FAIlED')
       }
     }
     await loader.dismiss()
@@ -285,7 +288,7 @@ export class HomePage {
     } else {
       this.alertCtrl.create({
         enableBackdropDismiss: false,
-        title: 'Error',
+        title: this.translate.instant('ERROR'),
         message: errMessage,
         buttons: ['ok']
       }).present()
@@ -313,7 +316,7 @@ export class HomePage {
           }
           await this.alertCtrl.create({
             enableBackdropDismiss: false,
-            title: 'Invalid Data',
+            title: this.translate.instant('ERR_INVALID_DATA'),
             message: url,
             buttons: ['ok']
           }).present()
@@ -354,28 +357,40 @@ export class HomePage {
       })
     } catch (err) {
       console.log(err)
+      let errMessage = err.message
+      if (err.message === 'not enough fund') {
+        errMessage = this.translate.instant('ERR_NOT_ENOUGH_FUND')
+      } else if (err.message === 'invalid address') {
+        errMessage = this.translate.instant('ERR_INVALID_ADDR')
+      } else if (err.message === 'invalid output') {
+        errMessage = this.translate.instant('ERR_INVALID_OUTPUT')
+      }
       this.alertCtrl.create({
         enableBackdropDismiss: false,
-        title: 'Error',
-        message: err.message,
+        title: this.translate.instant('ERROR'),
+        message: errMessage,
         buttons: ['ok']
       }).present()
       return
     }
 
+    let loader = this.loadingCtrl.create({
+      content: this.translate.instant('SIGNING')+"..."
+    })
+    await loader.present()
+
     try {
       let signedTx: { satoshis: number, hex: string, fee: number } = await this.wallet.makeSignedTx(info.outputs)
+      await loader.dismiss()
       await this.navCtrl.push('ConfirmPage', {
         info: Object.assign(info, signedTx)
       })
     } catch (err) {
       console.log(err)
-      if (err.message === 'cancelled') {
-        return
-      }
-      this.alertCtrl.create({
+      await loader.dismiss()
+      await this.alertCtrl.create({
         enableBackdropDismiss: false,
-        title: 'Error',
+        title: this.translate.instant('ERROR'),
         message: err.message,
         buttons: ['ok']
       }).present()

@@ -7,7 +7,7 @@
 <ion-header>
 
   <ion-navbar color="primary">
-    <ion-title>sweep</ion-title>
+    <ion-title>{{ 'SWEEP' | translate }}</ion-title>
   </ion-navbar>
 
 </ion-header>
@@ -18,7 +18,7 @@
   <ion-list>
 
     <ion-item>
-      <ion-label stacked color="primary">bitcoin cash address</ion-label>
+      <ion-label stacked color="primary">{{ 'BITCOIN_CASH_ADDRESS' | translate }}</ion-label>
       <ion-input
         [value]="address | convertAddressPipe:wallet.getPreferedAddressFormat()"
         type="text"
@@ -26,7 +26,7 @@
     </ion-item>
 
     <ion-item>
-      <ion-label stacked color="primary">balance</ion-label>
+      <ion-label stacked color="primary">{{ 'BALANCE' | translate }}</ion-label>
       <ion-input
         value="{{ balance | convertUnitPipe:unit }}"
         readonly></ion-input>
@@ -39,7 +39,7 @@
 
   <div text-center>
     <button ion-button clear (click)="sweep()" [disabled]="!isReady || !wallet.isOnline()">
-      sweep
+      {{ 'SWEEP' | translate }}
     </button>
   </div>
 

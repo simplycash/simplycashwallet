@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 import { AlertController, App, IonicPage, LoadingController, NavController, NavParams } from 'ionic-angular';
 import { InAppBrowser } from '@ionic-native/in-app-browser'
+import { TranslateService } from '@ngx-translate/core';
 import { Wallet } from '../../providers/providers'
 
 
@@ -18,6 +19,7 @@ export class MorePage {
     public loadingCtrl: LoadingController,
     public navCtrl: NavController,
     public navParams: NavParams,
+    private translate: TranslateService,
     private wallet: Wallet
   ) {
 
@@ -31,18 +33,18 @@ export class MorePage {
   }
 
   async showWRP() {
-    this.alertCtrl.create({
+    await this.alertCtrl.create({
       enableBackdropDismiss: false,
-      title: 'Recovery Info',
+      title: this.translate.instant('BACKUP_WALLET'),
       message: `recovery phrase:<br>${await this.wallet.getMnemonic()}<br><br>derivation path:<br>m/44'/145'/0'`,
       buttons: ['ok']
     }).present()
   }
 
-  promptForMenmonic() {
+  async promptForMenmonic() {
     let recoverAlert = this.alertCtrl.create({
       enableBackdropDismiss: false,
-      title: 'Recover Wallet',
+      title: this.translate.instant('RECOVER_WALLET'),
       message: "enter the 12-word recovery phrase<br>path m/44'/145'/0' will be used",
       inputs: [{
         name: 'mnemonic',
@@ -63,7 +65,7 @@ export class MorePage {
         }
       }]
     })
-    recoverAlert.present()
+    await recoverAlert.present()
   }
 
   mnemonicIsValid(m: string) {
@@ -71,8 +73,8 @@ export class MorePage {
     if (!this.wallet.validateMnemonic(m)) {
       this.alertCtrl.create({
         enableBackdropDismiss: false,
-        title: 'Error',
-        message: 'invalid recovery phrase',
+        title: this.translate.instant('ERROR'),
+        message: this.translate.instant('ERR_INVALID_RECOVERY_PHRASE'),
         buttons: ['ok']
       }).present()
       return false
@@ -81,11 +83,11 @@ export class MorePage {
     }
   }
 
-  recover(m: string) {
+  async recover(m: string) {
     m = m.trim()
     let error: Error
     let loader = this.loadingCtrl.create({
-      content: "please wait..."
+      content: this.translate.instant('RECOVERING')+'...'
     })
     loader.present().then(() => {
       return this.wallet.recoverWalletFromMnemonic(m)
@@ -100,15 +102,15 @@ export class MorePage {
       if (!error) {
         this.alertCtrl.create({
           enableBackdropDismiss: false,
-          title: 'Success',
-          message: 'wallet has been recovered',
+          title: this.translate.instant('SUCCESS'),
+          message: this.translate.instant('RECOVER_SUCCESS'),
           buttons: ['ok']
         }).present()
       } else {
         this.alertCtrl.create({
           enableBackdropDismiss: false,
-          title: 'Error',
-          message: 'failed to recover wallet',
+          title: this.translate.instant('ERROR'),
+          message: this.translate.instant('RECOVER_FAILED'),
           buttons: ['ok']
         }).present()
       }

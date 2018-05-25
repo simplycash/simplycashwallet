@@ -1,5 +1,6 @@
 import { NgModule } from '@angular/core';
 import { IonicPageModule } from 'ionic-angular';
+import { TranslateModule } from '@ngx-translate/core';
 import { XpubPage } from './xpub';
 
 @NgModule({
@@ -8,6 +9,7 @@ import { XpubPage } from './xpub';
   ],
   imports: [
     IonicPageModule.forChild(XpubPage),
+    TranslateModule.forChild()
   ],
 })
 export class XpubPageModule {}

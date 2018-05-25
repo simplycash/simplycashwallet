@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http'
 import 'rxjs/add/operator/catch'
 import 'rxjs/add/operator/toPromise'
 import { Storage } from '@ionic/storage'
+import { TranslateService } from '@ngx-translate/core';
 import { AlertController, App, Events, LoadingController, Platform, ToastController } from 'ionic-angular'
 // import { KeychainTouchId } from '@ionic-native/keychain-touch-id'
 import { LocalNotifications } from '@ionic-native/local-notifications'
@@ -85,7 +86,8 @@ export class Wallet {
     private localNotifications: LocalNotifications,
     private platform: Platform,
     public storage: Storage,
-    private toastCtrl: ToastController
+    private toastCtrl: ToastController,
+    private translate: TranslateService
   ) {
     this.platform.pause.subscribe(() =>{
       this.isPaused = true
@@ -330,14 +332,6 @@ export class Wallet {
     }).then((value) => {
       this.stored = value
       this.changeState(this.STATE.OFFLINE)
-    }).catch((err: any) => {
-      this.alertCtrl.create({
-        enableBackdropDismiss: false,
-        title: 'Error',
-        message: 'failed to load wallet from storage',
-        buttons: ['ok']
-      }).present()
-      throw err
     })
   }
 
@@ -460,7 +454,7 @@ export class Wallet {
         }
         this.localNotifications.schedule({
           id: this.notificationId++,
-          text: `received ${this.convertUnit('SATOSHIS', 'BCH', tx.delta.toString()).replace(/\.?0+$/,'')} BCH`,
+          text: `${this.translate.instant('RECEIVED')} ${this.convertUnit('SATOSHIS', 'BCH', tx.delta.toString()).replace(/\.?0+$/,'')} BCH`,
           data: { page: 'HistoryPage', navParams: {} }
         })
       })
@@ -944,10 +938,6 @@ export class Wallet {
     let hex_tentative: string
     let fee_tentative: number = 0
 
-    let loader = this.loadingCtrl.create({
-      content: "signing..."
-    })
-    await loader.present()
     while (true) {
       if (drain) {
         acc = availableAmount
@@ -955,7 +945,6 @@ export class Wallet {
         toAmount = acc - fee_tentative
         changeAmount = 0
         if (toAmount < 546) {
-          await loader.dismiss()
           throw new Error('not enough fund')
         }
       } else {
@@ -972,10 +961,8 @@ export class Wallet {
         toAmount = satoshis
         if (acc < toAmount + fee_tentative) {
           if (acc < toAmount) {
-            await loader.dismiss()
             throw new Error('not enough fund')
           } else if (changeAmount === 0) {
-            await loader.dismiss()
             throw new Error('not enough fund')
           } else {
             fee_tentative = 0
@@ -1020,7 +1007,6 @@ export class Wallet {
         fee_tentative = fee_required
       }
     }
-    await loader.dismiss()
     return {
       satoshis: toAmount,
       fee: acc - toAmount - changeAmount,
