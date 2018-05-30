@@ -36,7 +36,7 @@ export class MorePage {
     await this.alertCtrl.create({
       enableBackdropDismiss: false,
       title: this.translate.instant('BACKUP_WALLET'),
-      message: `recovery phrase:<br>${await this.wallet.getMnemonic()}<br><br>derivation path:<br>m/44'/145'/0'`,
+      message: `${this.translate.instant('RECOVERY_PHRASE')}:<br>${await this.wallet.getMnemonic()}<br><br>${this.translate.instant('DERIVATION_PATH')}:<br>m/44'/145'/0'`,
       buttons: ['ok']
     }).present()
   }
@@ -45,10 +45,10 @@ export class MorePage {
     let recoverAlert = this.alertCtrl.create({
       enableBackdropDismiss: false,
       title: this.translate.instant('RECOVER_WALLET'),
-      message: "enter the 12-word recovery phrase<br>path m/44'/145'/0' will be used",
+      message: `${this.translate.instant('RECOVERY_HINT')}<br>(${this.translate.instant('DERIVATION_PATH')}: m/44'/145'/0')`,
       inputs: [{
         name: 'mnemonic',
-        placeholder: 'recovery phrase'
+        placeholder: this.translate.instant('RECOVERY_PHRASE')
       }],
       buttons: [{
         text: 'cancel',
