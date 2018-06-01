@@ -325,14 +325,10 @@ export class HomePage {
     }
 
     // Check if app was opened by custom url scheme
-    const lastUrl: string = (window as any).handleOpenURL_LastURL || "";
-    if (lastUrl && lastUrl !== "") {
+    const lastUrl: string = (window as any).handleOpenURL_LastURL || ""
+    if (lastUrl !== "") {
       delete (window as any).handleOpenURL_LastURL;
-      setTimeout(() => {
-        this.ngZone.run(() => {
-          this.handleURL(lastUrl)
-        })
-      }, 0)
+      (window as any).handleOpenURL(lastUrl)
     }
   }
 
