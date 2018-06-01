@@ -120,9 +120,9 @@ export class MyAmountComponent {
   }
 
   setBlurTimer() {
-    clearTimeout(this.blurTimer)
+    window.clearTimeout(this.blurTimer)
     this.justBlurred = true
-    this.blurTimer = setTimeout(() => {
+    this.blurTimer = window.setTimeout(() => {
       this.justBlurred = false
     }, 100)
   }

@@ -115,7 +115,7 @@ export class HomePage {
   }
 
   startScan() {
-    clearTimeout(this.destroyTimer)
+    window.clearTimeout(this.destroyTimer)
     this.scanState = 'starting'
     this.scanBeginTime = new Date().getTime()
     this.qrScanner.getStatus().then((status: QRScannerStatus) => {
@@ -143,7 +143,7 @@ export class HomePage {
             await this.handleQRText(text)
             this.isTransparent = false
             this.ref.detectChanges()
-            this.destroyTimer = setTimeout(() => {
+            this.destroyTimer = window.setTimeout(() => {
               this.qrScanner.destroy()
             }, 500)
           })
@@ -178,7 +178,7 @@ export class HomePage {
     this.scanState = 'stopped'
     if (!keepPreview) {
       this.isTransparent = false
-      this.destroyTimer = setTimeout(() => {
+      this.destroyTimer = window.setTimeout(() => {
         this.qrScanner.destroy()
       }, 500)
     }
@@ -198,9 +198,9 @@ export class HomePage {
         })
         this.hint.present()
       } else {
-        clearTimeout(this.hintTimer)
+        window.clearTimeout(this.hintTimer)
       }
-      this.hintTimer = setTimeout(() => {
+      this.hintTimer = window.setTimeout(() => {
         this.hint.dismiss()
       }, 2000)
     }
@@ -309,7 +309,7 @@ export class HomePage {
       ) {
         return
       }
-      setTimeout(() => {
+      window.setTimeout(() => {
         this.ngZone.run(async () => {
           if (await this.handleURL(url)) {
             return

@@ -383,11 +383,11 @@ export class Wallet {
     let timer: number
     this.socket.on('notification', (data) => {
       if (data.method === 'address.subscribe') {
-        clearTimeout(timer)
+        window.clearTimeout(timer)
         if (this.pendingAddresses.indexOf(data.params[0]) === -1) {
           this.pendingAddresses.push(data.params[0])
         }
-        timer = setTimeout(() => {
+        timer = window.setTimeout(() => {
           if (this.isSyncing() || !this.isOnline() || this.pendingAddresses.length === 0) {
             return
           }
@@ -620,7 +620,7 @@ export class Wallet {
 
   delay(ms: number) {
     return new Promise((resolve, reject) => {
-      setTimeout(() => {
+      window.setTimeout(() => {
         resolve()
       }, ms)
     })
@@ -1166,7 +1166,7 @@ export class Wallet {
         if (data.id !== id) {
           return
         }
-        clearTimeout(timer)
+        window.clearTimeout(timer)
         this.socket.off('response', cb)
         if (typeof data.result !== 'undefined') {
           resolve(data.result)
@@ -1180,7 +1180,7 @@ export class Wallet {
       }
 
       this.socket.on('response', cb)
-      timer = setTimeout(() => {
+      timer = window.setTimeout(() => {
         this.socket.off('response', cb)
         reject(new Error('timeout'))
       }, timeout)

@@ -50,7 +50,7 @@ export class SendPage {
     if (typeof this.info === 'undefined') {
       return
     }
-    setTimeout(() => {
+    window.setTimeout(() => {
       this.myAmountEl.setFocus()
     }, 500)
   }
