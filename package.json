@@ -43,6 +43,8 @@
     "buffer-compare": "^1.0.0",
     "cordova-android": "6.4.0",
     "cordova-clipboard": "^1.2.1",
+    "cordova-ios": "4.5.4",
+    "cordova-plugin-add-swift-support": "^1.7.2",
     "cordova-plugin-badge": "^0.8.7",
     "cordova-plugin-compat": "^1.2.0",
     "cordova-plugin-customurlscheme": "^4.3.0",
@@ -101,7 +103,8 @@
       "cordova-plugin-globalization": {}
     },
     "platforms": [
-      "android"
+      "android",
+      "ios"
     ]
   }
 }
