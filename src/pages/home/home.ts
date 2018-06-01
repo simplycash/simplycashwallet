@@ -301,6 +301,9 @@ export class HomePage {
 
     // Check if app was resume by custom url scheme
     (window as any).handleOpenURL = (url: string) => {
+      if (this.platform.is('ios') && url.indexOf('bitcoincash:') !== 0) {
+        return
+      }
       if (
         this.app._appRoot._overlayPortal.getActive() ||
         this.app._appRoot._loadingPortal.getActive() ||
