@@ -87,6 +87,7 @@ export class MyApp {
     } else {
       browserLang = navigator.language || ''
     }
+    browserLang = browserLang.toLowerCase()
     prefix = browserLang.split('-')[0]
     if (browserLang && ['en', 'zh'].indexOf(prefix) !== -1) {
       if (prefix === 'zh') {
