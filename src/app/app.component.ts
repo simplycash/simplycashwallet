@@ -33,7 +33,7 @@ export class MyApp {
     private translate: TranslateService,
     private wallet: Wallet
   ) {
-    platform.ready().then(() => {
+    platform.ready().then(async () => {
       if (this.platform.is('android')) {
         this.statusBar.backgroundColorByHexString("#00000000");
       }
@@ -57,23 +57,25 @@ export class MyApp {
       } catch (err) {
         console.log(err)
       }
+      try {
+        await this.initTranslate()
+      } catch (err) {
+        console.log(err)
+      }
+      try {
+        await this.wallet.startWallet()
+        await this.navCtrl.setRoot('HomePage')
+        this.splashScreen.hide()
+      } catch (err) {
+        console.log(err)
+        this.alertCtrl.create({
+          enableBackdropDismiss: false,
+          title: this.translate.instant('ERROR'),
+          message: this.translate.instant('ERR_START_WALLET_FAILED'),
+          buttons: ['ok']
+        }).present()
+      }
     })
-
-    this.wallet.startWallet().then(() => {
-      return this.navCtrl.setRoot('HomePage')
-      // this.rootPage = 'HomePage'
-    }).then(() => {
-      this.splashScreen.hide()
-    }).catch((err: any) => {
-      this.alertCtrl.create({
-        enableBackdropDismiss: false,
-        title: this.translate.instant('ERROR'),
-        message: this.translate.instant('ERR_START_WALLET_FAILED'),
-        buttons: ['ok']
-      }).present()
-    })
-
-    this.initTranslate()
   }
 
   async initTranslate() {
