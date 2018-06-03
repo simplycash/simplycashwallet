@@ -12,8 +12,7 @@ import QRCode from 'qrcode'
 import * as bitcoincash from 'bitcoincashjs'
 import io from 'socket.io-client'
 import * as protobuf from 'protobufjs'
-import * as asn1js from 'asn1js'
-import * as pkijs from 'pkijs'
+import * as forge from 'node-forge'
 import * as crypto from 'crypto-browserify'
 import { Buffer } from 'buffer'
 
@@ -1086,8 +1085,8 @@ export class Wallet {
       certData.forEach((x, i) => {
         certBufferView[i] = x
       })
-      let cert: pkijs.Certificate = new pkijs.Certificate({ schema: asn1js.fromBER(certBuffer).result })
-      merchantName = cert.subject.typesAndValues.find(x => x.type === '2.5.4.3').value.valueBlock.value
+      let cert: any = forge.pki.certificateFromAsn1(forge.asn1.fromDer(forge.util.createBuffer(Buffer.from(certBuffer).toString('binary'))))
+      merchantName = cert.subject.attributes.find(attr => attr.type === '2.5.4.3').value
     } catch (err) {
       console.log(err)
     }
