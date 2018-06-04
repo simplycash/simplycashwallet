@@ -64,6 +64,7 @@ export class Wallet {
       history: {
         txid: string,
         timestamp: number,
+        friendlyTimestamp: number,
         delta: number,
         seen: boolean
       }[]
@@ -461,18 +462,26 @@ export class Wallet {
     }
 
     // new history
+    let currentTimestamp: number = Math.floor(new Date().getTime() / 1000)
     let newHistory: any[]
     if (fullSync) {
       let oldUnconfirmed: any[] = this.stored.cache.history.filter(tx => typeof tx.timestamp === 'undefined')
       let newUnconfirmed: any[] = results[4].filter(tx => typeof tx.timestamp === 'undefined')
       let stillUnconfirmed: any[] = oldUnconfirmed.filter(otx => typeof newUnconfirmed.find(ntx => ntx.txid === otx.txid) !== 'undefined')
       let freshUnconfirmed: any[] = newUnconfirmed.filter(ntx => typeof stillUnconfirmed.find(stx => ntx.txid === stx.txid) === 'undefined')
+
+      let oldConfirmed: any[] = this.stored.cache.history.filter(tx => typeof tx.timestamp !== 'undefined')
       let newConfirmed: any[] = results[4].filter(tx => typeof tx.timestamp !== 'undefined')
+      newConfirmed = newConfirmed.map(n => oldUnconfirmed.find(o => o.txid === n.txid) || n)
+      let stillConfirmed: any[] = oldConfirmed.filter(otx => typeof newConfirmed.find(ntx => ntx.txid === otx.txid) !== 'undefined')
+      let freshConfirmed: any[] = newConfirmed.filter(ntx => typeof stillConfirmed.find(stx => ntx.txid === stx.txid) === 'undefined')
+
       let unseenTxids: string[] = this.getUnseenTxids().concat(newTxids)
-      newHistory = freshUnconfirmed.concat(stillUnconfirmed).concat(newConfirmed).map((tx) => {
+      newHistory = freshUnconfirmed.concat(stillUnconfirmed).concat(freshConfirmed).concat(stillConfirmed).map((tx) => {
         return {
           txid: tx.txid,
           timestamp: tx.timestamp,
+          friendlyTimestamp: tx.friendlyTimestamp || (tx.timestamp ? Math.min(tx.timestamp, currentTimestamp) : currentTimestamp),
           delta: tx.delta,
           seen: unseenTxids.indexOf(tx.txid) === -1
         }
@@ -482,6 +491,7 @@ export class Wallet {
         return {
           txid: tx.txid,
           timestamp: tx.timestamp,
+          friendlyTimestamp: currentTimestamp,
           delta: tx.delta,
           seen: false
         }
@@ -494,12 +504,28 @@ export class Wallet {
         return {
           txid: match.txid,
           timestamp: match.timestamp,
+          friendlyTimestamp: h.friendlyTimestamp,
           delta: match.delta,
           seen: h.seen
         }
       })
       newHistory = h1.concat(h2).slice(0, 30)
     }
+    newHistory.forEach((h, i) => {
+      h.tempIndex = i
+    })
+    newHistory.sort((a, b) => {
+      // descending friendlyTimestamp
+      let v = b.friendlyTimestamp - a.friendlyTimestamp
+      if (v !== 0) {
+        return v
+      }
+      // ascending tempIndex
+      return a.tempIndex - b.tempIndex
+    })
+    newHistory.forEach((h) => {
+      delete h.tempIndex
+    })
 
     // new utxos
     let newUtxos: any[]

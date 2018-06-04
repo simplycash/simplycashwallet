@@ -15,8 +15,8 @@
       <span class="balance-span" item-end>{{ balance | convertUnitPipe:currentUnit }}</span>
     </ion-item>
     <ion-item-group *ngFor="let dateGroup of dateGroups">
-      <ion-item-divider *ngIf="dateGroup.date === 'just now'" color="light">{{ 'JUST_NOW' | translate }}</ion-item-divider>
-      <ion-item-divider *ngIf="dateGroup.date !== 'just now'" color="light">{{ dateGroup.date }}</ion-item-divider>
+      <ion-item-divider *ngIf="dateGroup.date === today()" color="light">{{ 'TODAY' | translate }}</ion-item-divider>
+      <ion-item-divider *ngIf="dateGroup.date !== today()" color="light">{{ dateGroup.date }}</ion-item-divider>
       <ion-item *ngFor="let tx of dateGroup.txs" (click)="showTx(tx.txid)" [attr.unseen]="tx.seen ? null : ''">
         <span>{{ tx.time }}</span>
         <span item-end [attr.class]="tx.delta > 0 ? 'pdelta' : 'ndelta'">{{ tx.delta | convertUnitPipe:currentUnit }}</span>

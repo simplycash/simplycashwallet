@@ -36,7 +36,6 @@
   "ERR_TIMEOUT": "已超時",
   "ERR_UNSUPPORTED_NETWORK": "unsupported network",
   "FEE": "費用",
-  "JUST_NOW": "剛剛",
   "LABEL": "標籤",
   "LOADING": "正在獲取請求",
   "LOADING_BALANCE": "正在載入餘額",
@@ -63,6 +62,7 @@
   "SIGNING": "正在簽署",
   "SUCCESS": "成功",
   "SWEEP": "sweep",
+  "TODAY": "今天",
   "TX_COMPLETE": "交易完成",
   "UNSPENT": "未花費"
 }

@@ -72,12 +72,12 @@ export class HistoryPage {
       }
       o[date].push(tx)
     })
-    if (typeof o['mempool'] !== 'undefined') {
-      this.dateGroups.push({
-        date: 'just now',
-        txs: o['mempool']
-      })
-      delete o['mempool']
+    if (typeof o['unknown'] !== 'undefined') {
+      // this.dateGroups.push({
+      //   date: 'unknown',
+      //   txs: o['unknown']
+      // })
+      delete o['unknown']
     }
     for (let date in o) {
       this.dateGroups.push({
@@ -89,16 +89,16 @@ export class HistoryPage {
 
   transformTxs(txs: any[]) {
     return txs.map((tx: any) => {
-      if (!tx.timestamp) {
+      if (!tx.friendlyTimestamp) {
         return {
           txid: tx.txid,
-          date: 'mempool',
+          date: 'unknown',
           time: '',
           delta: tx.delta,
           seen: tx.seen
         }
       }
-      let date: Date = new Date(tx.timestamp * 1000)
+      let date: Date = new Date(tx.friendlyTimestamp * 1000)
       let dateStr: string = [date.getFullYear(), ('0'+(date.getMonth()+1)).slice(-2), ('0'+date.getDate()).slice(-2)].join('-')
       let timeStr: string = [('0'+date.getHours()).slice(-2), ('0'+date.getMinutes()).slice(-2)].join(':')
       return {
@@ -109,6 +109,11 @@ export class HistoryPage {
         seen: tx.seen
       }
     })
+  }
+
+  today() {
+    let date: Date = new Date()
+    return [date.getFullYear(), ('0'+(date.getMonth()+1)).slice(-2), ('0'+date.getDate()).slice(-2)].join('-')
   }
 
   copyToClipboard(txid: string) {
