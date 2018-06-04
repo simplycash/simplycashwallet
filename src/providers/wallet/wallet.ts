@@ -454,7 +454,8 @@ export class Wallet {
         this.localNotifications.schedule({
           id: this.notificationId++,
           text: `${this.translate.instant('RECEIVED')} ${this.convertUnit('SATOSHIS', 'BCH', tx.delta.toString()).replace(/\.?0+$/,'')} BCH`,
-          data: { page: 'HistoryPage', navParams: {} }
+          data: { page: 'HistoryPage', navParams: {} },
+          foreground: true // need to modify @ionic-native/local-notifications ILocalNotification interface
         })
       })
     }
