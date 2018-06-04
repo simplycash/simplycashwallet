@@ -114,57 +114,55 @@ export class HomePage {
     this.wallet.tryToConnectAndSync()
   }
 
-  startScan() {
-    window.clearTimeout(this.destroyTimer)
-    this.scanState = 'starting'
-    this.scanBeginTime = new Date().getTime()
-    this.qrScanner.getStatus().then((status: QRScannerStatus) => {
-      if (status.prepared) {
-        return status
-      } else {
-        return this.qrScanner.prepare()
+  async startScan() {
+    try {
+      window.clearTimeout(this.destroyTimer)
+      this.scanState = 'starting'
+      this.scanBeginTime = new Date().getTime()
+      let status: QRScannerStatus = await this.qrScanner.getStatus()
+      if (!status.prepared) {
+        status = await this.qrScanner.prepare()
       }
-    }).then((status: QRScannerStatus) => {
-      if (status.authorized) {
-        if (this.scanState === 'stopping' || new Date().getTime() - this.scanBeginTime > 500) {
-          this.scanState = 'stopped'
-          this.qrScanner.destroy()
-          return
-        }
-        this.scanState = 'scanning'
-        this.pauseSub = this.platform.pause.subscribe(() => {
-          this.ngZone.run(() => {
-            this.stopScan()
-          })
-        })
-        this.scanSub = this.qrScanner.scan().subscribe((text: string) => {
-          this.ngZone.run(async () => {
-            this.stopScan(true)
-            await this.handleQRText(text)
-            this.isTransparent = false
-            this.ref.detectChanges()
-            this.destroyTimer = window.setTimeout(() => {
-              this.qrScanner.destroy()
-            }, 500)
-          })
-        })
-        this.isTransparent = true
-        // this.statusBar.hide()
-        this.qrScanner.show()
-      } else if (status.denied) {
-        this.scanState = 'stopped'
-        this.qrScanner.openSettings()
-        // camera permission was permanently denied
-        // you must use QRScanner.openSettings() method to guide the user to the settings page
-        // then they can grant the permission from there
-      } else {
-        this.scanState = 'stopped'
-        // permission was denied, but not permanently. You can ask for permission again at a later time.
+      if (!status.authorized) {
+        throw new Error('permission denied')
       }
-    }).catch((e: any) => {
-      console.log(e)
+      if (this.scanState === 'stopping' || new Date().getTime() - this.scanBeginTime > 500) {
+        this.scanState = 'stopped'
+        this.qrScanner.destroy()
+        return
+      }
+      this.scanState = 'scanning'
+      this.pauseSub = this.platform.pause.subscribe(() => {
+        this.ngZone.run(() => {
+          this.stopScan()
+        })
+      })
+      this.scanSub = this.qrScanner.scan().subscribe((text: string) => {
+        this.ngZone.run(async () => {
+          this.stopScan(true)
+          await this.handleQRText(text)
+          this.isTransparent = false
+          this.ref.detectChanges()
+          this.destroyTimer = window.setTimeout(() => {
+            this.qrScanner.destroy()
+          }, 500)
+        })
+      })
+      this.isTransparent = true
+      // this.statusBar.hide()
+      this.qrScanner.show()
+    } catch (err) {
+      console.log(err)
       this.scanState = 'stopped'
-    })
+      if (err.message === 'permission denied' || err.name === 'CAMERA_ACCESS_DENIED') {
+        await this.alertCtrl.create({
+          enableBackdropDismiss: false,
+          title: this.translate.instant('ERROR'),
+          message: this.translate.instant('ERR_CAMERA_PERMISSION_DENIED'),
+          buttons: ['ok']
+        }).present()
+      }
+    }
   }
 
   stopScan(keepPreview?: boolean) {

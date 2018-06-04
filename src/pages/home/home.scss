@@ -1,3 +1,10 @@
+
+.platform-android page-home {
+  ion-header[transparent] {
+    -webkit-transform: translateY(-76px);
+    transform: translateY(-76px);
+  }
+}
 page-home {
   ion-header {
     -webkit-transform: translateY(0);
@@ -13,8 +20,8 @@ page-home {
     transition: opacity 0.2s;
   }
   ion-header[transparent] {
-    -webkit-transform: translateY(-76px);
-    transform: translateY(-76px);
+    -webkit-transform: translateY(-56px);
+    transform: translateY(-56px);
   }
   ion-content[transparent] {
     opacity: 0;
