@@ -16,6 +16,7 @@
   "DERIVATION_PATH": "衍生路径",
   "DONATE": "捐助",
   "ERROR": "错误",
+  "ERR_CAMERA_PERMISSION_DENIED": "未能使用相机<br>请手动允许 simply cash 使用相机",
   "ERR_CREATE_TX_FAILED": "未能创建交易",
   "ERR_EXPIRED": "已过时",
   "ERR_GET_ADDR_BALANCE_FAILED": "未能获取地址余额",

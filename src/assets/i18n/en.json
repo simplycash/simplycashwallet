@@ -16,6 +16,7 @@
   "DERIVATION_PATH": "derivation path",
   "DONATE": "donate",
   "ERROR": "error",
+  "ERR_CAMERA_PERMISSION_DENIED": "failed to access camera<br>please manually allow simply cash to access camera",
   "ERR_CREATE_TX_FAILED": "failed to create transaction",
   "ERR_EXPIRED": "expired",
   "ERR_GET_ADDR_BALANCE_FAILED": "failed to get address balance",
