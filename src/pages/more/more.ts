@@ -51,10 +51,10 @@ export class MorePage {
         placeholder: this.translate.instant('RECOVERY_PHRASE')
       }],
       buttons: [{
-        text: 'cancel',
+        text: this.translate.instant('CANCEL'),
         handler: data => {}
       },{
-        text: 'recover',
+        text: this.translate.instant('RECOVER'),
         handler: data => {
           if (this.mnemonicIsValid(data.mnemonic)) {
             recoverAlert.dismiss().then(() => {

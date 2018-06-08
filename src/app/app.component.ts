@@ -89,7 +89,7 @@ export class MyApp {
     }
     browserLang = browserLang.toLowerCase()
     prefix = browserLang.split('-')[0]
-    if (browserLang && ['en', 'zh'].indexOf(prefix) !== -1) {
+    if (browserLang && ['en', 'ja', 'zh'].indexOf(prefix) !== -1) {
       if (prefix === 'zh') {
         if (browserLang.match(/-TW|CHT|Hant|HK|yue/i)) {
           this.translate.use('zh-cmn-Hant')
