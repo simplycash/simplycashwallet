@@ -95,16 +95,15 @@ export class HomePage {
   }
 
   share() {
-    let message: string = ''
+    let message: string = `${this.translate.instant('MY_BITCOIN_CASH_ADDRESS')}:\n${this.displayedAddress}\n\n`
     let link: string = 'https://simply.cash/send'
     if (this.amount > 0) {
       let amount: string = this.wallet.convertUnit('SATOSHIS', 'BCH', this.amount.toString()).replace(/\.?0+$/,'')
-      message += `please send ${amount} BCH to `
+      message += `${this.translate.instant('REQUEST_AMOUNT')}:\n${amount} BCH\n\n`
       link += '-' + amount
     }
-    message += `my bitcoin cash address:\n${this.displayedAddress}\n\n`
     link += `-BCH-to-${this.displayedAddress}`
-    message += `simply launch your wallet: \n${link}`
+    message += `${this.translate.instant('SIMPLY_LAUNCH')}:\n${link}`
     this.socialSharing.share(message).catch((err: any) => {
       console.log(err)
     })
