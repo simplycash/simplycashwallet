@@ -118,11 +118,19 @@ export class SendPage {
       })
     } catch (err) {
       console.log(err)
+      let errMessage = err.message
+      if (err.message === 'not enough fund') {
+        errMessage = this.translate.instant('ERR_NOT_ENOUGH_FUND')
+      } else if (err.message === 'invalid address') {
+        errMessage = this.translate.instant('ERR_INVALID_ADDR')
+      } else if (err.message === 'invalid amount') {
+        errMessage = this.translate.instant('ERR_INVALID_AMOUNT')
+      }
       await loader.dismiss()
       await this.alertCtrl.create({
         enableBackdropDismiss: false,
         title: this.translate.instant('ERROR'),
-        message: err.message,
+        message: errMessage,
         buttons: ['ok']
       }).present()
     }
