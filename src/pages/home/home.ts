@@ -22,6 +22,7 @@ export class HomePage {
 
   private updateCallback: Function
 
+  private cameraAccess: boolean = false
   private pauseSub: any
   private scanSub: any
   private scanState: string = 'stopped'
@@ -54,6 +55,14 @@ export class HomePage {
     this.updateCallback = () => {
       this.refresh()
     }
+    this.qrScanner.prepare().then((status: QRScannerStatus) => {
+      if (status.authorized) {
+        this.cameraAccess = true
+      }
+      return this.qrScanner.destroy()
+    }).catch((err: any) => {
+
+    })
   }
 
   ionViewDidEnter() {
@@ -119,14 +128,16 @@ export class HomePage {
       }
       this.scanState = 'starting'
       this.scanBeginTime = new Date().getTime()
-      let status: QRScannerStatus = await this.qrScanner.getStatus()
-      if (!status.prepared) {
-        status = await this.qrScanner.prepare()
-      }
+      let status: QRScannerStatus = await this.qrScanner.prepare()
       if (!status.authorized) {
         throw new Error('permission denied')
       }
-      if (this.scanState === 'stopping' || new Date().getTime() - this.scanBeginTime > 1000) {
+      if (!this.cameraAccess) {
+        this.cameraAccess = true
+        await this.destroyScanner()
+        return
+      }
+      if (this.scanState === 'stopping') {
         await this.destroyScanner()
         return
       }
