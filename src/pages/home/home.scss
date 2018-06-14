@@ -1,11 +1,4 @@
-
-.platform-android page-home {
-  ion-header[transparent] {
-    -webkit-transform: translateY(-76px);
-    transform: translateY(-76px);
-  }
-}
-page-home {
+.platform-ios page-home {
   ion-header {
     -webkit-transform: translateY(0);
     transform: translateY(0);
@@ -13,19 +6,48 @@ page-home {
     -webkit-transition: -webkit-transform 0.5s;
     transition: transform 0.5s;
   }
+  ion-header[transparent] {
+    -webkit-transform: translateY(-64px);
+    transform: translateY(-64px);
+  }
+  ion-content[style=""] {
+    opacity: 1;
+
+    -webkit-transition: opacity 0.2s;
+    transition: opacity 0.2s;
+  }
+  ion-content[style][transparent] {
+    opacity: 0;
+  }
+  & + .nav-decor {
+    background-color: transparent !important;
+  }
+}
+
+.platform-android page-home {
+  ion-header {
+    -webkit-transform: translateY(0);
+    transform: translateY(0);
+
+    -webkit-transition: -webkit-transform 0.5s;
+    transition: transform 0.5s;
+  }
+  ion-header[transparent] {
+    -webkit-transform: translateY(-76px);
+    transform: translateY(-76px);
+  }
   ion-content {
     opacity: 1;
 
     -webkit-transition: opacity 0.2s;
     transition: opacity 0.2s;
   }
-  ion-header[transparent] {
-    -webkit-transform: translateY(-56px);
-    transform: translateY(-56px);
-  }
   ion-content[transparent] {
     opacity: 0;
   }
+}
+
+page-home {
   ion-fab.main-fab>button {
     color: white;
   }

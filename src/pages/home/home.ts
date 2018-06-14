@@ -29,7 +29,6 @@ export class HomePage {
 
   private scanBeginTime: number
   private scanEndTime: number
-  private destroyTimer: number
 
   private hint: any
   private hintTimer: number
@@ -115,7 +114,9 @@ export class HomePage {
 
   async startScan() {
     try {
-      window.clearTimeout(this.destroyTimer)
+      if (this.scanState !== 'stopped') {
+        return
+      }
       this.scanState = 'starting'
       this.scanBeginTime = new Date().getTime()
       let status: QRScannerStatus = await this.qrScanner.getStatus()
@@ -125,26 +126,24 @@ export class HomePage {
       if (!status.authorized) {
         throw new Error('permission denied')
       }
-      if (this.scanState === 'stopping' || new Date().getTime() - this.scanBeginTime > 500) {
-        this.scanState = 'stopped'
-        this.qrScanner.destroy()
+      if (this.scanState === 'stopping' || new Date().getTime() - this.scanBeginTime > 1000) {
+        await this.destroyScanner()
         return
       }
       this.scanState = 'scanning'
       this.pauseSub = this.platform.pause.subscribe(() => {
-        this.ngZone.run(() => {
-          this.stopScan()
+        this.ngZone.run(async () => {
+          await this.stopScan()
         })
       })
       this.scanSub = this.qrScanner.scan().subscribe((text: string) => {
+        this.scanState = 'processing'
         this.ngZone.run(async () => {
-          this.stopScan(true)
+          await this.stopScan(true)
           await this.handleQRText(text)
           this.isTransparent = false
           this.ref.detectChanges()
-          this.destroyTimer = window.setTimeout(() => {
-            this.qrScanner.destroy()
-          }, 500)
+          await this.destroyScanner()
         })
       })
       this.isTransparent = true
@@ -164,25 +163,10 @@ export class HomePage {
     }
   }
 
-  stopScan(keepPreview?: boolean) {
-    if (this.scanState === 'stopped') {
+  async stopScan(keepPreview?: boolean) {
+    if (this.scanState === 'stopped' || this.scanState === 'destroying' || this.scanState === 'processing') {
       return
     }
-    if (this.scanState === 'starting') {
-      this.scanState = 'stopping'
-      return
-    }
-    this.scanState = 'stopped'
-    if (!keepPreview) {
-      this.isTransparent = false
-      this.destroyTimer = window.setTimeout(() => {
-        this.qrScanner.destroy()
-      }, 500)
-    }
-    // this.statusBar.show()
-    // this.qrScanner.hide()
-    this.pauseSub.unsubscribe()
-    this.scanSub.unsubscribe() // stop scanning
     this.scanEndTime = new Date().getTime()
     if (this.scanEndTime - this.scanBeginTime < 500) {
       if (typeof this.hint === 'undefined') {
@@ -201,6 +185,26 @@ export class HomePage {
         this.hint.dismiss()
       }, 2000)
     }
+    if (this.scanState === 'starting') {
+      this.scanState = 'stopping'
+      return
+    }
+    this.pauseSub.unsubscribe()
+    this.scanSub.unsubscribe() // stop scanning
+    if (!keepPreview) {
+      this.isTransparent = false
+      window.setTimeout(() => {
+        this.destroyScanner()
+      }, 200)
+    }
+    // this.statusBar.show()
+    // this.qrScanner.hide()
+  }
+
+  async destroyScanner() {
+    this.scanState = 'destroying'
+    await this.qrScanner.destroy()
+    this.scanState = 'stopped'
   }
 
   showMenu(myEvent: any) {
