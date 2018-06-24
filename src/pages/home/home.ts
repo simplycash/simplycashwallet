@@ -183,7 +183,11 @@ export class HomePage {
   }
 
   async stopScan(keepPreview?: boolean) {
-    if (this.scanState === 'stopped' || this.scanState === 'destroying' || this.scanState === 'processing') {
+    if (this.scanState === 'stopped'
+    || this.scanState === 'stopping'
+    || this.scanState === 'willDestroy'
+    || this.scanState === 'destroying'
+    || this.scanState === 'processing') {
       return
     }
     this.scanEndTime = new Date().getTime()
@@ -212,6 +216,7 @@ export class HomePage {
     this.scanSub.unsubscribe() // stop scanning
     if (!keepPreview) {
       this.isTransparent = false
+      this.scanState = 'willDestroy'
       window.setTimeout(() => {
         this.destroyScanner()
       }, 200)
