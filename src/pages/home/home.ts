@@ -19,6 +19,7 @@ export class HomePage {
   private displayedAddress: string
   private amount: number
   private qrCodeURL: string
+  private isSharing: boolean = false
 
   private updateCallback: Function
 
@@ -102,7 +103,10 @@ export class HomePage {
     })
   }
 
-  share() {
+  async share() {
+    if (this.isSharing) {
+      return
+    }
     let message: string = `${this.translate.instant('MY_BITCOIN_CASH_ADDRESS')}:\n${this.displayedAddress}\n\n`
     let link: string = 'https://simply.cash/send'
     if (this.amount > 0) {
@@ -112,9 +116,13 @@ export class HomePage {
     }
     link += `-BCH-to-${this.displayedAddress}`
     message += `${this.translate.instant('SIMPLY_LAUNCH')}:\n${link}`
-    this.socialSharing.share(message).catch((err: any) => {
+    this.isSharing = true
+    try {
+      await this.socialSharing.share(message)
+    } catch (err) {
       console.log(err)
-    })
+    }
+    this.isSharing = false
   }
 
   reconnect(ev: any) {
