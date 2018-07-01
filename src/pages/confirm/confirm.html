@@ -79,23 +79,14 @@
   </ion-list>
   <div class="divider"></div>
   <div class="align-center">
-    <button *ngIf="!info.paymentUrl"
+    <button
       class="send-btn"
       ion-button icon-left color="secondary"
       [disabled]="!isReady || !wallet.isOnline()"
-      (click)="broadcast($event)"
+      (click)="confirm($event)"
       clear>
       <ion-icon name="checkmark"></ion-icon>
-      {{ 'BROADCAST' | translate }}
-    </button>
-    <button *ngIf="info.paymentUrl"
-      class="send-btn"
-      ion-button icon-left color="secondary"
-      [disabled]="!isReady || !wallet.isOnline()"
-      (click)="sendBIP70($event)"
-      clear>
-      <ion-icon name="checkmark"></ion-icon>
-      {{ 'SEND' | translate }}
+      {{ confirmBtnText | translate }}
     </button>
   </div>
 

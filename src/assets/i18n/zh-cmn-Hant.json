@@ -1,4 +1,12 @@
 {
+  "PROTECTION": "保護",
+  "OFF": "關閉",
+  "PIN": "PIN",
+  "FINGERPRINT": "指紋",
+  "ENTER_PIN": "輸入 PIN",
+  "CONFIRM_PIN": "確認 PIN",
+  "ERR_INCORRECT_PIN": "PIN 不正確",
+  "ERR_AUTH_UNAVAILABLE": "無法使用",
   "ADDRESS": "地址",
   "ADDRESSES": "地址",
   "AMOUNT": "金額",

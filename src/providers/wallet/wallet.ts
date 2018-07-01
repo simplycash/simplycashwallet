@@ -5,7 +5,7 @@ import 'rxjs/add/operator/toPromise'
 import { Storage } from '@ionic/storage'
 import { TranslateService } from '@ngx-translate/core';
 import { AlertController, App, Events, LoadingController, Platform, ToastController } from 'ionic-angular'
-// import { KeychainTouchId } from '@ionic-native/keychain-touch-id'
+import { FingerprintAIO } from '@ionic-native/fingerprint-aio';
 import { LocalNotifications } from '@ionic-native/local-notifications'
 import 'rxjs/add/operator/timeout'
 import QRCode from 'qrcode'
@@ -72,7 +72,8 @@ export class Wallet {
     preference: {
       currency: string,
       addressFormat: string,
-      // fingerprint: boolean
+      pin: string,
+      fingerprint: boolean
     }
   }
 
@@ -81,7 +82,7 @@ export class Wallet {
     public app: App,
     public events: Events,
     private http: HttpClient,
-    // private keychainTouchId: KeychainTouchId,
+    private faio: FingerprintAIO,
     public loadingCtrl: LoadingController,
     private localNotifications: LocalNotifications,
     private platform: Platform,
@@ -100,7 +101,188 @@ export class Wallet {
     })
   }
 
+  //authorize
+
+  async authorize() {
+    await this.delay(0)
+    let p: string = this.getPreferedProtection()
+    if (p === 'OFF') {
+
+    } else if (p === 'FINGERPRINT') {
+      // intended
+      if (await this.canUseFingerprint()) {
+        await this.authorizeFingerprint()
+      }
+    } else if (p === 'PIN') {
+      await this.authorizePIN()
+    }
+  }
+
+  getSupportedProtections() {
+    return ['OFF', 'PIN', 'FINGERPRINT']
+  }
+
+  getPreferedProtection() {
+    if (typeof this.stored.preference.pin !== 'undefined') {
+      return 'PIN'
+    }
+    if (this.stored.preference.fingerprint === true) {
+      return 'FINGERPRINT'
+    }
+    return 'OFF'
+  }
+
+  async setPreferedProtection(p: string) {
+    if (p === 'PIN') {
+      this.stored.preference.pin = await this.newPIN()
+      this.stored.preference.fingerprint = false
+    } else if (p === 'FINGERPRINT') {
+      if (!await this.canUseFingerprint()) {
+        await this.fingerprintNAPrompt()
+        throw new Error('auth unavailable')
+      }
+      this.stored.preference.pin = undefined
+      this.stored.preference.fingerprint = true
+    } else if (p === 'OFF') {
+      this.stored.preference.pin = undefined
+      this.stored.preference.fingerprint = false
+    }
+    return await this.updateStorage()
+  }
+
+  //pin
+
+  newPIN() {
+    return new Promise<string>((resolve, reject) => {
+      let pinAlert = this.alertCtrl.create({
+        enableBackdropDismiss: false,
+        title: 'PIN',
+        inputs: [{
+          name: 'pin1',
+          type: 'password',
+          placeholder: this.translate.instant('ENTER_PIN')
+        },{
+          name: 'pin2',
+          type: 'password',
+          placeholder: this.translate.instant('CONFIRM_PIN')
+        }],
+        buttons: [{
+          text: this.translate.instant('CANCEL'),
+          handler: data => {
+            pinAlert.dismiss().then(() => {
+              reject(new Error('cancelled'))
+            })
+            return false
+          }
+        },{
+          text: 'ok',
+          handler: data => {
+            if (data.pin1.length > 0 && data.pin1 === data.pin2) {
+              pinAlert.dismiss().then(() => {
+                resolve(data.pin1)
+              })
+            } else {
+              this.alertCtrl.create({
+                enableBackdropDismiss: false,
+                title: this.translate.instant('ERROR'),
+                message: this.translate.instant('ERR_INCORRECT_PIN'),
+                buttons: ['ok']
+              }).present()
+            }
+            return false
+          }
+        }]
+      })
+      pinAlert.present()
+    })
+  }
+
+  authorizePIN() {
+    return new Promise((resolve, reject) => {
+      let pinAlert = this.alertCtrl.create({
+        enableBackdropDismiss: false,
+        title: 'PIN',
+        inputs: [{
+          name: 'pin',
+          type: 'password',
+          placeholder: this.translate.instant('ENTER_PIN')
+        }],
+        buttons: [{
+          text: this.translate.instant('CANCEL'),
+          handler: data => {
+            pinAlert.dismiss().then(() => {
+              reject(new Error('cancelled'))
+            })
+            return false
+          }
+        },{
+          text: 'ok',
+          handler: data => {
+            if (data.pin === this.stored.preference.pin) {
+              pinAlert.dismiss().then(() => {
+                resolve()
+              })
+            } else {
+              this.alertCtrl.create({
+                enableBackdropDismiss: false,
+                title: this.translate.instant('ERROR'),
+                message: this.translate.instant('ERR_INCORRECT_PIN'),
+                buttons: ['ok']
+              }).present()
+            }
+            return false
+          }
+        }]
+      })
+      pinAlert.present()
+    })
+  }
+
   //fingerprint
+
+  async canUseFingerprint() {
+    try {
+      if (this.platform.is('cordova') && -1 !== ['finger', 'face'].indexOf(await this.faio.isAvailable())) {
+        return true
+      } else {
+        return false
+      }
+    } catch (err) {
+      return false
+    }
+  }
+
+  fingerprintNAPrompt() {
+    return new Promise((resolve, reject) => {
+      let naAlert = this.alertCtrl.create({
+        enableBackdropDismiss: false,
+        title: this.translate.instant('ERROR'),
+        message: this.translate.instant('ERR_AUTH_UNAVAILABLE'),
+        buttons: [{
+          text: 'ok',
+          handler: data => {
+            naAlert.dismiss().then(() => {
+              resolve()
+            })
+            return false
+          }
+        }]
+      })
+      naAlert.present()
+    })
+  }
+
+  authorizeFingerprint() {
+    return this.faio.show({
+      clientId: 'cash.simply.wallet',
+      clientSecret: 'cash.simply.wallet.dummy.password', //Only necessary for Android
+      disableBackup: false,  //Only for Android(optional)
+      localizedFallbackTitle: 'PIN', //Only for iOS
+      //localizedReason: 'Please authenticate' //Only for iOS
+    }).catch((err: any) => {
+      throw new Error('cancelled')
+    })
+  }
 
   // async canUseFingerprint() {
   //   return await this.keychainTouchId.isAvailable()
@@ -298,7 +480,8 @@ export class Wallet {
       preference: {
         currency: 'USD',
         addressFormat: 'cashaddr',
-        // fingerprint: false
+        pin: undefined,
+        fingerprint: false
       }
     }).then((value) => {
       console.log('successfully created new wallet')

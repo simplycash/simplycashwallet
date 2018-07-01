@@ -23,6 +23,7 @@
     "@ionic-native/camera": "4.3.3",
     "@ionic-native/clipboard": "^4.5.3",
     "@ionic-native/core": "4.4.0",
+    "@ionic-native/fingerprint-aio": "^4.9.0",
     "@ionic-native/globalization": "^4.7.0",
     "@ionic-native/in-app-browser": "^4.5.3",
     "@ionic-native/keyboard": "^4.6.0",
@@ -48,6 +49,7 @@
     "cordova-plugin-compat": "^1.2.0",
     "cordova-plugin-customurlscheme": "^4.3.0",
     "cordova-plugin-device": "^2.0.2",
+    "cordova-plugin-fingerprint-aio": "^1.3.8",
     "cordova-plugin-globalization": "^1.11.0",
     "cordova-plugin-inappbrowser": "^3.0.0",
     "cordova-plugin-ionic-keyboard": "^2.0.5",
@@ -99,7 +101,10 @@
       "cordova-plugin-statusbar": {},
       "cordova-plugin-inappbrowser": {},
       "cordova-plugin-local-notification": {},
-      "cordova-plugin-globalization": {}
+      "cordova-plugin-globalization": {},
+      "cordova-plugin-fingerprint-aio": {
+        "FACEID_USAGE_DESCRIPTION": " "
+      }
     },
     "platforms": [
       "android",

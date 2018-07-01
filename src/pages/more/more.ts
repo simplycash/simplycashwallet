@@ -33,12 +33,19 @@ export class MorePage {
   }
 
   async showWRP() {
-    await this.alertCtrl.create({
-      enableBackdropDismiss: false,
-      title: this.translate.instant('BACKUP_WALLET'),
-      message: `${this.translate.instant('RECOVERY_PHRASE')}:<br>${await this.wallet.getMnemonic()}<br><br>${this.translate.instant('DERIVATION_PATH')}:<br>m/44'/145'/0'`,
-      buttons: ['ok']
-    }).present()
+    try {
+      await this.wallet.authorize()
+      await this.alertCtrl.create({
+        enableBackdropDismiss: false,
+        title: this.translate.instant('BACKUP_WALLET'),
+        message: `${this.translate.instant('RECOVERY_PHRASE')}:<br>${await this.wallet.getMnemonic()}<br><br>${this.translate.instant('DERIVATION_PATH')}:<br>m/44'/145'/0'`,
+        buttons: ['ok']
+      }).present()
+    } catch (err) {
+      if (err.message !== 'cancelled') {
+        console.log(err)
+      }
+    }
   }
 
   async promptForMenmonic() {

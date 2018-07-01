@@ -17,6 +17,8 @@ import { Wallet } from '../../providers/providers'
 export class SettingsPage {
   private currency: string
   private supportedCurrencies: string[]
+  private protection: string
+  private supportedProtections: string[]
   private useCashAddr: boolean
   // private canUseFingerprint: boolean = false
   // private useFingerprint: boolean
@@ -33,6 +35,8 @@ export class SettingsPage {
   ) {
     this.currency = this.wallet.getPreferedCurrency()
     this.supportedCurrencies = this.wallet.getSupportedCurrencies()
+    this.protection = this.wallet.getPreferedProtection()
+    this.supportedProtections = this.wallet.getSupportedProtections()
     this.useCashAddr = this.wallet.getPreferedAddressFormat() === 'cashaddr'
     // this.useFingerprint = this.wallet.isUsingFingerprint()
     // this.wallet.canUseFingerprint().then(() => {
@@ -59,6 +63,21 @@ export class SettingsPage {
 
   setCurrency() {
     return this.wallet.setPreferedCurrency(this.currency).catch((err: any) => {console.log(err)})
+  }
+
+  async setProtection() {
+    if (this.protection === this.wallet.getPreferedProtection()) {
+      return
+    }
+    try {
+      await this.wallet.authorize()
+      await this.wallet.setPreferedProtection(this.protection)
+    } catch (err) {
+      if (err.message !== 'cancelled') {
+        console.log(err)
+      }
+      this.protection = this.wallet.getPreferedProtection()
+    }
   }
 
   setAddressFormat() {

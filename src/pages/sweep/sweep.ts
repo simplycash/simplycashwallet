@@ -94,7 +94,8 @@ export class SweepPage {
           outputs: [{
             address: this.wallet.convertAddress('legacy', this.wallet.getPreferedAddressFormat(), this.wallet.getCacheReceiveAddress()),
             satoshis: 0
-          }]
+          }],
+          sweep: true
         }, signedTx)
       })
     } catch (err) {

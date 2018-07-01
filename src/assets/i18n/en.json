@@ -1,4 +1,12 @@
 {
+  "PROTECTION": "protection",
+  "OFF": "off",
+  "PIN": "PIN",
+  "FINGERPRINT": "touch",
+  "ENTER_PIN": "enter PIN",
+  "CONFIRM_PIN": "confirm PIN",
+  "ERR_INCORRECT_PIN": "incorrect PIN",
+  "ERR_AUTH_UNAVAILABLE": "unavailable",
   "ADDRESS": "address",
   "ADDRESSES": "addresses",
   "AMOUNT": "amount",

@@ -5,7 +5,7 @@ import { Clipboard } from '@ionic-native/clipboard';
 import { Globalization } from '@ionic-native/globalization';
 import { InAppBrowser } from '@ionic-native/in-app-browser';
 import { LocalNotifications } from '@ionic-native/local-notifications';
-// import { KeychainTouchId } from '@ionic-native/keychain-touch-id';
+import { FingerprintAIO } from '@ionic-native/fingerprint-aio';
 import { QRScanner } from '@ionic-native/qr-scanner';
 import { SocialSharing } from '@ionic-native/social-sharing';
 import { SplashScreen } from '@ionic-native/splash-screen';
@@ -51,7 +51,7 @@ export function createTranslateLoader(http: HttpClient) {
     Clipboard,
     Globalization,
     InAppBrowser,
-    // KeychainTouchId,
+    FingerprintAIO,
     // Keyboard,
     LocalNotifications,
     QRScanner,

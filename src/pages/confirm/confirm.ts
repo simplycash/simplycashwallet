@@ -13,6 +13,7 @@ export class ConfirmPage {
   private unit: string = this.wallet.getUnits()[0]
   private info: any
   private qrCodeURL: string
+  private confirmBtnText: string
   private isReady: boolean = false
 
   constructor(
@@ -25,6 +26,11 @@ export class ConfirmPage {
     private wallet: Wallet
   ) {
     this.info = navParams.get('info')
+    if (this.info.bip70) {
+      this.confirmBtnText = 'SEND'
+    } else {
+      this.confirmBtnText = 'BROADCAST'
+    }
     this.isReady = true
   }
 
@@ -37,8 +43,26 @@ export class ConfirmPage {
     this.unit = units[(units.indexOf(this.unit)+1)%units.length]
   }
 
-  async sendBIP70(ev: any) {
+  async confirm(ev: any) {
     this.isReady = false
+    try {
+      if (!this.info.sweep) {
+        await this.wallet.authorize()
+      }
+      if (this.info.bip70) {
+        await this.sendBIP70()
+      } else {
+        await this.broadcast()
+      }
+    } catch (err) {
+      if (err.message !== 'cancelled') {
+        console.log(err)
+      }
+    }
+    this.isReady = true
+  }
+
+  async sendBIP70() {
     let loader = this.loadingCtrl.create({
       content: this.translate.instant('SENDING')+"..."
     })
@@ -87,11 +111,9 @@ export class ConfirmPage {
         buttons: ['ok']
       }).present()
     }
-    this.isReady = true
   }
 
-  async broadcast(ev: any) {
-    this.isReady = false
+  async broadcast() {
     let loader = this.loadingCtrl.create({
       content: this.translate.instant('BROADCASTING')+"..."
     })
@@ -131,6 +153,5 @@ export class ConfirmPage {
         buttons: ['ok']
       }).present()
     }
-    this.isReady = true
   }
 }
