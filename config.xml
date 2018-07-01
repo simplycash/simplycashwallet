@@ -2,7 +2,7 @@
 <widget id="cash.simply.wallet" version="0.0.31" xmlns="http://www.w3.org/ns/widgets" xmlns:cdv="http://cordova.apache.org/ns/1.0">
     <name>simply cash</name>
     <description>simply a bitcoin cash wallet</description>
-    <author email="simplycashdev@gmail.com" href="https://simply.cash/">simplycash</author>
+    <author email="simplycashdev@gmail.com" href="https://simply.cash/">Simply Cash Limited</author>
     <content src="index.html" />
     <access origin="*" />
     <allow-intent href="http://*/*" />
