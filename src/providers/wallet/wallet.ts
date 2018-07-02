@@ -274,7 +274,7 @@ export class Wallet {
 
   authorizeFingerprint() {
     return this.faio.show({
-      clientId: 'cash.simply.wallet',
+      clientId: 'wallet owner',
       clientSecret: 'cash.simply.wallet.dummy.password', //Only necessary for Android
       disableBackup: false,  //Only for Android(optional)
       localizedFallbackTitle: 'PIN', //Only for iOS
