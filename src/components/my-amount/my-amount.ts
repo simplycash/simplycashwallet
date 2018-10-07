@@ -20,11 +20,17 @@ export class MyAmountComponent {
   private blurTimer: number
   private justBlurred: boolean = false
 
-  private preferedCurrencyCallback: Function
+  private preferredSmallUnitCallback: Function
+  private preferredCurrencyCallback: Function
 
   constructor(private wallet: Wallet) {
     this.currentUnit = this.wallet.getUnits()[0]
-    this.preferedCurrencyCallback = (sym: string) => {
+    this.preferredSmallUnitCallback = (sym: string) => {
+      if (this.wallet.getUnits().indexOf(this.currentUnit) === -1) {
+        this.changeUnit(sym)
+      }
+    }
+    this.preferredCurrencyCallback = (sym: string) => {
       if (this.wallet.getUnits().indexOf(this.currentUnit) === -1) {
         this.changeUnit(sym)
       }
@@ -33,11 +39,13 @@ export class MyAmountComponent {
 
   ngAfterViewInit() {
     this.inputEl = this.amountElNative.nativeElement.querySelector('input')
-    this.wallet.subscribePreferedCurrency(this.preferedCurrencyCallback)
+    this.wallet.subscribePreferredSmallUnit(this.preferredSmallUnitCallback)
+    this.wallet.subscribePreferredCurrency(this.preferredCurrencyCallback)
   }
 
   ngOnDestroy() {
-    this.wallet.unsubscribePreferedCurrency(this.preferedCurrencyCallback)
+    this.wallet.unsubscribePreferredSmallUnit(this.preferredSmallUnitCallback)
+    this.wallet.unsubscribePreferredCurrency(this.preferredCurrencyCallback)
   }
 
   amountInput(ev: any) {

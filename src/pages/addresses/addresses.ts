@@ -45,7 +45,7 @@ export class AddressesPage {
         balance: this.wallet.convertUnit('SATOSHIS', 'BCH', utxo.satoshis.toString())
       }
     })
-    if (this.wallet.getPreferedAddressFormat() === 'cashaddr') {
+    if (this.wallet.getPreferredAddressFormat() === 'cashaddr') {
       this.currentReceiveAddr = this.wallet.convertAddress('legacy', 'cashaddr', this.currentReceiveAddr)
       this.currentChangeAddr = this.wallet.convertAddress('legacy', 'cashaddr', this.currentChangeAddr)
       this.receiveAddrs.forEach((item: any) => {

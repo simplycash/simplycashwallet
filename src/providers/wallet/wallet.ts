@@ -26,9 +26,10 @@ export class Wallet {
 
   private UNITS: { [key: string]: { rate: number, dp: number } } = {
     'BCH': {rate: 1, dp: 8},
-    'SATOSHIS': {rate: 1e8, dp: 0}
+    'SATOSHIS': {rate: 1e8, dp: 0},
+    'BITS': {rate: 1e6, dp: 2}
   }
-  private units: string[] = ['BCH', 'SATOSHIS']
+  private mainUnit: string = 'BCH'
 
   private supportedAddressFormats: string[] = ['legacy', 'cashaddr', 'bitpay']
 
@@ -70,11 +71,19 @@ export class Wallet {
       }[]
     },
     preference: {
+      smallUnit: string,
       currency: string,
       addressFormat: string,
       pin: string,
       fingerprint: boolean
     }
+  }
+  private defaultPreference: any = {
+    smallUnit: 'SATOSHIS',
+    currency: 'USD',
+    addressFormat: 'cashaddr',
+    pin: undefined,
+    fingerprint: false
   }
 
   constructor(
@@ -105,7 +114,7 @@ export class Wallet {
 
   async authorize() {
     await this.delay(0)
-    let p: string = this.getPreferedProtection()
+    let p: string = this.getPreferredProtection()
     if (p === 'OFF') {
 
     } else if (p === 'FINGERPRINT') {
@@ -122,7 +131,7 @@ export class Wallet {
     return ['OFF', 'PIN', 'FINGERPRINT']
   }
 
-  getPreferedProtection() {
+  getPreferredProtection() {
     if (typeof this.stored.preference.pin !== 'undefined') {
       return 'PIN'
     }
@@ -132,7 +141,7 @@ export class Wallet {
     return 'OFF'
   }
 
-  async setPreferedProtection(p: string) {
+  async setPreferredProtection(p: string) {
     if (p === 'PIN') {
       this.stored.preference.pin = await this.newPIN()
       this.stored.preference.fingerprint = false
@@ -308,27 +317,47 @@ export class Wallet {
 
   //unit
 
-  getSupportedCurrencies() {
-    return Object.keys(this.UNITS).slice(2)
+  getSupportedSmallUnits() {
+    return Object.keys(this.UNITS).slice(1, 3)
   }
 
-  getPreferedCurrency() {
+  getSupportedCurrencies() {
+    return Object.keys(this.UNITS).slice(3)
+  }
+
+  getPreferredSmallUnit() {
+    return this.stored.preference.smallUnit
+  }
+
+  setPreferredSmallUnit(sym: string) {
+    this.stored.preference.smallUnit = sym
+    setImmediate(() => {
+      this.events.publish('wallet:preferredsmallunit', sym)
+    })
+    return this.updateStorage()
+  }
+
+  getPreferredCurrency() {
     return this.stored.preference.currency
   }
 
-  setPreferedCurrency(sym: string) {
+  setPreferredCurrency(sym: string) {
     // if (this.getSupportedCurrencies().indexOf(sym) === -1) {
     //   return Promise.resolve()
     // }
     this.stored.preference.currency = sym
     setImmediate(() => {
-      this.events.publish('wallet:preferedcurrency', sym)
+      this.events.publish('wallet:preferredcurrency', sym)
     })
     return this.updateStorage()
   }
 
   getUnits() {
-    return this.units.concat([this.stored.preference.currency])
+    return [
+      this.mainUnit,
+      this.stored.preference.smallUnit,
+      this.stored.preference.currency
+    ]
   }
 
   convertUnit(from: string, to: string, amountStr: string) {
@@ -350,17 +379,17 @@ export class Wallet {
 
   // address format
 
-  getPreferedAddressFormat() {
+  getPreferredAddressFormat() {
     return this.stored.preference.addressFormat
   }
 
-  setPreferedAddressFormat(af: string) {
+  setPreferredAddressFormat(af: string) {
     if (af !== 'cashaddr' && af !== 'legacy') {
       return Promise.resolve()
     }
     this.stored.preference.addressFormat = af
     setImmediate(() => {
-      this.events.publish('wallet:preferedaddressformat', af)
+      this.events.publish('wallet:preferredaddressformat', af)
     })
     return this.updateStorage()
   }
@@ -477,12 +506,7 @@ export class Wallet {
         utxos: [],
         history: []
       },
-      preference: {
-        currency: 'USD',
-        addressFormat: 'cashaddr',
-        pin: undefined,
-        fingerprint: false
-      }
+      preference: this.defaultPreference
     }).then((value) => {
       console.log('successfully created new wallet')
       return value
@@ -513,6 +537,9 @@ export class Wallet {
         return this.createWallet()
       }
     }).then((value) => {
+      Object.keys(this.defaultPreference).forEach((k) => {
+        value.preference[k] = value.preference[k] || this.defaultPreference[k]
+      })
       this.stored = value
       this.changeState(this.STATE.OFFLINE)
     })
@@ -805,24 +832,34 @@ export class Wallet {
     console.log('unsubscribeUpdate: '+result)
   }
 
-  subscribePreferedCurrency(callback: Function) {
-    this.events.subscribe('wallet:preferedcurrency', callback)
-    console.log('subscribePreferedCurrency')
+  subscribePreferredSmallUnit(callback: Function) {
+    this.events.subscribe('wallet:preferredsmallunit', callback)
+    console.log('subscribePreferredSmallUnit')
   }
 
-  unsubscribePreferedCurrency(callback: Function) {
-    let result = this.events.unsubscribe('wallet:preferedcurrency', callback)
-    console.log('unsubscribePreferedCurrency: '+result)
+  unsubscribePreferredSmallUnit(callback: Function) {
+    let result = this.events.unsubscribe('wallet:preferredsmallunit', callback)
+    console.log('unsubscribePreferredSmallUnit: '+result)
   }
 
-  subscribePreferedAddressFormat(callback: Function) {
-    this.events.subscribe('wallet:preferedaddressformat', callback)
-    console.log('subscribePreferedAddressFormat')
+  subscribePreferredCurrency(callback: Function) {
+    this.events.subscribe('wallet:preferredcurrency', callback)
+    console.log('subscribePreferredCurrency')
   }
 
-  unsubscribePreferedAddressFormat(callback: Function) {
-    let result = this.events.unsubscribe('wallet:preferedaddressformat', callback)
-    console.log('unsubscribePreferedAddressFormat: '+result)
+  unsubscribePreferredCurrency(callback: Function) {
+    let result = this.events.unsubscribe('wallet:preferredcurrency', callback)
+    console.log('unsubscribePreferredCurrency: '+result)
+  }
+
+  subscribePreferredAddressFormat(callback: Function) {
+    this.events.subscribe('wallet:preferredaddressformat', callback)
+    console.log('subscribePreferredAddressFormat')
+  }
+
+  unsubscribePreferredAddressFormat(callback: Function) {
+    let result = this.events.unsubscribe('wallet:preferredaddressformat', callback)
+    console.log('unsubscribePreferredAddressFormat: '+result)
   }
 
   //helper

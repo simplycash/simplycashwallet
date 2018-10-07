@@ -92,7 +92,7 @@ export class SweepPage {
       await this.navCtrl.push('ConfirmPage', {
         info: Object.assign({
           outputs: [{
-            address: this.wallet.convertAddress('legacy', this.wallet.getPreferedAddressFormat(), this.wallet.getCacheReceiveAddress()),
+            address: this.wallet.convertAddress('legacy', this.wallet.getPreferredAddressFormat(), this.wallet.getCacheReceiveAddress()),
             satoshis: 0
           }],
           sweep: true

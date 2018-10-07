@@ -15,6 +15,8 @@ import { Wallet } from '../../providers/providers'
   templateUrl: 'settings.html'
 })
 export class SettingsPage {
+  private smallUnit: string
+  private supportedSmallUnits: string[]
   private currency: string
   private supportedCurrencies: string[]
   private protection: string
@@ -33,11 +35,13 @@ export class SettingsPage {
     public viewCtrl: ViewController,
     private wallet: Wallet
   ) {
-    this.currency = this.wallet.getPreferedCurrency()
+    this.smallUnit = this.wallet.getPreferredSmallUnit()
+    this.supportedSmallUnits = this.wallet.getSupportedSmallUnits()
+    this.currency = this.wallet.getPreferredCurrency()
     this.supportedCurrencies = this.wallet.getSupportedCurrencies()
-    this.protection = this.wallet.getPreferedProtection()
+    this.protection = this.wallet.getPreferredProtection()
     this.supportedProtections = this.wallet.getSupportedProtections()
-    this.useCashAddr = this.wallet.getPreferedAddressFormat() === 'cashaddr'
+    this.useCashAddr = this.wallet.getPreferredAddressFormat() === 'cashaddr'
     // this.useFingerprint = this.wallet.isUsingFingerprint()
     // this.wallet.canUseFingerprint().then(() => {
     //   this.canUseFingerprint = true
@@ -61,30 +65,34 @@ export class SettingsPage {
     this.app.getRootNav().push('MorePage')
   }
 
+  setSmallUnit() {
+    return this.wallet.setPreferredSmallUnit(this.smallUnit).catch((err: any) => {console.log(err)})
+  }
+
   setCurrency() {
-    return this.wallet.setPreferedCurrency(this.currency).catch((err: any) => {console.log(err)})
+    return this.wallet.setPreferredCurrency(this.currency).catch((err: any) => {console.log(err)})
   }
 
   async setProtection() {
-    if (this.protection === this.wallet.getPreferedProtection()) {
+    if (this.protection === this.wallet.getPreferredProtection()) {
       return
     }
     try {
       await this.wallet.authorize()
-      await this.wallet.setPreferedProtection(this.protection)
+      await this.wallet.setPreferredProtection(this.protection)
     } catch (err) {
       if (err.message !== 'cancelled') {
         console.log(err)
       }
-      this.protection = this.wallet.getPreferedProtection()
+      this.protection = this.wallet.getPreferredProtection()
     }
   }
 
   setAddressFormat() {
     if (this.useCashAddr) {
-      return this.wallet.setPreferedAddressFormat('cashaddr').catch((err: any) => {console.log(err)})
+      return this.wallet.setPreferredAddressFormat('cashaddr').catch((err: any) => {console.log(err)})
     } else {
-      return this.wallet.setPreferedAddressFormat('legacy').catch((err: any) => {console.log(err)})
+      return this.wallet.setPreferredAddressFormat('legacy').catch((err: any) => {console.log(err)})
     }
   }
 

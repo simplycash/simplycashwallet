@@ -21,7 +21,7 @@
     <ion-item>
       <ion-label stacked color="primary">{{ 'MY_BITCOIN_CASH_ADDRESS' | translate}}</ion-label>
       <ion-input
-        [value]="address | convertAddressPipe:wallet.getPreferedAddressFormat()"
+        [value]="address | convertAddressPipe:wallet.getPreferredAddressFormat()"
         type="text"
         (ionChange)="addressChange($event)"
         readonly></ion-input>
