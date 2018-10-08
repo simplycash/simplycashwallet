@@ -26,8 +26,8 @@ export class Wallet {
 
   private UNITS: { [key: string]: { rate: number, dp: number } } = {
     'BCH': {rate: 1, dp: 8},
-    'SATOSHIS': {rate: 1e8, dp: 0},
-    'BITS': {rate: 1e6, dp: 2}
+    'BITS': {rate: 1e6, dp: 2},
+    'SATOSHIS': {rate: 1e8, dp: 0}
   }
   private mainUnit: string = 'BCH'
 
@@ -79,7 +79,7 @@ export class Wallet {
     }
   }
   private defaultPreference: any = {
-    smallUnit: 'SATOSHIS',
+    smallUnit: 'BCH',
     currency: 'USD',
     addressFormat: 'cashaddr',
     pin: undefined,
@@ -318,7 +318,7 @@ export class Wallet {
   //unit
 
   getSupportedSmallUnits() {
-    return Object.keys(this.UNITS).slice(1, 3)
+    return Object.keys(this.UNITS).slice(0, 3)
   }
 
   getSupportedCurrencies() {
@@ -354,7 +354,6 @@ export class Wallet {
 
   getUnits() {
     return [
-      this.mainUnit,
       this.stored.preference.smallUnit,
       this.stored.preference.currency
     ]
@@ -506,7 +505,7 @@ export class Wallet {
         utxos: [],
         history: []
       },
-      preference: this.defaultPreference
+      preference: Object.assign({}, this.defaultPreference)
     }).then((value) => {
       console.log('successfully created new wallet')
       return value
