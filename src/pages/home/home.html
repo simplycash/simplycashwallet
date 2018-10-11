@@ -35,6 +35,18 @@
     <img class="qrcode" [src]="qrCodeURL" (click)="share()"/>
   </div>
 
+  <ion-toolbar class="quick-send-toolbar" *ngIf="clipboardContent && !wallet.isOffline()">
+    <p>{{ clipboardContent }}</p>
+    <ion-buttons end>
+      <button ion-button icon-only color="primary" (click)="quickSend()">
+        <ion-icon name="paper-plane"></ion-icon>
+      </button>
+      <button ion-button icon-only color="primary" (click)="clearClipboard()">
+        <ion-icon name="close"></ion-icon>
+      </button>
+    </ion-buttons>
+  </ion-toolbar>
+
   <ion-toolbar class="connection-toolbar" *ngIf="wallet.isOffline()">
     <p><ion-icon name="alert" color="danger"></ion-icon> {{ 'ERR_NOT_CONNECTED' | translate }}</p>
     <ion-buttons end>
@@ -42,7 +54,7 @@
     </ion-buttons>
   </ion-toolbar>
 
-  <ion-fab class="camera-fab" [attr.elevated]="wallet.isOffline() ? '' : null">
+  <ion-fab class="camera-fab" [attr.elevated]="wallet.isOffline() || clipboardContent ? '' : null">
     <button ion-fab (touchstart)="startScan()" (touchend)="stopScan()" [disabled]=isToggling>
       <ion-icon name="camera"></ion-icon>
     </button>

@@ -35,6 +35,10 @@ export class HomePage {
   private hint: any
   private hintTimer: number
 
+  private firstTimeEnter: boolean = true
+  private clipboardContent: string = ''
+  private resumeSub: any
+
   constructor(
     public alertCtrl: AlertController,
     private app: App,
@@ -66,13 +70,24 @@ export class HomePage {
     })
   }
 
-  ionViewDidEnter() {
+  ionViewWillEnter() {
     this.wallet.subscribeUpdate(this.updateCallback)
-    this.handleDeepLinks()
+    this.resumeSub = this.platform.resume.subscribe(() => {
+      this.handleClipboard()
+    })
+    this.handleClipboard()
+  }
+
+  ionViewDidEnter() {
+    if (this.firstTimeEnter) {
+      this.firstTimeEnter = false
+      this.handleDeepLinks()
+    }
   }
 
   ionViewDidLeave() {
     this.wallet.unsubscribeUpdate(this.updateCallback)
+    this.resumeSub.unsubscribe()
   }
 
   ionViewWillUnload() {
@@ -238,7 +253,10 @@ export class HomePage {
   }
 
   copyAddress() {
-    this.clipboard.copy(this.displayedAddress)
+    let a: string = this.displayedAddress
+    this.clipboard.copy(a).then(() => {
+      this.clipboardContent = a
+    })
   }
 
   async handleQRText(text: string) {
@@ -290,7 +308,7 @@ export class HomePage {
 
   async handleBIP70(info: any) {
     let loader = this.loadingCtrl.create({
-      content: this.translate.instant('LOADING')+"..."
+      content: this.translate.instant('LOADING')+'...'
     })
     await loader.present()
     let request: any
@@ -350,14 +368,37 @@ export class HomePage {
           }).present()
         })
       }, 0)
+      return true
     }
 
     // Check if app was opened by custom url scheme
-    const lastUrl: string = (window as any).handleOpenURL_LastURL || ""
-    if (lastUrl !== "") {
+    const lastUrl: string = (window as any).handleOpenURL_LastURL || ''
+    if (lastUrl !== '') {
       delete (window as any).handleOpenURL_LastURL;
       (window as any).handleOpenURL(lastUrl)
     }
+  }
+
+  handleClipboard() {
+    this.clipboard.paste().then((content: string) => {
+      if (!content || typeof this.wallet.getRequestFromURL(content) === 'undefined') {
+        this.clipboardContent = ''
+      } else {
+        this.clipboardContent = content
+      }
+    }).catch((err: any) => {
+      
+    })
+  }
+
+  quickSend() {
+    this.handleURL(this.clipboardContent)
+  }
+
+  clearClipboard() {
+    this.clipboard.copy('').then(() => {
+      this.clipboardContent = ''
+    })
   }
 
   async sign(info: any) {
@@ -399,7 +440,7 @@ export class HomePage {
     }
 
     let loader = this.loadingCtrl.create({
-      content: this.translate.instant('SIGNING')+"..."
+      content: this.translate.instant('SIGNING')+'...'
     })
     await loader.present()
 
