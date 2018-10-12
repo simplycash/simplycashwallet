@@ -19,7 +19,6 @@ export class MyAmountComponent {
   private touch: boolean = false
   private inputTouch: boolean = false
   private blurTimer: number
-  private justBlurred: boolean = false
 
   private fromUnit: string
   private fromAmount: string
@@ -34,7 +33,7 @@ export class MyAmountComponent {
     this.priceCallback = () => {
       if (this.fromUnit && this.fromAmount) {
         this.updateInputField()
-        this.amountSATOSHIS = this.wallet.convertUnit(this.fromUnit, 'SATOSHIS', this.fromAmount) || '0'
+        this.amountSATOSHIS = this.wallet.convertUnit(this.fromUnit, 'SATS', this.fromAmount) || '0'
         this.satoshisChange.emit(parseFloat(this.amountSATOSHIS))
       }
     }
@@ -85,7 +84,7 @@ export class MyAmountComponent {
       return
     }
     this.fromAmount = '' + parseFloat(this.amountEl.value) || '0'
-    this.amountSATOSHIS = this.wallet.convertUnit(this.fromUnit, 'SATOSHIS', this.amountEl.value) || '0'
+    this.amountSATOSHIS = this.wallet.convertUnit(this.fromUnit, 'SATS', this.amountEl.value) || '0'
     this.satoshisChange.emit(parseFloat(this.amountSATOSHIS))
   }
 
@@ -108,9 +107,6 @@ export class MyAmountComponent {
       this.touch = true
       this.amountEl.value = newValue
     }
-    if (this.justBlurred) {
-      this.amountEl.setFocus()
-    }
   }
 
   getSatoshis() {
@@ -122,14 +118,6 @@ export class MyAmountComponent {
 
   setFocus() {
     this.amountEl.setFocus()
-  }
-
-  setBlurTimer() {
-    window.clearTimeout(this.blurTimer)
-    this.justBlurred = true
-    this.blurTimer = window.setTimeout(() => {
-      this.justBlurred = false
-    }, 100)
   }
 
   clear() {

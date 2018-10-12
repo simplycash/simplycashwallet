@@ -7,7 +7,6 @@
     [placeholder]="placeholder || ''"
     (input)="amountInput($event)"
     (ionChange)="amountChange($event)"
-    (ionBlur)="setBlurTimer()"
     clearInput=true></ion-input>
     <button ion-button outline item-end (click)="changeUnit()">
       {{ wallet.getPreferredUnit() }}

@@ -42,7 +42,7 @@ export class AddressesPage {
     this.unspentAddrs = this.wallet.getCacheUtxos().map((utxo: any) => {
       return {
         address: utxo.address,
-        balance: this.wallet.convertUnit('SATOSHIS', 'BCH', utxo.satoshis.toString())
+        balance: this.wallet.convertUnit('SATS', 'BCH', utxo.satoshis.toString())
       }
     })
     if (this.wallet.getPreferredAddressFormat() === 'cashaddr') {

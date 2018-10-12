@@ -27,7 +27,7 @@ export class Wallet {
   private UNITS: { [key: string]: { rate: number, dp: number } } = {
     'BCH': {rate: 1, dp: 8},
     'BITS': {rate: 1e6, dp: 2},
-    'SATOSHIS': {rate: 1e8, dp: 0}
+    'SATS': {rate: 1e8, dp: 0}
   }
 
   private supportedAddressFormats: string[] = ['legacy', 'cashaddr', 'bitpay']
@@ -693,7 +693,7 @@ export class Wallet {
         }
         this.localNotifications.schedule({
           id: this.notificationId++,
-          text: `${this.translate.instant('RECEIVED')} ${this.convertUnit('SATOSHIS', 'BCH', tx.delta.toString()).replace(/\.?0+$/,'')} BCH`,
+          text: `${this.translate.instant('RECEIVED')} ${this.convertUnit('SATS', 'BCH', tx.delta.toString()).replace(/\.?0+$/,'')} BCH`,
           data: { page: 'HistoryPage', navParams: {} },
           foreground: true // need to modify @ionic-native/local-notifications ILocalNotification interface
         })
@@ -1052,7 +1052,7 @@ export class Wallet {
     }
     let uri: string = 'bitcoincash:' + address
     if (sat) {
-      uri += '?amount=' + this.convertUnit('SATOSHIS', 'BCH', sat.toString()).replace(/\.?0+$/,'')
+      uri += '?amount=' + this.convertUnit('SATS', 'BCH', sat.toString()).replace(/\.?0+$/,'')
     }
     console.log(uri)
     return uri
@@ -1107,7 +1107,7 @@ export class Wallet {
     if (typeof params.amount !== 'undefined') {
       let amount: number = parseFloat(params.amount)
       if (amount > 0) {
-        satoshis = parseFloat(this.convertUnit('BCH', 'SATOSHIS', amount.toString()))
+        satoshis = parseFloat(this.convertUnit('BCH', 'SATS', amount.toString()))
       }
     }
     if (typeof params.r !== 'undefined') {

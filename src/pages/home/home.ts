@@ -133,7 +133,7 @@ export class HomePage {
     let message: string = `${this.translate.instant('MY_BITCOIN_CASH_ADDRESS')}:\n${this.displayedAddress}\n\n`
     let link: string = 'https://simply.cash/send'
     if (this.amount > 0) {
-      let amount: string = this.wallet.convertUnit('SATOSHIS', 'BCH', this.amount.toString()).replace(/\.?0+$/,'')
+      let amount: string = this.wallet.convertUnit('SATS', 'BCH', this.amount.toString()).replace(/\.?0+$/,'')
       message += `${this.translate.instant('REQUEST_AMOUNT')}:\n${amount} BCH\n\n`
       link += '-' + amount
     }

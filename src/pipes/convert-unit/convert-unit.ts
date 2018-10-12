@@ -10,10 +10,10 @@ export class ConvertUnitPipe implements PipeTransform {
   }
   transform(amountSAT: string, ...args) {
     let result: string
-    if (args[0] === 'SATOSHIS') {
+    if (args[0] === 'SATS') {
       result = amountSAT
     } else {
-      result = this.wallet.convertUnit('SATOSHIS', args[0], amountSAT)
+      result = this.wallet.convertUnit('SATS', args[0], amountSAT)
     }
     return typeof result === 'undefined' ? '' : result
   }
