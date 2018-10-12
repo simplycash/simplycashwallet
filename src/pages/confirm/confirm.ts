@@ -31,7 +31,7 @@ export class ConfirmPage {
     if (this.info.bip70) {
       this.confirmBtnText = 'SEND'
     } else {
-      this.confirmBtnText = 'BROADCAST'
+      this.confirmBtnText = 'SEND'
     }
     this.isReady = true
     this.priceCallback = () => {
