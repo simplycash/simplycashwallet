@@ -35,24 +35,29 @@
     <img class="qrcode" [src]="qrCodeURL" (click)="share()"/>
   </div>
 
-  <ion-toolbar class="quick-send-toolbar" *ngIf="clipboardContent && !wallet.isOffline()">
-    <p>{{ clipboardContent }}</p>
-    <ion-buttons end>
-      <button ion-button icon-only color="primary" (click)="quickSend()">
-        <ion-icon name="paper-plane"></ion-icon>
-      </button>
-      <button ion-button icon-only color="primary" (click)="clearClipboard()">
-        <ion-icon name="close"></ion-icon>
-      </button>
-    </ion-buttons>
-  </ion-toolbar>
-
   <ion-toolbar class="connection-toolbar" *ngIf="wallet.isOffline()">
     <p><ion-icon name="alert" color="danger"></ion-icon> {{ 'ERR_NOT_CONNECTED' | translate }}</p>
     <ion-buttons end>
       <button ion-button color="primary" (click)="reconnect($event)">{{ 'RETRY' | translate }}</button>
     </ion-buttons>
   </ion-toolbar>
+
+  <div class="quick-send-toolbar" *ngIf="clipboardContent && !wallet.isOffline()">
+    <div class="quick-send-toolbar-title">{{ 'COPIED_ADDRESS' | translate }}</div>
+    <ion-toolbar>
+      <p style="word-break: break-all;">{{ clipboardContent }}</p>
+      <ion-buttons end>
+        <button ion-button icon-left color="primary" (click)="quickSend()">
+          <ion-icon name="paper-plane"></ion-icon>
+          {{ 'SEND' | translate }}
+        </button>
+        <button ion-button icon-left color="primary" (click)="clearClipboard()">
+          <ion-icon name="close"></ion-icon>
+          {{ 'CLEAR' | translate }}
+        </button>
+      </ion-buttons>
+    </ion-toolbar>
+  </div>
 
   <ion-fab class="camera-fab" [attr.elevated]="wallet.isOffline() || clipboardContent ? '' : null">
     <button ion-fab (touchstart)="startScan()" (touchend)="stopScan()" [disabled]=isToggling>

@@ -57,11 +57,25 @@ page-home {
   .address {
     // margin: 20px 0;
   }
-  .connection-toolbar, .quick-send-toolbar {
+  .connection-toolbar {
     position: fixed;
     bottom: 0;
     left: 0;
   }
+
+  .quick-send-toolbar {
+    width: 100%;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+  }
+
+  .quick-send-toolbar-title {
+    text-align: center;
+    background-color: color($colors, light);
+    padding-top: 14px;
+  }
+
   .camera-fab {
     left: 15px;
     bottom: 15px;
