@@ -26,13 +26,17 @@ export class MyAmountComponent {
   private preferredUnitCallback: Function
   private priceCallback: Function
 
+  private isTyping: boolean = false
+
   constructor(private wallet: Wallet) {
     this.preferredUnitCallback = (sym: string) => {
       this.updateInputField()
     }
     this.priceCallback = () => {
       if (this.fromUnit && this.fromAmount) {
-        this.updateInputField()
+        if (!this.isTyping) {
+          this.updateInputField()
+        }
         this.amountSATOSHIS = this.wallet.convertUnit(this.fromUnit, 'SATS', this.fromAmount) || '0'
         this.satoshisChange.emit(parseFloat(this.amountSATOSHIS))
       }
