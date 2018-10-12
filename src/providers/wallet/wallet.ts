@@ -29,7 +29,6 @@ export class Wallet {
     'BITS': {rate: 1e6, dp: 2},
     'SATOSHIS': {rate: 1e8, dp: 0}
   }
-  private mainUnit: string = 'BCH'
 
   private supportedAddressFormats: string[] = ['legacy', 'cashaddr', 'bitpay']
 
@@ -71,7 +70,8 @@ export class Wallet {
       }[]
     },
     preference: {
-      smallUnit: string,
+      unitIndex: number,
+      cryptoUnit: string,
       currency: string,
       addressFormat: string,
       pin: string,
@@ -79,7 +79,8 @@ export class Wallet {
     }
   }
   private defaultPreference: any = {
-    smallUnit: 'BCH',
+    unitIndex: 0,
+    cryptoUnit: 'BCH',
     currency: 'USD',
     addressFormat: 'cashaddr',
     pin: undefined,
@@ -317,7 +318,7 @@ export class Wallet {
 
   //unit
 
-  getSupportedSmallUnits() {
+  getSupportedCryptoUnits() {
     return Object.keys(this.UNITS).slice(0, 3)
   }
 
@@ -325,14 +326,15 @@ export class Wallet {
     return Object.keys(this.UNITS).slice(3)
   }
 
-  getPreferredSmallUnit() {
-    return this.stored.preference.smallUnit
+  getPreferredCryptoUnit() {
+    return this.stored.preference.cryptoUnit
   }
 
-  setPreferredSmallUnit(sym: string) {
-    this.stored.preference.smallUnit = sym
+  setPreferredCryptoUnit(sym: string) {
+    this.stored.preference.cryptoUnit = sym
     setImmediate(() => {
-      this.events.publish('wallet:preferredsmallunit', sym)
+      this.events.publish('wallet:preferredcryptounit', sym)
+      this.events.publish('wallet:preferredunit', this.getPreferredUnit())
     })
     return this.updateStorage()
   }
@@ -348,13 +350,29 @@ export class Wallet {
     this.stored.preference.currency = sym
     setImmediate(() => {
       this.events.publish('wallet:preferredcurrency', sym)
+      this.events.publish('wallet:preferredunit', this.getPreferredUnit())
     })
     return this.updateStorage()
   }
 
+  getPreferredUnit() {
+    return this.getUnits()[this.stored.preference.unitIndex]
+  }
+
+  changePreferredUnit() {
+    let units = this.getUnits()
+    this.stored.preference.unitIndex = (this.stored.preference.unitIndex + 1) % units.length
+    let punit = units[this.stored.preference.unitIndex]
+    setImmediate(() => {
+      this.events.publish('wallet:preferredunit', punit)
+      this.updateStorage()
+    })
+    return punit
+  }
+
   getUnits() {
     return [
-      this.stored.preference.smallUnit,
+      this.stored.preference.cryptoUnit,
       this.stored.preference.currency
     ]
   }
@@ -814,6 +832,7 @@ export class Wallet {
         this.UNITS[k] = {rate: price[k], dp: 2}
       }
     }
+    this.events.publish('wallet:price')
   }
 
   //event subscription
@@ -831,24 +850,24 @@ export class Wallet {
     console.log('unsubscribeUpdate: '+result)
   }
 
-  subscribePreferredSmallUnit(callback: Function) {
-    this.events.subscribe('wallet:preferredsmallunit', callback)
-    console.log('subscribePreferredSmallUnit')
+  subscribePrice(callback: Function) {
+    this.events.subscribe('wallet:price', callback)
+    console.log('subscribePrice')
   }
 
-  unsubscribePreferredSmallUnit(callback: Function) {
-    let result = this.events.unsubscribe('wallet:preferredsmallunit', callback)
-    console.log('unsubscribePreferredSmallUnit: '+result)
+  unsubscribePrice(callback: Function) {
+    let result = this.events.unsubscribe('wallet:price', callback)
+    console.log('unsubscribePrice: '+result)
   }
 
-  subscribePreferredCurrency(callback: Function) {
-    this.events.subscribe('wallet:preferredcurrency', callback)
-    console.log('subscribePreferredCurrency')
+  subscribePreferredUnit(callback: Function) {
+    this.events.subscribe('wallet:preferredunit', callback)
+    console.log('subscribePreferredUnit')
   }
 
-  unsubscribePreferredCurrency(callback: Function) {
-    let result = this.events.unsubscribe('wallet:preferredcurrency', callback)
-    console.log('unsubscribePreferredCurrency: '+result)
+  unsubscribePreferredUnit(callback: Function) {
+    let result = this.events.unsubscribe('wallet:preferredunit', callback)
+    console.log('unsubscribePreferredUnit: '+result)
   }
 
   subscribePreferredAddressFormat(callback: Function) {

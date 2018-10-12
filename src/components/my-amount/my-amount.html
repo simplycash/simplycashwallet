@@ -10,6 +10,6 @@
     (ionBlur)="setBlurTimer()"
     clearInput=true></ion-input>
     <button ion-button outline item-end (click)="changeUnit()">
-      {{ currentUnit }}
+      {{ wallet.getPreferredUnit() }}
     </button>
 </ion-item>

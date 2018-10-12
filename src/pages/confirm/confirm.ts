@@ -10,7 +10,7 @@ import { Wallet } from '../../providers/providers'
 })
 export class ConfirmPage {
 
-  private unit: string = this.wallet.getUnits()[0]
+  private unit: string = this.wallet.getPreferredUnit()
   private info: any
   private qrCodeURL: string
   private confirmBtnText: string
@@ -39,8 +39,7 @@ export class ConfirmPage {
   }
 
   changeUnit() {
-    let units = this.wallet.getUnits()
-    this.unit = units[(units.indexOf(this.unit)+1)%units.length]
+    this.unit = this.wallet.changePreferredUnit()
   }
 
   async confirm(ev: any) {

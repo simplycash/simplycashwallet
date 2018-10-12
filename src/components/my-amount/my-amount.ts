@@ -1,6 +1,8 @@
 import { Component, ElementRef, ViewChild, Input, Output, EventEmitter, AfterViewInit, OnDestroy } from '@angular/core'
 import { Wallet } from '../../providers/providers'
 
+//what a mess!
+
 @Component({
   selector: 'my-amount',
   templateUrl: 'my-amount.html'
@@ -13,39 +15,40 @@ export class MyAmountComponent {
   @ViewChild('amount', { read: ElementRef }) amountElNative
 
   private inputEl: any
-  private currentUnit: string
   private amountSATOSHIS: string
   private touch: boolean = false
   private inputTouch: boolean = false
   private blurTimer: number
   private justBlurred: boolean = false
 
-  private preferredSmallUnitCallback: Function
-  private preferredCurrencyCallback: Function
+  private fromUnit: string
+  private fromAmount: string
+
+  private preferredUnitCallback: Function
+  private priceCallback: Function
 
   constructor(private wallet: Wallet) {
-    this.currentUnit = this.wallet.getUnits()[0]
-    this.preferredSmallUnitCallback = (sym: string) => {
-      if (this.wallet.getUnits().indexOf(this.currentUnit) === -1) {
-        this.changeUnit(sym)
-      }
+    this.preferredUnitCallback = (sym: string) => {
+      this.updateInputField()
     }
-    this.preferredCurrencyCallback = (sym: string) => {
-      if (this.wallet.getUnits().indexOf(this.currentUnit) === -1) {
-        this.changeUnit(sym)
+    this.priceCallback = () => {
+      if (this.fromUnit && this.fromAmount) {
+        this.updateInputField()
+        this.amountSATOSHIS = this.wallet.convertUnit(this.fromUnit, 'SATOSHIS', this.fromAmount) || '0'
+        this.satoshisChange.emit(parseFloat(this.amountSATOSHIS))
       }
     }
   }
 
   ngAfterViewInit() {
     this.inputEl = this.amountElNative.nativeElement.querySelector('input')
-    this.wallet.subscribePreferredSmallUnit(this.preferredSmallUnitCallback)
-    this.wallet.subscribePreferredCurrency(this.preferredCurrencyCallback)
+    this.wallet.subscribePreferredUnit(this.preferredUnitCallback)
+    this.wallet.subscribePrice(this.priceCallback)
   }
 
   ngOnDestroy() {
-    this.wallet.unsubscribePreferredSmallUnit(this.preferredSmallUnitCallback)
-    this.wallet.unsubscribePreferredCurrency(this.preferredCurrencyCallback)
+    this.wallet.unsubscribePreferredUnit(this.preferredUnitCallback)
+    this.wallet.unsubscribePrice(this.priceCallback)
   }
 
   amountInput(ev: any) {
@@ -57,10 +60,13 @@ export class MyAmountComponent {
     if (this.amountEl.value.length !== 0) {
       return
     }
+    this.fromUnit = this.wallet.getPreferredUnit()
     if (this.inputEl.checkValidity()) {
+      this.fromAmount = undefined
       this.amountSATOSHIS = undefined
       this.satoshisChange.emit(undefined)
     } else {
+      this.fromAmount = '0'
       this.amountSATOSHIS = '0'
       this.satoshisChange.emit(0)
     }
@@ -71,33 +77,30 @@ export class MyAmountComponent {
       this.touch = false
       return
     }
+    this.fromUnit = this.wallet.getPreferredUnit()
     if (this.amountEl.value.length === 0 && this.inputEl.checkValidity()) {
+      this.fromAmount = undefined
       this.amountSATOSHIS = undefined
       this.satoshisChange.emit(undefined)
       return
     }
-    this.amountSATOSHIS = this.wallet.convertUnit(this.currentUnit, 'SATOSHIS', this.amountEl.value) || '0'
+    this.fromAmount = '' + parseFloat(this.amountEl.value) || '0'
+    this.amountSATOSHIS = this.wallet.convertUnit(this.fromUnit, 'SATOSHIS', this.amountEl.value) || '0'
     this.satoshisChange.emit(parseFloat(this.amountSATOSHIS))
   }
 
-  changeUnit(unit?: string) {
-    let units: string[] = this.wallet.getUnits()
-    if (unit) {
-      if (units.indexOf(unit) === -1) {
-        return
-      }
-      this.currentUnit = unit
-    } else {
-      let i: number = units.indexOf(this.currentUnit) // can be -1
-      i = (i + 1) % units.length
-      this.currentUnit = units[i]
-    }
+  changeUnit() {
+    this.wallet.changePreferredUnit()
+  }
+
+  updateInputField() {
+    let unit = this.wallet.getPreferredUnit()
     let newValue: string
-    if (typeof this.amountSATOSHIS === 'undefined') {
+    if (typeof this.fromAmount === 'undefined') {
       newValue = ''
     } else {
-      newValue = this.wallet.convertUnit('SATOSHIS', this.currentUnit, this.amountSATOSHIS) || '0'
-      if (this.currentUnit === 'BCH') {
+      newValue = this.wallet.convertUnit(this.fromUnit, unit, this.fromAmount) || '0'
+      if (unit === 'BCH') {
         newValue = newValue.replace(/\.?0+$/,'')
       }
     }
@@ -115,12 +118,6 @@ export class MyAmountComponent {
       return undefined
     }
     return parseFloat(this.amountSATOSHIS)
-  }
-
-  setSatoshis(sat: number) {
-    this.amountSATOSHIS = sat.toString()
-    this.touch = true
-    this.amountEl.value = this.wallet.convertUnit('SATOSHIS', this.currentUnit, this.amountSATOSHIS)
   }
 
   setFocus() {

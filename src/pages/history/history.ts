@@ -14,7 +14,7 @@ import { Wallet } from '../../providers/providers'
 export class HistoryPage {
 
   public static readonly pageName = 'HistoryPage'
-  private currentUnit: string = this.wallet.getUnits()[0]
+  private currentUnit: string = this.wallet.getPreferredUnit()
   private balance: number
   private txs: { txid: string, date: string, time: string, delta: number, seen: boolean }[] = []
   private dateGroups: { date: string, txs: any[] }[] = []
@@ -121,8 +121,7 @@ export class HistoryPage {
   }
 
   changeUnit() {
-    let units: string[] = this.wallet.getUnits()
-    this.currentUnit = units[(units.indexOf(this.currentUnit)+1)%units.length]
+    this.currentUnit = this.wallet.changePreferredUnit()
   }
 
   showTx(txid: string) {

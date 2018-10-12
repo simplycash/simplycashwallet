@@ -1,5 +1,6 @@
 {
-  "SMALL_UNIT": "unit",
+  "SHARE": "share",
+  "CRYPTO_UNIT": "unit",
   "PROTECTION": "protection",
   "OFF": "off",
   "PIN": "PIN",

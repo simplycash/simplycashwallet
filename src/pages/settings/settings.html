@@ -10,9 +10,9 @@
       {{ 'SEND' | translate }}
     </ion-item>
     <ion-item>
-      <ion-label>{{ 'SMALL_UNIT' | translate }}</ion-label>
-      <ion-select [(ngModel)]="smallUnit" (ionChange)="setSmallUnit()">
-        <ion-option *ngFor="let su of supportedSmallUnits" [value]="su">{{ su }}</ion-option>
+      <ion-label>{{ 'CRYPTO_UNIT' | translate }}</ion-label>
+      <ion-select [(ngModel)]="cryptoUnit" (ionChange)="setCryptoUnit()">
+        <ion-option *ngFor="let su of supportedCryptoUnits" [value]="su">{{ su }}</ion-option>
       </ion-select>
     </ion-item>
     <ion-item>

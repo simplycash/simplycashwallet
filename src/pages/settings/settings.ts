@@ -15,8 +15,8 @@ import { Wallet } from '../../providers/providers'
   templateUrl: 'settings.html'
 })
 export class SettingsPage {
-  private smallUnit: string
-  private supportedSmallUnits: string[]
+  private cryptoUnit: string
+  private supportedCryptoUnits: string[]
   private currency: string
   private supportedCurrencies: string[]
   private protection: string
@@ -35,8 +35,8 @@ export class SettingsPage {
     public viewCtrl: ViewController,
     private wallet: Wallet
   ) {
-    this.smallUnit = this.wallet.getPreferredSmallUnit()
-    this.supportedSmallUnits = this.wallet.getSupportedSmallUnits()
+    this.cryptoUnit = this.wallet.getPreferredCryptoUnit()
+    this.supportedCryptoUnits = this.wallet.getSupportedCryptoUnits()
     this.currency = this.wallet.getPreferredCurrency()
     this.supportedCurrencies = this.wallet.getSupportedCurrencies()
     this.protection = this.wallet.getPreferredProtection()
@@ -65,8 +65,8 @@ export class SettingsPage {
     this.app.getRootNav().push('MorePage')
   }
 
-  setSmallUnit() {
-    return this.wallet.setPreferredSmallUnit(this.smallUnit).catch((err: any) => {console.log(err)})
+  setCryptoUnit() {
+    return this.wallet.setPreferredCryptoUnit(this.cryptoUnit).catch((err: any) => {console.log(err)})
   }
 
   setCurrency() {
