@@ -70,6 +70,7 @@ export class Wallet {
       }[]
     },
     preference: {
+      showBalance: boolean,
       unitIndex: number,
       cryptoUnit: string,
       currency: string,
@@ -79,6 +80,7 @@ export class Wallet {
     }
   }
   private defaultPreference: any = {
+    showBalance: true,
     unitIndex: 0,
     cryptoUnit: 'BCH',
     currency: 'USD',
@@ -315,6 +317,16 @@ export class Wallet {
   //   this.stored.preference.fingerprint = willEnable
   //   return await this.updateStorage()
   // }
+
+  //show balance
+  getShowBalance() {
+    return this.stored.preference.showBalance
+  }
+
+  setShowBalance(s: boolean) {
+    this.stored.preference.showBalance = s
+    return this.updateStorage()
+  }
 
   //unit
 

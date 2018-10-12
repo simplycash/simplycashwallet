@@ -1,7 +1,13 @@
 <ion-header no-border  [attr.transparent]="isTransparent ? '' : null">
 
   <ion-navbar color="primary">
-    <ion-title>simply cash</ion-title>
+    <ion-title *ngIf="!wallet.getShowBalance()" (click)="wallet.setShowBalance(true)">
+      simply cash
+    </ion-title>
+    <ion-title *ngIf="wallet.getShowBalance()" (click)="wallet.setShowBalance(false)">
+      {{ (wallet.getCacheBalance() | convertUnitPipe:wallet.getPreferredUnit():timestamp) || '--' }}
+      {{ wallet.getPreferredUnit() }}
+    </ion-title>
     <ion-buttons end>
       <button ion-button *ngIf="wallet.isConnecting() || wallet.isSyncing()">
         <ion-spinner color="light"></ion-spinner>
@@ -31,6 +37,7 @@
     </ion-item>
     <my-amount #myAmount label="{{ 'REQUEST_AMOUNT' | translate }}" (satoshisChange)="amountChange($event)"></my-amount>
   </ion-list>
+
   <div *ngIf="qrCodeURL" text-center>
     <img class="qrcode" [src]="qrCodeURL" (click)="share()"/>
   </div>

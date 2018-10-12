@@ -22,6 +22,7 @@ export class HomePage {
   private isSharing: boolean = false
 
   private updateCallback: Function
+  private priceCallback: Function
 
   private cameraAccess: boolean = false
   private pauseSub: any
@@ -38,6 +39,8 @@ export class HomePage {
   private firstTimeEnter: boolean = true
   private clipboardContent: string = ''
   private resumeSub: any
+
+  private timestamp: number
 
   constructor(
     public alertCtrl: AlertController,
@@ -60,6 +63,9 @@ export class HomePage {
     this.updateCallback = () => {
       this.refresh()
     }
+    this.priceCallback = () => {
+      this.timestamp = new Date().getTime()
+    }
     this.qrScanner.prepare().then((status: QRScannerStatus) => {
       if (status.authorized) {
         this.cameraAccess = true
@@ -72,6 +78,7 @@ export class HomePage {
 
   ionViewWillEnter() {
     this.wallet.subscribeUpdate(this.updateCallback)
+    this.wallet.subscribePrice(this.priceCallback)
     this.resumeSub = this.platform.resume.subscribe(() => {
       this.handleClipboard()
     })
@@ -87,6 +94,7 @@ export class HomePage {
 
   ionViewDidLeave() {
     this.wallet.unsubscribeUpdate(this.updateCallback)
+    this.wallet.unsubscribePrice(this.priceCallback)
     this.resumeSub.unsubscribe()
   }
 
@@ -387,7 +395,7 @@ export class HomePage {
         this.clipboardContent = content
       }
     }).catch((err: any) => {
-      
+
     })
   }
 
