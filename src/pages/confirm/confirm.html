@@ -62,7 +62,7 @@
     <ion-item>
       <ion-label stacked color="primary">{{ 'AMOUNT' | translate }}</ion-label>
       <ion-input
-        value="{{ info.satoshis | convertUnitPipe:unit }}"
+        value="{{ info.satoshis | convertUnitPipe:unit:timestamp }}"
         readonly></ion-input>
         <button ion-button outline item-end (click)="changeUnit()">
           {{ unit }}
@@ -72,7 +72,7 @@
     <ion-item>
       <ion-label stacked color="primary">{{ 'FEE' | translate }}</ion-label>
       <ion-input
-        value="{{ info.fee | convertUnitPipe:unit }}"
+        value="{{ info.fee | convertUnitPipe:unit:timestamp }}"
         readonly></ion-input>
     </ion-item>
 

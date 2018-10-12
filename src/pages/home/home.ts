@@ -79,6 +79,7 @@ export class HomePage {
   ionViewWillEnter() {
     this.wallet.subscribeUpdate(this.updateCallback)
     this.wallet.subscribePrice(this.priceCallback)
+    this.priceCallback()
     this.resumeSub = this.platform.resume.subscribe(() => {
       this.handleClipboard()
     })

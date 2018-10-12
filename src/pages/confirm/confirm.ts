@@ -15,6 +15,8 @@ export class ConfirmPage {
   private qrCodeURL: string
   private confirmBtnText: string
   private isReady: boolean = false
+  private timestamp: number
+  private priceCallback: Function
 
   constructor(
     public alertCtrl: AlertController,
@@ -32,10 +34,21 @@ export class ConfirmPage {
       this.confirmBtnText = 'BROADCAST'
     }
     this.isReady = true
+    this.priceCallback = () => {
+      this.timestamp = new Date().getTime()
+    }
   }
 
   ionViewCanLeave() {
     return this.isReady
+  }
+
+  ionViewWillEnter() {
+    this.wallet.subscribePrice(this.priceCallback)
+  }
+
+  ionViewDidLeave() {
+    this.wallet.unsubscribePrice(this.priceCallback)
   }
 
   changeUnit() {
