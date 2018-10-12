@@ -687,13 +687,14 @@ export class Wallet {
 
     let skipNotification: boolean = (allTxids.length === 0 && results[4].length > 1) || this.app.getRootNav().getActive().component.pageName === 'HistoryPage'
     if (!skipNotification) {
+      let unit: string = this.getPreferredUnit()
       newTxs.forEach((tx) => {
         if (tx.delta <= 0) {
           return
         }
         this.localNotifications.schedule({
           id: this.notificationId++,
-          text: `${this.translate.instant('RECEIVED')} ${this.convertUnit('SATS', 'BCH', tx.delta.toString()).replace(/\.?0+$/,'')} BCH`,
+          text: `${this.translate.instant('RECEIVED')} ${(this.convertUnit('SATS', unit, tx.delta.toString()) || '').replace(/\.?0+$/,'')} ${unit}`,
           data: { page: 'HistoryPage', navParams: {} },
           foreground: true // need to modify @ionic-native/local-notifications ILocalNotification interface
         })
