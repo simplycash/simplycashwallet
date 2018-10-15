@@ -85,7 +85,7 @@ export class Wallet {
     cryptoUnit: 'BCH',
     currency: 'USD',
     addressFormat: 'cashaddr',
-    pin: undefined,
+    pin: null,
     fingerprint: false
   }
 
@@ -135,7 +135,7 @@ export class Wallet {
   }
 
   getPreferredProtection() {
-    if (typeof this.stored.preference.pin !== 'undefined') {
+    if (this.stored.preference.pin !== null) {
       return 'PIN'
     }
     if (this.stored.preference.fingerprint === true) {
@@ -153,10 +153,10 @@ export class Wallet {
         await this.fingerprintNAPrompt()
         throw new Error('auth unavailable')
       }
-      this.stored.preference.pin = undefined
+      this.stored.preference.pin = null
       this.stored.preference.fingerprint = true
     } else if (p === 'OFF') {
-      this.stored.preference.pin = undefined
+      this.stored.preference.pin = null
       this.stored.preference.fingerprint = false
     }
     return await this.updateStorage()
@@ -567,7 +567,9 @@ export class Wallet {
       }
     }).then((value) => {
       Object.keys(this.defaultPreference).forEach((k) => {
-        value.preference[k] = value.preference[k] || this.defaultPreference[k]
+        if (typeof value.preference[k] === 'undefined') {
+          value.preference[k] = this.defaultPreference[k]
+        }
       })
       this.stored = value
       this.changeState(this.STATE.OFFLINE)
