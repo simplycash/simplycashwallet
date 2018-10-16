@@ -132,10 +132,4 @@ export class MorePage {
     this.iab.create('https://t.me/simplycashgroup', '_system')
   }
 
-  pushSendPage() {
-    this.navCtrl.push('SendPage', {
-      info: { outputs: [{ address: 'qr4ewh5fdsfn2k4extwlmkmm9wp0034k95s4rzr6xa' }] }
-    })
-  }
-
 }
