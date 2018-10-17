@@ -10,12 +10,12 @@ import { Wallet } from '../../providers/providers'
 export class MyAmountComponent {
   @Input() label: string
   @Input() placeholder: string
+  @Input() fixedAmount: string
   @Output() satoshisChange = new EventEmitter()
   @ViewChild('amount') amountEl
   @ViewChild('amount', { read: ElementRef }) amountElNative
 
   private inputEl: any
-  private amountSATOSHIS: string
   private touch: boolean = false
   private inputTouch: boolean = false
   private blurTimer: number
@@ -37,16 +37,29 @@ export class MyAmountComponent {
         if (!this.isTyping) {
           this.updateInputField()
         }
-        this.amountSATOSHIS = this.wallet.convertUnit(this.fromUnit, 'SATS', this.fromAmount) || '0'
-        this.satoshisChange.emit(parseFloat(this.amountSATOSHIS))
+        this.satoshisChange.emit(this.getSatoshis())
       }
     }
+  }
+
+  setFixedAmount(a: string) {
+    this.fixedAmount = a
+    this.fromUnit = 'SATS'
+    this.fromAmount = this.fixedAmount
+    this.updateInputField()
+    this.satoshisChange.emit(this.getSatoshis())
   }
 
   ngAfterViewInit() {
     this.inputEl = this.amountElNative.nativeElement.querySelector('input')
     this.wallet.subscribePreferredUnit(this.preferredUnitCallback)
     this.wallet.subscribePrice(this.priceCallback)
+    if (parseFloat(this.fixedAmount) >= 0) {
+      this.fromUnit = 'SATS'
+      this.fromAmount = this.fixedAmount
+      this.updateInputField()
+      this.satoshisChange.emit(this.getSatoshis())
+    }
   }
 
   ngOnDestroy() {
@@ -65,13 +78,9 @@ export class MyAmountComponent {
     }
     this.fromUnit = this.wallet.getPreferredUnit()
     if (this.inputEl.checkValidity()) {
-      this.fromAmount = undefined
-      this.amountSATOSHIS = undefined
-      this.satoshisChange.emit(undefined)
+      this.setFromAmount(undefined)
     } else {
-      this.fromAmount = '0'
-      this.amountSATOSHIS = '0'
-      this.satoshisChange.emit(0)
+      this.setFromAmount(0)
     }
   }
 
@@ -82,14 +91,10 @@ export class MyAmountComponent {
     }
     this.fromUnit = this.wallet.getPreferredUnit()
     if (this.amountEl.value.length === 0 && this.inputEl.checkValidity()) {
-      this.fromAmount = undefined
-      this.amountSATOSHIS = undefined
-      this.satoshisChange.emit(undefined)
+      this.setFromAmount(undefined)
       return
     }
-    this.fromAmount = '' + parseFloat(this.amountEl.value) || '0'
-    this.amountSATOSHIS = this.wallet.convertUnit(this.fromUnit, 'SATS', this.amountEl.value) || '0'
-    this.satoshisChange.emit(parseFloat(this.amountSATOSHIS))
+    this.setFromAmount(parseFloat(this.amountEl.value))
   }
 
   changeUnit() {
@@ -113,11 +118,22 @@ export class MyAmountComponent {
     }
   }
 
+  setFromAmount(a: number) {
+    if (typeof a === 'undefined') {
+      this.fromAmount = undefined
+    } else if (isNaN(a)) {
+      this.fromAmount = '0'
+    } else {
+      this.fromAmount = a.toString()
+    }
+    this.satoshisChange.emit(this.getSatoshis())
+  }
+
   getSatoshis() {
-    if (typeof this.amountSATOSHIS === 'undefined') {
+    if (typeof this.fromAmount === 'undefined') {
       return undefined
     }
-    return parseFloat(this.amountSATOSHIS)
+    return parseFloat(this.wallet.convertUnit(this.fromUnit, 'SATS', this.fromAmount)) || 0
   }
 
   setFocus() {

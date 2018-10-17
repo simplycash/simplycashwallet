@@ -1,4 +1,6 @@
 {
+  "Q_SEND_NOW": "現在發送？",
+  "Q_SEND_MAX_AMOUNT": "發送最大金額？",
   "NEXT": "下一步",
   "CLEAR": "清除",
   "COPIED_ADDRESS": "已複製的地址",

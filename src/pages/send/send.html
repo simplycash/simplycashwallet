@@ -53,13 +53,16 @@
         type="text"
         readonly></ion-input>
     </ion-item>
-    <my-amount #myAmount placeholder="{{ 'MAX_AMOUNT_HINT' | translate }}"></my-amount>
+    <my-amount
+      #myAmount
+      [fixedAmount]="outputSum > 0 ? outputSum.toString() : null"
+      placeholder="{{ 'MAX_AMOUNT_HINT' | translate }}"></my-amount>
   </ion-list>
 
   <div text-center>
-    <button ion-button clear icon-left (click)="sign()">
-      <ion-icon name="checkmark"></ion-icon>
-      {{ 'NEXT' | translate }}
+    <button ion-button clear icon-left (click)="send()" [disabled]="!canLeave || !wallet.isOnline()">
+      <ion-icon name="paper-plane"></ion-icon>
+      {{ 'SEND' | translate }}
     </button>
   </div>
 

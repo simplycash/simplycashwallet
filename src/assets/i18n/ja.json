@@ -1,4 +1,6 @@
 {
+  "Q_SEND_NOW": "今すぐ送信しますか？",
+  "Q_SEND_MAX_AMOUNT": "最大額を送信しますか？",
   "NEXT": "次へ",
   "CLEAR": "消去",
   "COPIED_ADDRESS": "コピーされたアドレス",

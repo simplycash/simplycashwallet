@@ -25,20 +25,12 @@
         readonly></ion-input>
     </ion-item>
 
-    <ion-item>
-      <ion-label stacked color="primary">{{ 'BALANCE' | translate }}</ion-label>
-      <ion-input
-        value="{{ balance | convertUnitPipe:unit }}"
-        readonly></ion-input>
-        <button ion-button outline item-end (click)="changeUnit()">
-          {{ unit }}
-        </button>
-    </ion-item>
+    <my-amount #myAmount label="{{ 'BALANCE' | translate }}"></my-amount>
 
   </ion-list>
 
   <div text-center>
-    <button ion-button clear (click)="sweep()" [disabled]="!isReady || !wallet.isOnline()">
+    <button ion-button clear (click)="sweep()" [disabled]="!canLeave || balance === 0 || !wallet.isOnline()">
       {{ 'SWEEP' | translate }}
     </button>
   </div>

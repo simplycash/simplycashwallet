@@ -5,11 +5,18 @@
     #amount
     type="number"
     [placeholder]="placeholder || ''"
+    [readonly]="fixedAmount ? '' : null"
     (input)="amountInput($event)"
     (ionChange)="amountChange($event)"
     (ionFocus)="isTyping = true"
-    (ionBlur)="isTyping = false"
-    clearInput=true></ion-input>
+    (ionBlur)="isTyping = false"></ion-input>
+    <button
+      *ngIf="!fixedAmount && isTyping"
+      ion-button clear item-end icon-only color="dark"
+      (touchstart)="clear()"
+      (mousedown)="clear()">
+      <ion-icon name="close"></ion-icon>
+    </button>
     <button ion-button outline item-end (click)="changeUnit()">
       {{ wallet.getPreferredUnit() }}
     </button>

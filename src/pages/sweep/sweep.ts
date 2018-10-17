@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, ViewChild } from '@angular/core';
 import { AlertController, IonicPage, LoadingController, NavController, NavParams } from 'ionic-angular';
 import { TranslateService } from '@ngx-translate/core';
 import { Wallet } from '../../providers/providers'
@@ -16,12 +16,12 @@ import { Wallet } from '../../providers/providers'
   templateUrl: 'sweep.html',
 })
 export class SweepPage {
-  private unit: string = this.wallet.getUnits()[0]
+  @ViewChild('myAmount') myAmountEl
   private wif: string
   private wifInfo: { address: string, balance: number, utxos: any[] }
   private address: string
   private balance: number
-  private isReady: boolean = false
+  private canLeave: boolean = true
 
   constructor(
     public alertCtrl: AlertController,
@@ -31,6 +31,10 @@ export class SweepPage {
     private translate: TranslateService,
     private wallet: Wallet
   ) {
+  }
+
+  ionViewCanLeave() {
+    return this.canLeave
   }
 
   async ionViewDidEnter() {
@@ -44,9 +48,7 @@ export class SweepPage {
       this.wifInfo = info
       this.address = info.address
       this.balance = info.balance
-      if (info.balance > 0) {
-        this.isReady = true
-      }
+      this.myAmountEl.setFixedAmount(this.balance.toString())
       await loader.dismiss()
     } catch (err) {
       console.log(err)
@@ -75,35 +77,29 @@ export class SweepPage {
     }
   }
 
-  changeUnit() {
-    let units = this.wallet.getUnits()
-    this.unit = units[(units.indexOf(this.unit)+1)%units.length]
+  async sweep() {
+    this.canLeave = false
+    await this.signAndBroadcast()
+    this.canLeave = true
   }
 
-  async sweep() {
-    this.isReady = false
+  async signAndBroadcast() {
+    let hex: string
     let loader = this.loadingCtrl.create({
       content: this.translate.instant('SIGNING')+"..."
     })
     await loader.present()
     try {
       let signedTx: any = await this.wallet.makeSweepTx(this.wif, this.wifInfo)
-      await loader.dismiss()
-      await this.navCtrl.push('ConfirmPage', {
-        info: Object.assign({
-          outputs: [{
-            address: this.wallet.convertAddress('legacy', this.wallet.getPreferredAddressFormat(), this.wallet.getCacheReceiveAddress()),
-            satoshis: 0
-          }],
-          sweep: true
-        }, signedTx)
-      })
+      hex = signedTx.hex
     } catch (err) {
-      console.log(err)
       await loader.dismiss()
+      console.log(err)
       let message: string
       if (err.message == 'not connected') {
         message = this.translate.instant('ERR_NOT_CONNECTED')
+      } else if (err.message == 'not enough fund') {
+        message = this.translate.instant('ERR_NOT_ENOUGH_FUND')
       } else {
         message = this.translate.instant('ERR_CREATE_TX_FAILED')
       }
@@ -113,8 +109,48 @@ export class SweepPage {
         message: message,
         buttons: ['ok']
       }).present()
+      return
     }
-    this.isReady = true
+    await this.broadcast(hex, loader)
+  }
+
+  async broadcast(hex: string, loader: any) {
+    try {
+      loader.setContent(this.translate.instant('BROADCASTING')+'...')
+      let txid: string = await this.wallet.broadcastTx(hex)
+      await loader.dismiss()
+      let successAlert = this.alertCtrl.create({
+        enableBackdropDismiss: false,
+        title: this.translate.instant('TX_COMPLETE'),
+        buttons: [{
+          text: 'ok',
+          handler: () => {
+            successAlert.dismiss().then(() => {
+              this.navCtrl.popToRoot()
+            })
+            return false
+          }
+        }]
+      })
+      await successAlert.present()
+    } catch (err) {
+      await loader.dismiss()
+      console.log(err)
+      let message: string
+      if (err.message == 'not connected') {
+        message = this.translate.instant('ERR_NOT_CONNECTED')
+      } else if (err.message == 'timeout') {
+        message = this.translate.instant('ERR_TIMEOUT')
+      } else {
+        message = this.translate.instant('ERR_INVALID_TX')
+      }
+      await this.alertCtrl.create({
+        enableBackdropDismiss: false,
+        title: this.translate.instant('ERROR'),
+        message: message,
+        buttons: ['ok']
+      }).present()
+    }
   }
 
 }

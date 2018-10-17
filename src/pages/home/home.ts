@@ -304,14 +304,9 @@ export class HomePage {
     if (info.outputs.length === 0) {
       return false
     }
-    if (info.outputs.map(output => output.satoshis).reduce((acc, curr) => acc + curr) > 0) {
-      await this.sign(info)
-    } else {
-      info.outputs = info.outputs.slice(0, 1)
-      await this.navCtrl.push('SendPage', {
-        info: info
-      })
-    }
+    await this.navCtrl.push('SendPage', {
+      info: info
+    })
     return true
   }
 
@@ -409,67 +404,5 @@ export class HomePage {
       this.clipboardContent = ''
     })
   }
-
-  async sign(info: any) {
-    try {
-      let satoshis: number = info.outputs.map(output => output.satoshis).reduce((acc, curr) => acc + curr)
-      if (satoshis > this.wallet.getCacheBalance()) {
-        throw new Error('not enough fund')
-      }
-      info.outputs = info.outputs.filter(output => output.satoshis > 0)
-      info.outputs.forEach((output) => {
-        if (typeof output.address !== 'undefined') {
-          let af: string = this.wallet.getAddressFormat(output.address)
-          if (typeof af === 'undefined') {
-            throw new Error('invalid address')
-          }
-          let legacyAddr: string = this.wallet.convertAddress(af, 'legacy', output.address)
-          output.script = this.wallet.scriptFromAddress(legacyAddr)
-        } else if (typeof output.script === 'undefined') {
-          throw new Error('invalid output')
-        }
-      })
-    } catch (err) {
-      console.log(err)
-      let errMessage = err.message
-      if (err.message === 'not enough fund') {
-        errMessage = this.translate.instant('ERR_NOT_ENOUGH_FUND')
-      } else if (err.message === 'invalid address') {
-        errMessage = this.translate.instant('ERR_INVALID_ADDR')
-      } else if (err.message === 'invalid output') {
-        errMessage = this.translate.instant('ERR_INVALID_OUTPUT')
-      }
-      this.alertCtrl.create({
-        enableBackdropDismiss: false,
-        title: this.translate.instant('ERROR'),
-        message: errMessage,
-        buttons: ['ok']
-      }).present()
-      return
-    }
-
-    let loader = this.loadingCtrl.create({
-      content: this.translate.instant('SIGNING')+'...'
-    })
-    await loader.present()
-
-    try {
-      let signedTx: { satoshis: number, hex: string, fee: number } = await this.wallet.makeSignedTx(info.outputs)
-      await loader.dismiss()
-      await this.navCtrl.push('ConfirmPage', {
-        info: Object.assign(info, signedTx)
-      })
-    } catch (err) {
-      console.log(err)
-      await loader.dismiss()
-      await this.alertCtrl.create({
-        enableBackdropDismiss: false,
-        title: this.translate.instant('ERROR'),
-        message: err.message,
-        buttons: ['ok']
-      }).present()
-    }
-  }
-
 
 }
