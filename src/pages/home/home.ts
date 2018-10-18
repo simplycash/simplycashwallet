@@ -264,7 +264,7 @@ export class HomePage {
   copyAddress() {
     let a: string = this.displayedAddress
     this.clipboard.copy(a).then(() => {
-      this.clipboardContent = a
+      this.handleClipboard()
     })
   }
 
@@ -386,6 +386,11 @@ export class HomePage {
   handleClipboard() {
     this.clipboard.paste().then((content: string) => {
       if (!content || typeof this.wallet.getRequestFromURL(content) === 'undefined') {
+        this.clipboardContent = ''
+        return
+      }
+      let af: string = this.wallet.getAddressFormat(content)
+      if (typeof af !== 'undefined' && this.wallet.isMyReceiveAddress(this.wallet.convertAddress(af, 'legacy', content))) {
         this.clipboardContent = ''
       } else {
         this.clipboardContent = content

@@ -43,8 +43,13 @@ export class MyAmountComponent {
   }
 
   setFixedAmount(a: string) {
-    this.fixedAmount = a
-    this.fromUnit = 'SATS'
+    if (typeof a === 'undefined') {
+      this.fixedAmount = undefined
+      this.fromUnit = undefined
+    } else {
+      this.fixedAmount = a
+      this.fromUnit = 'SATS'
+    }
     this.fromAmount = this.fixedAmount
     this.updateInputField()
     this.satoshisChange.emit(this.getSatoshis())

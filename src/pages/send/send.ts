@@ -1,7 +1,8 @@
 import { Component, ViewChild } from '@angular/core'
-import { AlertController, IonicPage, ModalController, NavController, NavParams, App, LoadingController, ToastController } from 'ionic-angular'
+import { AlertController, IonicPage, ModalController, NavController, NavParams, App, LoadingController, Platform, ToastController } from 'ionic-angular'
 import { TranslateService } from '@ngx-translate/core';
 import { Wallet } from '../../providers/providers'
+import { Clipboard } from '@ionic-native/clipboard'
 
 @IonicPage()
 @Component({
@@ -19,23 +20,43 @@ export class SendPage {
   private memoValue: string
   private rValue: string
   private outputSum: number
-  private canLeave: boolean = true
   private predefinedRecipient: boolean
+
+  private canLeave: boolean = true
+
+  private firstClipboardContent: string
+  private activeClipboardContent: string
+  private currentClipboardContent: string
+  private lastRawClipboardContent: string
+  private resumeSub: any
 
   constructor(
     public alertCtrl: AlertController,
     public navCtrl: NavController,
     private navParams: NavParams,
     public appCtrl: App,
+    private clipboard: Clipboard,
     public loadingCtrl: LoadingController,
     public modalCtrl: ModalController,
+    private platform: Platform,
     private translate: TranslateService,
     private wallet: Wallet
   ) {
-    this.info = this.navParams.get('info')
+    this.initPage(this.navParams.get('info'))
+  }
+
+  initPage(info: any) {
+    this.info = info
     if (typeof this.info === 'undefined') {
-      this.predefinedRecipient = false
       this.info = {}
+      this.predefinedRecipient = false
+      this.labelValue = undefined
+      this.messageValue = undefined
+      this.addressValue = undefined
+      this.merchantValue = undefined
+      this.memoValue = undefined
+      this.rValue = undefined
+      this.outputSum = undefined
     } else {
       this.predefinedRecipient = true
       this.labelValue = this.info.label
@@ -46,6 +67,21 @@ export class SendPage {
       this.rValue = this.info.r
       this.outputSum = this.info.outputs.map(o => o.satoshis).reduce((a, c) => a + c)
     }
+  }
+
+  ionViewDidLoad() {
+    if (this.outputSum > 0) {
+      this.myAmountEl.setFixedAmount(this.outputSum.toString())
+    } else {
+      this.myAmountEl.setFixedAmount(undefined)
+    }
+  }
+
+  ionViewWillEnter() {
+    this.resumeSub = this.platform.resume.subscribe(() => {
+      this.sp_handleClipboard()
+    })
+    this.sp_handleClipboard()
   }
 
   ionViewDidEnter() {
@@ -59,6 +95,10 @@ export class SendPage {
 
   ionViewCanLeave() {
     return this.canLeave
+  }
+
+  ionViewDidLeave() {
+    this.resumeSub.unsubscribe()
   }
 
   confirmSend() {
@@ -216,10 +256,15 @@ export class SendPage {
       return
     }
 
+    let txComplete: boolean = false
     if (this.info.bip70) {
-      await this.sendBIP70(loader)
+      txComplete = await this.sendBIP70(loader)
     } else {
-      await this.broadcast(loader)
+      txComplete = await this.broadcast(loader)
+    }
+
+    if (txComplete) {
+      await this.clipboard.copy('')
     }
 
   }
@@ -252,6 +297,7 @@ export class SendPage {
         }]
       })
       await successAlert.present()
+      return true
     } catch (err) {
       await loader.dismiss()
       console.log(err)
@@ -291,6 +337,7 @@ export class SendPage {
         }]
       })
       await successAlert.present()
+      return true
     } catch (err) {
       await loader.dismiss()
       console.log(err)
@@ -314,6 +361,97 @@ export class SendPage {
   resetForm() {
     this.addressEl.value = ''
     this.myAmountEl.clear()
+  }
+
+  sp_handleClipboard() {
+    if (!this.canLeave) {
+      return
+    }
+    this.canLeave = false
+    this.clipboard.paste().then((content: string) => {
+      if (typeof this.firstClipboardContent === 'undefined') {
+        this.firstClipboardContent = content
+      }
+      if (this.lastRawClipboardContent === content) {
+        return
+      }
+      this.lastRawClipboardContent = content
+      if (!content || typeof this.wallet.getRequestFromURL(content) === 'undefined') {
+        this.currentClipboardContent = ''
+        return
+      }
+      this.currentClipboardContent = content
+      if (
+        (typeof this.activeClipboardContent === 'undefined' && this.currentClipboardContent !== this.firstClipboardContent) ||
+        (typeof this.activeClipboardContent !== 'undefined' && this.currentClipboardContent !== this.activeClipboardContent)
+      ) {
+        this.activeClipboardContent = this.currentClipboardContent
+        this.initPage(undefined)
+        this.ionViewDidLoad()
+        return this.sp_handleURL(this.activeClipboardContent)
+      }
+    }).catch((err: any) => {
+
+    }).then((r: boolean) => {
+      this.canLeave = true
+    })
+  }
+
+  async sp_handleURL(url: string) {
+    let info: any = this.wallet.getRequestFromURL(url)
+    if (typeof info === 'undefined') {
+      return false
+    }
+    if (typeof info.url !== 'undefined') {
+      await this.sp_handleBIP70(info)
+      return true
+    } else {
+      return await this.sp_handleRequest(info)
+    }
+  }
+
+  async sp_handleRequest(info: any) {
+    if (info.outputs.length === 0) {
+      return false
+    }
+    this.initPage(info)
+    this.ionViewDidLoad()
+    this.ionViewDidEnter()
+    return true
+  }
+
+  async sp_handleBIP70(info: any) {
+    let loader = this.loadingCtrl.create({
+      content: this.translate.instant('LOADING')+'...'
+    })
+    await loader.present()
+    let request: any
+    let errMessage: string
+    try {
+      request = await this.wallet.getRequestFromMerchant(info.url)
+    } catch (err) {
+      console.log(err)
+      if (err.message === 'unsupported network') {
+        errMessage = this.translate.instant('ERR_UNSUPPORTED_NETWORK')
+      } else if (err.message === 'expired') {
+        errMessage = this.translate.instant('ERR_EXPIRED')
+      } else {
+        errMessage = this.translate.instant('ERR_GET_REQUEST_FAIlED')
+      }
+    }
+    await loader.dismiss()
+    if (typeof errMessage === 'undefined') {
+      return await this.sp_handleRequest(request)
+    } else {
+      this.alertCtrl.create({
+        enableBackdropDismiss: false,
+        title: this.translate.instant('ERROR'),
+        message: errMessage,
+        buttons: ['ok']
+      }).present()
+      // fallback
+      // this.sp_handleRequest(info)
+    }
   }
 
 }
