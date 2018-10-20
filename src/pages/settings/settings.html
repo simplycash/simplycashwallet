@@ -3,7 +3,7 @@
   <ion-list no-lines no-margin>
     <ion-item (click)="pushHistoryPage($event)">
       <ion-icon name="logo-bitcoin" item-end [attr.notify]="wallet.getUnseenTxids().length > 0 ? '' : null"></ion-icon>
-      {{ 'BALANCE' | translate }}
+      {{ 'HISTORY' | translate }}
     </ion-item>
     <ion-item (click)="pushSendPage($event)">
       <ion-icon name="paper-plane" item-end></ion-icon>
