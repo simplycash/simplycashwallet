@@ -27,6 +27,7 @@
     <ion-item>
       <ion-label stacked color="primary">{{ 'MY_BITCOIN_CASH_ADDRESS' | translate}}</ion-label>
       <ion-input
+        class="address"
         [value]="address | convertAddressPipe:wallet.getPreferredAddressFormat()"
         type="text"
         (ionChange)="addressChange($event)"
@@ -42,34 +43,41 @@
     <img class="qrcode" [src]="qrCodeURL" (click)="share()"/>
   </div>
 
-  <ion-toolbar class="connection-toolbar" *ngIf="wallet.isOffline()">
-    <p><ion-icon name="alert" color="danger"></ion-icon> {{ 'ERR_NOT_CONNECTED' | translate }}</p>
-    <ion-buttons end>
-      <button ion-button color="primary" (click)="reconnect($event)">{{ 'RETRY' | translate }}</button>
-    </ion-buttons>
-  </ion-toolbar>
+  <div class="custom-footer">
 
-  <div class="quick-send-toolbar" *ngIf="clipboardContent && !wallet.isOffline()">
-    <div class="quick-send-toolbar-title">{{ 'COPIED_ADDRESS' | translate }}</div>
-    <ion-toolbar>
-      <p style="word-break: break-all;">{{ clipboardContent }}</p>
+    <ion-toolbar *ngIf="wallet.isOffline() && !isTransparent">
+      <p><ion-icon name="alert" color="danger"></ion-icon> {{ 'ERR_NOT_CONNECTED' | translate }}</p>
       <ion-buttons end>
-        <button ion-button icon-left color="primary" (click)="quickSend()">
-          <ion-icon name="paper-plane"></ion-icon>
-          {{ 'SEND' | translate }}
-        </button>
-        <button ion-button icon-left color="primary" (click)="clearClipboard()">
-          <ion-icon name="close"></ion-icon>
-          {{ 'CLEAR' | translate }}
-        </button>
+        <button ion-button color="primary" (click)="reconnect($event)">{{ 'RETRY' | translate }}</button>
       </ion-buttons>
     </ion-toolbar>
-  </div>
 
-  <ion-fab class="camera-fab" [attr.elevated]="wallet.isOffline() || clipboardContent ? '' : null">
-    <button ion-fab (touchstart)="startScan()" (touchend)="stopScan()" [disabled]=isToggling>
+    <div class="quick-send-toolbar" *ngIf="clipboardContent && !wallet.isOffline()">
+      <div class="quick-send-toolbar-title">{{ 'COPIED_ADDRESS' | translate }}</div>
+      <ion-toolbar>
+        <p style="word-break: break-all;">{{ clipboardContent }}</p>
+        <ion-buttons end>
+          <button ion-button icon-left color="primary" (click)="quickSend()">
+            <ion-icon name="paper-plane"></ion-icon>
+            {{ 'SEND' | translate }}
+          </button>
+          <button ion-button icon-left color="primary" (click)="clearClipboard()">
+            <ion-icon name="close"></ion-icon>
+            {{ 'CLEAR' | translate }}
+          </button>
+        </ion-buttons>
+      </ion-toolbar>
+    </div>
+
+    <button
+      *ngIf="(!clipboardContent && !wallet.isOffline()) || isTransparent"
+      color="light" class="camera-btn" ion-button full icon-only
+      (touchstart)="startScan()"
+      (touchend)="stopScan()"
+      [disabled]=isToggling>
       <ion-icon name="camera"></ion-icon>
     </button>
-  </ion-fab>
+
+  </div>
 
 </ion-content>

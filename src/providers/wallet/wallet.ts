@@ -19,6 +19,7 @@ import { Buffer } from 'buffer'
 
 @Injectable()
 export class Wallet {
+  private DUMMY_KEY: string = 'well... at least better than plain text ¯\\_(ツ)_/¯'
   private STATE: any = Object.freeze({ CLOSED: 1, OFFLINE: 2, CONNECTING: 3, CONNECTED: 4, SYNCING: 5, SYNCED: 6 })
   private WALLET_KEY: string = '_wallet'
   private WS_URL: string = 'https://ws.simply.cash:3000'
@@ -43,7 +44,7 @@ export class Wallet {
 
   private stored: {
     keys: {
-      mnemonic: string,
+      encMnemonic: string,
       xpub: string
     },
     addresses: {
@@ -523,9 +524,14 @@ export class Wallet {
     let hdPublicKey: bitcoincash.HDPublicKey = hdPrivateKey.hdPublicKey
     let xpub: string = hdPublicKey.toString()
     let addresses: any = this.generateAddresses(hdPrivateKey)
+
+    let cipher = crypto.createCipher('aes192', this.DUMMY_KEY)
+    let encrypted: string = cipher.update(mnemonic, 'utf8', 'hex')
+    encrypted += cipher.final('hex')
+
     return this.updateStorage({
       keys: {
-        mnemonic: mnemonic,
+        encMnemonic: encrypted,
         xpub: xpub,
       },
       addresses: addresses,
@@ -560,6 +566,14 @@ export class Wallet {
     return this.storage.get(this.WALLET_KEY).then((value) => {
       if (value) {
         console.log('wallet found in storage')
+        if (typeof value.keys.mnemonic !== 'undefined' && typeof value.keys.encMnemonic === 'undefined') {
+          let cipher = crypto.createCipher('aes192', this.DUMMY_KEY)
+          let encrypted: string = cipher.update(value.keys.mnemonic, 'utf8', 'hex')
+          encrypted += cipher.final('hex')
+          delete value.keys.mnemonic;
+          value.keys.encMnemonic = encrypted
+          return this.updateStorage(value)
+        }
         return value
       } else {
         console.log('nothing found in storage, will create new wallet')
@@ -589,15 +603,15 @@ export class Wallet {
     })
     this.socket.on('connect', async () => {
       try {
-        let challenge: any = await this.apiWS('challenge', {}, true)
-        let challengeBuffer: any = Buffer.from(challenge, 'hex')
-        let response: any = Buffer.alloc(2)
+        let challenge: any = await this.apiWS('challengev2', {}, true)
+        let challengeBuffer: any = Buffer.from(challenge.nonce, 'hex')
+        let response: any = Buffer.alloc(4)
         let x: string = ''
         let i: number = 0
-        while (true) {
-          response.writeUInt16LE(i)
-          x = crypto.createHash('sha256').update(challengeBuffer).update(response).digest('hex').slice(0, 3)
-          if (x === '000') {
+        while (i < 4294967296) {
+          response.writeUInt32LE(i)
+          x = crypto.createHash('sha256').update(challengeBuffer).update(response).digest('hex').slice(0, challenge.target.length)
+          if (x <= challenge.target) {
             break
           }
           if (++i % 100 === 0) {
@@ -1030,7 +1044,11 @@ export class Wallet {
 
   async getMnemonic() {
     // if (!this.isUsingFingerprint()) {
-      return this.stored.keys.mnemonic
+      let decipher = crypto.createDecipher('aes192', this.DUMMY_KEY)
+      let encrypted: string = this.stored.keys.encMnemonic
+      let decrypted: string = decipher.update(encrypted, 'hex', 'utf8')
+      decrypted += decipher.final('utf8')
+      return decrypted
     // }
     // try {
     //   return await this.keychainTouchId.verify('_mnemonic','')

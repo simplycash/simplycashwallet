@@ -55,19 +55,12 @@ page-home {
     text-align: center;
   }
   .address {
-    // margin: 20px 0;
-  }
-  .connection-toolbar {
-    position: fixed;
-    bottom: 0;
-    left: 0;
+    font-size: 1.2rem;
   }
 
   .quick-send-toolbar {
+    position: relative;
     width: 100%;
-    position: fixed;
-    bottom: 0;
-    left: 0;
   }
 
   .quick-send-toolbar-title {
@@ -76,16 +69,24 @@ page-home {
     padding-top: 14px;
   }
 
-  .camera-fab {
-    left: 15px;
-    bottom: 15px;
+  .camera-btn {
+    margin: 0;
+    min-height: 76px;
+    box-shadow: none;
   }
-  .camera-fab[elevated] {
-    bottom: 71px;
-  }
+
   .qrcode {
     width: 100%;
     max-width: 200px;
     box-shadow: 0 4px 6px 0 rgba(0, 0, 0, 0.14), 0 4px 5px rgba(0, 0, 0, 0.1);
+  }
+
+  .custom-footer {
+    left: 0;
+    bottom: 0;
+    position: absolute;
+    z-index: 10;
+    display: block;
+    width: 100%;
   }
 }

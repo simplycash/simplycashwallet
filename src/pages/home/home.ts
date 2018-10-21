@@ -158,6 +158,9 @@ export class HomePage {
       if (this.scanState !== 'stopped') {
         return
       }
+      if (typeof this.hint !== 'undefined') {
+        this.hint.dismiss()
+      }
       this.scanState = 'starting'
       this.scanBeginTime = new Date().getTime()
       let status: QRScannerStatus = await this.qrScanner.prepare()
@@ -219,9 +222,11 @@ export class HomePage {
       if (typeof this.hint === 'undefined') {
         this.hint = this.toastCtrl.create({
           message: this.translate.instant('CAMERA_BUTTON_HINT'),
-          position: 'middle'
+          position: 'middle',
+          dismissOnPageChange: true
         })
         this.hint.onWillDismiss(() => {
+          window.clearTimeout(this.hintTimer)
           this.hint = undefined
         })
         this.hint.present()
@@ -230,7 +235,7 @@ export class HomePage {
       }
       this.hintTimer = window.setTimeout(() => {
         this.hint.dismiss()
-      }, 2000)
+      }, 3000)
     }
     if (this.scanState === 'starting') {
       this.scanState = 'stopping'

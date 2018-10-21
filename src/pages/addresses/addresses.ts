@@ -1,6 +1,6 @@
 import { Component } from '@angular/core'
-import { IonicPage, NavController, NavParams } from 'ionic-angular'
-
+import { IonicPage, LoadingController, NavController, NavParams } from 'ionic-angular'
+import { TranslateService } from '@ngx-translate/core';
 import { Wallet } from '../../providers/providers'
 
 @IonicPage()
@@ -18,13 +18,19 @@ export class AddressesPage {
   private type: string = 'receive'
 
   constructor(
+    public loadingCtrl: LoadingController,
     public navCtrl: NavController,
     public navParams: NavParams,
+    private translate: TranslateService,
     private wallet: Wallet
   ) {
   }
 
-  ionViewDidLoad() {
+  async ionViewDidLoad() {
+    let loader = this.loadingCtrl.create({
+      content: this.translate.instant('LOADING_ADDRESSES')+'...'
+    })
+    await loader.present()
     this.currentReceiveAddr = this.wallet.getCacheReceiveAddress()
     this.currentChangeAddr = this.wallet.getCacheChangeAddress()
     this.receiveAddrs = this.wallet.getAllReceiveAddresses().map((addr: string, i: number, arr: string[]) => {
@@ -58,6 +64,7 @@ export class AddressesPage {
         item.address = this.wallet.convertAddress('legacy', 'cashaddr', item.address)
       })
     }
+    await loader.dismiss()
   }
 
   pushAddressPage(addr: any) {
