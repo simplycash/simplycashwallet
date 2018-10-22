@@ -624,11 +624,10 @@ export class Wallet {
         }, true)
         this.changeState(this.STATE.CONNECTED)
         let results: any[] = await Promise.all([
+          this.apiWS('price.subscribe').then((price) => {this.updatePrice(price)}),
           this.apiWS('address.subscribe'),
-          this.apiWS('price.subscribe'),
           this.syncEverything(true)
         ])
-        this.updatePrice(results[1])
       } catch (err) {
         console.log(err)
         this.socket.close()
