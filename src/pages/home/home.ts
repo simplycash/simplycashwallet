@@ -4,7 +4,7 @@ import { QRScanner, QRScannerStatus } from '@ionic-native/qr-scanner'
 import { SocialSharing } from '@ionic-native/social-sharing'
 import { StatusBar } from '@ionic-native/status-bar'
 import { Clipboard } from '@ionic-native/clipboard'
-// import { Keyboard } from '@ionic-native/keyboard'
+import { Keyboard } from '@ionic-native/keyboard'
 import { TranslateService } from '@ngx-translate/core';
 import { Wallet } from '../../providers/providers'
 
@@ -47,7 +47,7 @@ export class HomePage {
     private app: App,
     private ref: ChangeDetectorRef,
     private clipboard: Clipboard,
-    // private keyboard: Keyboard,
+    private keyboard: Keyboard,
     public loadingCtrl: LoadingController,
     public navCtrl: NavController,
     private ngZone: NgZone,

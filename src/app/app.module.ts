@@ -10,7 +10,7 @@ import { QRScanner } from '@ionic-native/qr-scanner';
 import { SocialSharing } from '@ionic-native/social-sharing';
 import { SplashScreen } from '@ionic-native/splash-screen';
 import { StatusBar } from '@ionic-native/status-bar';
-// import { Keyboard } from '@ionic-native/keyboard';
+import { Keyboard } from '@ionic-native/keyboard';
 import { IonicStorageModule, Storage } from '@ionic/storage';
 import { TranslateLoader, TranslateModule } from '@ngx-translate/core';
 import { TranslateHttpLoader } from '@ngx-translate/http-loader';
@@ -52,7 +52,7 @@ export function createTranslateLoader(http: HttpClient) {
     Globalization,
     InAppBrowser,
     FingerprintAIO,
-    // Keyboard,
+    Keyboard,
     LocalNotifications,
     QRScanner,
     SocialSharing,
