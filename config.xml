@@ -25,6 +25,7 @@
     <preference name="StatusBarBackgroundColor" value="#006944" />
     <preference name="StatusBarStyle" value="lightcontent" />
     <preference name="orientation" value="portrait" />
+    <preference name="KeyboardResize" value="false" />
     <platform name="android">
         <allow-intent href="market:*" />
         <icon density="ldpi" src="resources/android/icon/drawable-ldpi-icon.png" />

@@ -43,7 +43,7 @@
     <img class="qrcode" [src]="qrCodeURL" (click)="share()"/>
   </div>
 
-  <div class="custom-footer" *ngIf="!keyboard.isVisible">
+  <div class="custom-footer">
 
     <ion-toolbar *ngIf="wallet.isOffline() && !isTransparent">
       <p><ion-icon name="alert" color="danger"></ion-icon> {{ 'ERR_NOT_CONNECTED' | translate }}</p>
