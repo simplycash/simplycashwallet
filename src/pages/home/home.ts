@@ -412,6 +412,8 @@ export class HomePage {
   clearClipboard() {
     this.clipboard.copy('').then(() => {
       this.clipboardContent = ''
+    }).catch((err: any) => {
+
     })
   }
 
