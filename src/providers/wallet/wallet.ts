@@ -76,7 +76,7 @@ export class Wallet {
       cryptoUnit: string,
       currency: string,
       addressFormat: string,
-      pin: string,
+      pinHash: string,
       fingerprint: boolean
     }
   }
@@ -86,7 +86,7 @@ export class Wallet {
     cryptoUnit: 'BCH',
     currency: 'USD',
     addressFormat: 'cashaddr',
-    pin: null,
+    pinHash: null,
     fingerprint: false
   }
 
@@ -136,7 +136,7 @@ export class Wallet {
   }
 
   getPreferredProtection() {
-    if (this.stored.preference.pin !== null) {
+    if (this.stored.preference.pinHash !== null) {
       return 'PIN'
     }
     if (this.stored.preference.fingerprint === true) {
@@ -147,17 +147,20 @@ export class Wallet {
 
   async setPreferredProtection(p: string) {
     if (p === 'PIN') {
-      this.stored.preference.pin = await this.newPIN()
+      let plain = await this.newPIN()
+      let salt = crypto.randomBytes(16)
+      let hash = crypto.createHash('sha256').update(salt).update(plain, 'utf8').digest('hex')
+      this.stored.preference.pinHash = salt.toString('hex') + ':' + hash
       this.stored.preference.fingerprint = false
     } else if (p === 'FINGERPRINT') {
       if (!await this.canUseFingerprint()) {
         await this.fingerprintNAPrompt()
         throw new Error('auth unavailable')
       }
-      this.stored.preference.pin = null
+      this.stored.preference.pinHash = null
       this.stored.preference.fingerprint = true
     } else if (p === 'OFF') {
-      this.stored.preference.pin = null
+      this.stored.preference.pinHash = null
       this.stored.preference.fingerprint = false
     }
     return await this.updateStorage()
@@ -231,7 +234,11 @@ export class Wallet {
         },{
           text: 'ok',
           handler: data => {
-            if (data.pin === this.stored.preference.pin) {
+            let p = this.stored.preference.pinHash.split(':')
+            let salt = Buffer.from(p[0], 'hex')
+            let hash = crypto.createHash('sha256').update(salt).update(data.pin, 'utf8').digest('hex')
+            let r = p[0] + ':' + hash
+            if (r === this.stored.preference.pinHash) {
               pinAlert.dismiss().then(() => {
                 resolve()
               })
@@ -566,15 +573,32 @@ export class Wallet {
     return this.storage.get(this.WALLET_KEY).then((value) => {
       if (value) {
         console.log('wallet found in storage')
+        let willUpdate = false
         if (typeof value.keys.mnemonic !== 'undefined' && typeof value.keys.encMnemonic === 'undefined') {
           let cipher = crypto.createCipher('aes192', this.DUMMY_KEY)
           let encrypted: string = cipher.update(value.keys.mnemonic, 'utf8', 'hex')
           encrypted += cipher.final('hex')
           delete value.keys.mnemonic;
           value.keys.encMnemonic = encrypted
-          return this.updateStorage(value)
+          willUpdate = true
         }
-        return value
+        if (typeof value.preference.pin !== 'undefined' && typeof value.preference.pinHash === 'undefined') {
+          if (value.preference.pin === null) {
+            value.preference.pinHash = null
+          } else {
+            let plain = value.preference.pin
+            let salt = crypto.randomBytes(16)
+            let hash = crypto.createHash('sha256').update(salt).update(plain, 'utf8').digest('hex')
+            value.preference.pinHash = salt.toString('hex') + ':' + hash
+          }
+          delete value.preference.pin;
+          willUpdate = true
+        }
+        if (willUpdate) {
+          return this.updateStorage(value)
+        } else {
+          return value
+        }
       } else {
         console.log('nothing found in storage, will create new wallet')
         return this.createWallet()
