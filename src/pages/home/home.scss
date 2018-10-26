@@ -59,9 +59,11 @@ page-home {
   }
 
   .flex-container {
+    position: absolute;
+    height: 100%;
+    width: 100%
     display: flex;
     flex-direction: column;
-    height: 100%;
   }
 
   .quick-send-chip {
@@ -86,6 +88,8 @@ page-home {
 
   .send-btn {
     bottom: 15px;
+    right: 15px;
+    right: calc(15px + constant(safe-area-inset-right));
     right: calc(15px + env(safe-area-inset-right));
   }
 
