@@ -57,12 +57,6 @@
     </ion-toolbar>
   </div>
 
-  <ion-fab bottom right class="send-btn" [attr.elevated]="wallet.isOffline() ? '' : null">
-    <button ion-fab icon-only (click)="navCtrl.push('SendPage')">
-      <ion-icon name="paper-plane"></ion-icon>
-    </button>
-  </ion-fab>
-
   <ion-chip
     class="quick-send-chip"
     [attr.elevated]="wallet.isOffline() ? '' : null"

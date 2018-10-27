@@ -55,6 +55,11 @@ export class SettingsPage {
     this.app.getRootNav().push('HistoryPage')
   }
 
+  pushSendPage() {
+    this.viewCtrl.dismiss()
+    this.app.getRootNav().push('SendPage')
+  }
+
   pushMorePage() {
     this.viewCtrl.dismiss()
     this.app.getRootNav().push('MorePage')
