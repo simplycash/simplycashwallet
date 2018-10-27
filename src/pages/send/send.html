@@ -63,4 +63,8 @@
     </button>
   </div>
 
+  <div *ngIf="showQuickSendHint" class="quick-send-hint" padding>
+    {{ 'QUICK_SEND_HINT' | translate }}
+  </div>
+
 </ion-content>

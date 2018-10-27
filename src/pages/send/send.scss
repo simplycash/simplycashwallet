@@ -2,4 +2,10 @@ page-send {
   .align-center {
     text-align: center;
   }
+  .quick-send-hint {
+    color: #999999;
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+  }
 }

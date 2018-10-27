@@ -30,6 +30,8 @@ export class SendPage {
   private lastRawClipboardContent: string
   private resumeSub: any
 
+  private showQuickSendHint: boolean = false
+
   constructor(
     public alertCtrl: AlertController,
     public navCtrl: NavController,
@@ -385,6 +387,7 @@ export class SendPage {
         (typeof this.activeClipboardContent === 'undefined' && this.currentClipboardContent !== this.firstClipboardContent) ||
         (typeof this.activeClipboardContent !== 'undefined' && this.currentClipboardContent !== this.activeClipboardContent)
       ) {
+        this.showQuickSendHint = true
         this.activeClipboardContent = this.currentClipboardContent
         this.initPage(undefined)
         this.ionViewDidLoad()
