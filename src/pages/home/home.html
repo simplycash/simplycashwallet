@@ -5,7 +5,7 @@
       simply cash
     </ion-title>
     <ion-title *ngIf="wallet.getShowBalance()" (click)="wallet.setShowBalance(false)">
-      {{ (wallet.getCacheBalance() | convertUnitPipe:wallet.getPreferredUnit():timestamp) || '--' }}
+      {{ (wallet.getCacheBalance().toString() | convertUnitPipe:wallet.getPreferredUnit():'comma':timestamp) || '--' }}
       {{ wallet.getPreferredUnit() }}
     </ion-title>
     <ion-buttons end>

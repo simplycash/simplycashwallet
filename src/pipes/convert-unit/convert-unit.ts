@@ -15,6 +15,14 @@ export class ConvertUnitPipe implements PipeTransform {
     } else {
       result = this.wallet.convertUnit('SATS', args[0], amountSAT)
     }
-    return typeof result === 'undefined' ? '' : result
+    if (typeof result === 'undefined') {
+      return ''
+    }
+    if (args[1] === 'comma') {
+      let p = result.split('.')
+      p[0] = p[0].split('').reverse().join('').match(/\d{1,3}-?/g).join(',').split('').reverse().join('')
+      return p.join('.')
+    }
+    return result
   }
 }

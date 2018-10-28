@@ -31,10 +31,10 @@ export class HistoryPage {
     this.updateCallback = () => {
       this.refresh()
     }
+    this.wallet.subscribeUpdate(this.updateCallback)
   }
 
   ionViewDidLoad() {
-    this.wallet.subscribeUpdate(this.updateCallback)
     this.localNotifications.getAll().then((items: any) => {
       items.forEach((item: any) => {
         try {
