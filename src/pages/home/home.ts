@@ -5,7 +5,7 @@ import { SocialSharing } from '@ionic-native/social-sharing'
 import { StatusBar } from '@ionic-native/status-bar'
 import { Clipboard } from '@ionic-native/clipboard'
 // import { Keyboard } from '@ionic-native/keyboard'
-import { TranslateService } from '@ngx-translate/core';
+import { TranslateService } from '@ngx-translate/core'
 import { Wallet } from '../../providers/providers'
 
 @IonicPage()
@@ -35,6 +35,8 @@ export class HomePage {
 
   private hint: any
   private hintTimer: number
+  private copyToast: any
+  private copyToastTimer: number
 
   private firstTimeEnter: boolean = true
   private clipboardContent: string = ''
@@ -222,7 +224,7 @@ export class HomePage {
       if (typeof this.hint === 'undefined') {
         this.hint = this.toastCtrl.create({
           message: this.translate.instant('CAMERA_BUTTON_HINT'),
-          position: 'middle',
+          position: 'bottom',
           dismissOnPageChange: true
         })
         this.hint.onWillDismiss(() => {
@@ -269,7 +271,28 @@ export class HomePage {
   copyAddress() {
     let a: string = this.displayedAddress
     this.clipboard.copy(a).then(() => {
-      this.handleClipboard()
+      if (this.copyToast) {
+        window.clearTimeout(this.copyToastTimer)
+      } else {
+        this.copyToast = this.toastCtrl.create({
+          message: this.translate.instant('ADDRESS_COPIED'),
+          position: 'bottom',
+          dismissOnPageChange: true
+        })
+        this.copyToast.onWillDismiss(() => {
+          window.clearTimeout(this.copyToastTimer)
+          this.copyToast = undefined
+        })
+        this.copyToast.present()
+      }
+      this.copyToastTimer = window.setTimeout(() => {
+        this.copyToast.dismiss()
+      }, 1000)
+      // shortcut
+      this.clipboardContent = ''
+      // return this.handleClipboard()
+    }).catch((err: any) => {
+
     })
   }
 
