@@ -224,8 +224,9 @@ export class SendPage {
     }
 
     // authorize
+    let m: string
     try {
-      await this.wallet.authorize()
+      m = await this.wallet.authorize()
     } catch (err) {
       if (err.message !== 'cancelled') {
         console.log(err)
@@ -240,7 +241,7 @@ export class SendPage {
 
     //sign
     try {
-      let signedTx: { satoshis: number, hex: string, fee: number } = await this.wallet.makeSignedTx(this.info.outputs, drain)
+      let signedTx: { satoshis: number, hex: string, fee: number } = await this.wallet.makeSignedTx(this.info.outputs, drain, m)
       Object.assign(this.info, signedTx)
     } catch (err) {
       console.log(err)
@@ -266,7 +267,9 @@ export class SendPage {
     }
 
     if (txComplete) {
-      await this.clipboard.copy('')
+      await this.clipboard.copy('').catch((err: any) => {
+        
+      })
     }
 
   }

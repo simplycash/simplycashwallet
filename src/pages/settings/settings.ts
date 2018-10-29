@@ -78,8 +78,8 @@ export class SettingsPage {
       return
     }
     try {
-      await this.wallet.authorize()
-      await this.wallet.setPreferredProtection(this.protection)
+      let m: string = await this.wallet.authorize()
+      await this.wallet.setPreferredProtection(this.protection, m)
     } catch (err) {
       if (err.message !== 'cancelled') {
         console.log(err)

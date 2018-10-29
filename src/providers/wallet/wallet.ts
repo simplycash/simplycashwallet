@@ -7,6 +7,7 @@ import { TranslateService } from '@ngx-translate/core';
 import { AlertController, App, Events, LoadingController, Platform, ToastController } from 'ionic-angular'
 import { FingerprintAIO } from '@ionic-native/fingerprint-aio';
 import { LocalNotifications } from '@ionic-native/local-notifications'
+import { SplashScreen } from '@ionic-native/splash-screen'
 import 'rxjs/add/operator/timeout'
 import QRCode from 'qrcode'
 import * as bitcoincash from 'bitcoincashjs'
@@ -76,8 +77,10 @@ export class Wallet {
       cryptoUnit: string,
       currency: string,
       addressFormat: string,
+      password: boolean,
+      fingerprint: boolean,
       pinHash: string,
-      fingerprint: boolean
+      pin: string
     }
   }
   private defaultPreference: any = {
@@ -86,7 +89,7 @@ export class Wallet {
     cryptoUnit: 'BCH',
     currency: 'USD',
     addressFormat: 'cashaddr',
-    pinHash: null,
+    password: false,
     fingerprint: false
   }
 
@@ -99,6 +102,7 @@ export class Wallet {
     public loadingCtrl: LoadingController,
     private localNotifications: LocalNotifications,
     private platform: Platform,
+    private splashScreen: SplashScreen,
     public storage: Storage,
     private toastCtrl: ToastController,
     private translate: TranslateService
@@ -116,18 +120,18 @@ export class Wallet {
 
   //authorize
 
-  async authorize() {
+  async authorize(): Promise<string> {
     await this.delay(0)
     let p: string = this.getPreferredProtection()
     if (p === 'OFF') {
-
+      return this.getMnemonic()
     } else if (p === 'FINGERPRINT') {
       // intended
       if (await this.canUseFingerprint()) {
-        await this.authorizeFingerprint()
+        return await this.authorizeFingerprint()
       }
     } else if (p === 'PIN') {
-      await this.authorizePIN()
+      return await this.authorizePIN()
     }
   }
 
@@ -136,7 +140,7 @@ export class Wallet {
   }
 
   getPreferredProtection() {
-    if (this.stored.preference.pinHash !== null) {
+    if (this.stored.preference.password === true) {
       return 'PIN'
     }
     if (this.stored.preference.fingerprint === true) {
@@ -145,22 +149,32 @@ export class Wallet {
     return 'OFF'
   }
 
-  async setPreferredProtection(p: string) {
+  async setPreferredProtection(p: string, m: string) {
     if (p === 'PIN') {
-      let plain = await this.newPIN()
-      let salt = crypto.randomBytes(16)
-      let hash = crypto.createHash('sha256').update(salt).update(plain, 'utf8').digest('hex')
-      this.stored.preference.pinHash = salt.toString('hex') + ':' + hash
+      let pw = await this.newPIN()
+      let cipher = crypto.createCipher('aes192', pw)
+      let encrypted: string = cipher.update(m, 'utf8', 'hex')
+      encrypted += cipher.final('hex')
+      this.stored.keys.encMnemonic = encrypted
+      this.stored.preference.password = true
       this.stored.preference.fingerprint = false
     } else if (p === 'FINGERPRINT') {
       if (!await this.canUseFingerprint()) {
         await this.fingerprintNAPrompt()
         throw new Error('auth unavailable')
       }
-      this.stored.preference.pinHash = null
+      let cipher = crypto.createCipher('aes192', this.DUMMY_KEY)
+      let encrypted: string = cipher.update(m, 'utf8', 'hex')
+      encrypted += cipher.final('hex')
+      this.stored.keys.encMnemonic = encrypted
+      this.stored.preference.password = false
       this.stored.preference.fingerprint = true
     } else if (p === 'OFF') {
-      this.stored.preference.pinHash = null
+      let cipher = crypto.createCipher('aes192', this.DUMMY_KEY)
+      let encrypted: string = cipher.update(m, 'utf8', 'hex')
+      encrypted += cipher.final('hex')
+      this.stored.keys.encMnemonic = encrypted
+      this.stored.preference.password = false
       this.stored.preference.fingerprint = false
     }
     return await this.updateStorage()
@@ -213,7 +227,7 @@ export class Wallet {
     })
   }
 
-  authorizePIN() {
+  authorizePIN(): Promise<string> {
     return new Promise((resolve, reject) => {
       let pinAlert = this.alertCtrl.create({
         enableBackdropDismiss: false,
@@ -234,15 +248,13 @@ export class Wallet {
         },{
           text: 'ok',
           handler: data => {
-            let p = this.stored.preference.pinHash.split(':')
-            let salt = Buffer.from(p[0], 'hex')
-            let hash = crypto.createHash('sha256').update(salt).update(data.pin, 'utf8').digest('hex')
-            let r = p[0] + ':' + hash
-            if (r === this.stored.preference.pinHash) {
+            let m: string
+            try {
+              m = this.getMnemonic(data.pin)
               pinAlert.dismiss().then(() => {
-                resolve()
+                resolve(m)
               })
-            } else {
+            } catch (err) {
               this.alertCtrl.create({
                 enableBackdropDismiss: false,
                 title: this.translate.instant('ERROR'),
@@ -292,13 +304,15 @@ export class Wallet {
     })
   }
 
-  authorizeFingerprint() {
+  authorizeFingerprint(): Promise<string> {
     return this.faio.show({
       clientId: 'wallet owner',
       clientSecret: 'cash.simply.wallet.dummy.password', //Only necessary for Android
       disableBackup: false,  //Only for Android(optional)
       localizedFallbackTitle: 'PIN', //Only for iOS
       //localizedReason: 'Please authenticate' //Only for iOS
+    }).then(() => {
+      return this.getMnemonic()
     }).catch((err: any) => {
       throw new Error('cancelled')
     })
@@ -569,49 +583,100 @@ export class Wallet {
     })
   }
 
-  loadWalletFromStorage() {
-    return this.storage.get(this.WALLET_KEY).then((value) => {
-      if (value) {
-        console.log('wallet found in storage')
-        let willUpdate = false
-        if (typeof value.keys.mnemonic !== 'undefined' && typeof value.keys.encMnemonic === 'undefined') {
-          let cipher = crypto.createCipher('aes192', this.DUMMY_KEY)
-          let encrypted: string = cipher.update(value.keys.mnemonic, 'utf8', 'hex')
-          encrypted += cipher.final('hex')
-          delete value.keys.mnemonic;
-          value.keys.encMnemonic = encrypted
-          willUpdate = true
-        }
-        if (typeof value.preference.pin !== 'undefined' && typeof value.preference.pinHash === 'undefined') {
-          if (value.preference.pin === null) {
-            value.preference.pinHash = null
-          } else {
-            let plain = value.preference.pin
-            let salt = crypto.randomBytes(16)
-            let hash = crypto.createHash('sha256').update(salt).update(plain, 'utf8').digest('hex')
-            value.preference.pinHash = salt.toString('hex') + ':' + hash
-          }
-          delete value.preference.pin;
-          willUpdate = true
-        }
-        if (willUpdate) {
-          return this.updateStorage(value)
-        } else {
-          return value
-        }
-      } else {
-        console.log('nothing found in storage, will create new wallet')
-        return this.createWallet()
+  async loadWalletFromStorage() {
+    let value: any = await this.storage.get(this.WALLET_KEY)
+    if (!value) {
+      console.log('nothing found in storage, will create new wallet')
+      value = await this.createWallet()
+    } else {
+      console.log('wallet found in storage')
+      let willUpdate = false
+      if (value.keys.hasOwnProperty('mnemonic') && !value.keys.hasOwnProperty('encMnemonic')) {
+        let cipher = crypto.createCipher('aes192', this.DUMMY_KEY)
+        let encrypted: string = cipher.update(value.keys.mnemonic, 'utf8', 'hex')
+        encrypted += cipher.final('hex')
+        delete value.keys.mnemonic;
+        value.keys.encMnemonic = encrypted
+        willUpdate = true
       }
-    }).then((value) => {
-      Object.keys(this.defaultPreference).forEach((k) => {
-        if (typeof value.preference[k] === 'undefined') {
-          value.preference[k] = this.defaultPreference[k]
+      if (value.preference.hasOwnProperty('pin')) {
+        if (typeof value.preference.pin === 'undefined' || value.preference.pin === null) {
+          value.preference.password = false
+        } else {
+          let decipher = crypto.createDecipher('aes192', this.DUMMY_KEY)
+          let decrypted: string = decipher.update(value.keys.encMnemonic, 'hex', 'utf8')
+          decrypted += decipher.final('utf8')
+          let cipher = crypto.createCipher('aes192', value.preference.pin)
+          let encrypted: string = cipher.update(decrypted, 'utf8', 'hex')
+          encrypted += cipher.final('hex')
+          value.keys.encMnemonic = encrypted
+          value.preference.password = true
         }
-      })
-      this.stored = value
-      this.changeState(this.STATE.OFFLINE)
+        delete value.preference.pin;
+        willUpdate = true
+      }
+      if (value.preference.hasOwnProperty('pinHash')) {
+        if (typeof value.preference.pinHash === 'undefined' || value.preference.pinHash === null) {
+          value.preference.password = false
+        } else {
+          this.splashScreen.hide()
+          let pw = await new Promise((resolve, reject) => {
+            let pinAlert = this.alertCtrl.create({
+              enableBackdropDismiss: false,
+              title: 'PIN',
+              inputs: [{
+                name: 'pin',
+                type: 'password',
+                placeholder: this.translate.instant('ENTER_PIN')
+              }],
+              buttons: [{
+                text: 'ok',
+                handler: data => {
+                  let p = value.preference.pinHash.split(':')
+                  let salt = Buffer.from(p[0], 'hex')
+                  let hash = crypto.createHash('sha256').update(salt).update(data.pin, 'utf8').digest('hex')
+                  let r = p[0] + ':' + hash
+                  if (r === value.preference.pinHash) {
+                    pinAlert.dismiss().then(() => {
+                      resolve(data.pin)
+                    })
+                  } else {
+                    this.alertCtrl.create({
+                      enableBackdropDismiss: false,
+                      title: this.translate.instant('ERROR'),
+                      message: this.translate.instant('ERR_INCORRECT_PIN'),
+                      buttons: ['ok']
+                    }).present()
+                  }
+                  return false
+                }
+              }]
+            })
+            pinAlert.present()
+          })
+          let decipher = crypto.createDecipher('aes192', this.DUMMY_KEY)
+          let decrypted: string = decipher.update(value.keys.encMnemonic, 'hex', 'utf8')
+          decrypted += decipher.final('utf8')
+          let cipher = crypto.createCipher('aes192', pw)
+          let encrypted: string = cipher.update(decrypted, 'utf8', 'hex')
+          encrypted += cipher.final('hex')
+          value.keys.encMnemonic = encrypted
+          value.preference.password = true
+        }
+        delete value.preference.pinHash;
+        willUpdate = true
+      }
+      if (willUpdate) {
+        value = await this.updateStorage(value)
+      }
+    }
+    Object.keys(this.defaultPreference).forEach((k) => {
+      if (typeof value.preference[k] === 'undefined') {
+        value.preference[k] = this.defaultPreference[k]
+      }
     })
+    this.stored = value
+    this.changeState(this.STATE.OFFLINE)
   }
 
   tryToConnectAndSync() {
@@ -857,21 +922,21 @@ export class Wallet {
 
   async generateNewAddresses(pair: any) {
     let newAddresses: any = { receive: [], change: [] }
-    // let hdPublicKey: bitcoincash.HDPublicKey = this.getHDPublicKey()
-    // let d: bitcoincash.HDPublicKey[] = [hdPublicKey.derive(0), hdPublicKey.derive(1)]
 
     if (pair.receive === this.stored.addresses.receive.length - 1 && pair.change === this.stored.addresses.change.length - 1) {
         return newAddresses
     }
-    let hdPrivateKey: bitcoincash.HDPrivateKey = this.getHDPrivateKeyFromMnemonic(await this.getMnemonic())
-    let d: bitcoincash.HDPrivateKey[] = [hdPrivateKey.derive(0), hdPrivateKey.derive(1)]
+    let hdPublicKey: bitcoincash.HDPublicKey = this.getHDPublicKey()
+    let d: bitcoincash.HDPublicKey[] = [hdPublicKey.derive(0), hdPublicKey.derive(1)]
+    // let hdPrivateKey: bitcoincash.HDPrivateKey = this.getHDPrivateKeyFromMnemonic(this.getMnemonic())
+    // let d: bitcoincash.HDPrivateKey[] = [hdPrivateKey.derive(0), hdPrivateKey.derive(1)]
     for (let i = this.stored.addresses.receive.length; i <= pair.receive; i++) {
       await this.delay(0)
-      newAddresses.receive.push(d[0].derive(i).privateKey.toAddress().toString())
+      newAddresses.receive.push(d[0].derive(i).publicKey.toAddress().toString())
     }
     for (let i = this.stored.addresses.change.length; i <= pair.change; i++) {
       await this.delay(0)
-      newAddresses.change.push(d[1].derive(i).privateKey.toAddress().toString())
+      newAddresses.change.push(d[1].derive(i).publicKey.toAddress().toString())
     }
     return newAddresses
   }
@@ -1065,13 +1130,17 @@ export class Wallet {
     return this.stored.keys.xpub
   }
 
-  async getMnemonic() {
+  getMnemonic(password?: string) {
     // if (!this.isUsingFingerprint()) {
-      let decipher = crypto.createDecipher('aes192', this.DUMMY_KEY)
+      let decipher = crypto.createDecipher('aes192', password || this.DUMMY_KEY)
       let encrypted: string = this.stored.keys.encMnemonic
       let decrypted: string = decipher.update(encrypted, 'hex', 'utf8')
       decrypted += decipher.final('utf8')
-      return decrypted
+      if (this.validateMnemonic(decrypted)) {
+        return decrypted
+      } else {
+        throw new Error('invalid password')
+      }
     // }
     // try {
     //   return await this.keychainTouchId.verify('_mnemonic','')
@@ -1235,17 +1304,22 @@ export class Wallet {
     return  tx.inputAmount - tx.outputAmount
   }
 
-  async getRequiredKeys(utxos: any[]) {
-    let hdPrivateKey: bitcoincash.HDPrivateKey = this.getHDPrivateKeyFromMnemonic(await this.getMnemonic())
+  getRequiredKeys(utxos: any[], m: string): bitcoincash.PrivateKey[] {
+    let hdPrivateKey: bitcoincash.HDPrivateKey = this.getHDPrivateKeyFromMnemonic(m)
     let d: bitcoincash.HDPrivateKey[] = [hdPrivateKey.derive(0), hdPrivateKey.derive(1)]
     return utxos.map(utxo => d[utxo.path[0]].derive(utxo.path[1]).privateKey)
   }
 
   //tx
 
-  async makeSignedTx(outputs: { script: bitcoincash.Script, satoshis: number }[], drain?: boolean, availableUtxos?: any[], keys?: bitcoincash.PrivateKey[]) {
+  async makeSignedTx(outputs: { script: bitcoincash.Script, satoshis: number }[], drain: boolean, m: string) {
+    let au: any[] = this.getCacheUtxos()
+    let ak: bitcoincash.PrivateKey[] = this.getRequiredKeys(au, m)
+    return this._makeSignedTx(outputs, drain, au, ak)
+  }
+
+  async _makeSignedTx(outputs: { script: bitcoincash.Script, satoshis: number }[], drain: boolean, availableUtxos: any[], availableKeys: bitcoincash.PrivateKey[]) {
     let satoshis: number = drain ? undefined : outputs.map(output => output.satoshis).reduce((acc, curr) => acc + curr)
-    availableUtxos = availableUtxos || this.stored.cache.utxos
     if (availableUtxos.length === 0) {
       throw new Error('not enough fund')
     }
@@ -1314,7 +1388,7 @@ export class Wallet {
       if (changeAmount > 0) {
         ustx.fee(fee_tentative).change(this.stored.cache.changeAddress)
       }
-      hex_tentative = this.signTx(ustx, keys || await this.getRequiredKeys(utxos))
+      hex_tentative = this.signTx(ustx, availableKeys)
       let fee_required: number = hex_tentative.length / 2
       // console.log(fee_tentative)
       // console.log(fee_required)
@@ -1343,7 +1417,7 @@ export class Wallet {
       script: this.scriptFromAddress(this.stored.cache.receiveAddress),
       satoshis: 0
     }
-    return await this.makeSignedTx([output], true, info.utxos, keys)
+    return await this._makeSignedTx([output], true, info.utxos, keys)
   }
 
   signTx(ustx: bitcoincash.Transaction, keys: bitcoincash.PrivateKey[]) {
