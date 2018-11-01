@@ -22,6 +22,9 @@
   & + .nav-decor {
     background-color: transparent !important;
   }
+  .toolbar-ios ion-title {
+    padding: 0 80px 1px;
+  }
 }
 
 .platform-android page-home {
