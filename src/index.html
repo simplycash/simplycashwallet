@@ -3,7 +3,20 @@
 <head>
   <meta charset="UTF-8">
   <title>simply cash</title>
-  <meta name="viewport" content="viewport-fit=cover, width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="" id="viewport-meta-tag">
+  <script>
+    let adjustViewport = () => {
+      let MAX_WIDTH = 500
+      let viewport = document.getElementById('viewport-meta-tag')
+      if (screen.width > MAX_WIDTH) {
+        viewport.setAttribute("content", "viewport-fit=cover, width=" + MAX_WIDTH + ", user-scalable=no")
+      } else {
+        viewport.setAttribute("content", "viewport-fit=cover, width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no")
+      }
+    }
+    window.addEventListener('resize', adjustViewport)
+    adjustViewport()
+  </script>
   <meta name="format-detection" content="telephone=no">
   <meta name="msapplication-tap-highlight" content="no">
 
