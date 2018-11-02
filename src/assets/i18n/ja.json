@@ -1,4 +1,5 @@
 {
+  "CLIPBOARD_PERMISSION": "クリップボードのアクセスを許可してください",
   "BACK": "戻る",
   "ADDRESS_COPIED": "アドレスがコピーされました",
   "QUICK_SEND_HINT": "アドレスをコピーすると、ホームページにショートカットが表示されます",
