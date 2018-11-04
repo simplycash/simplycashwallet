@@ -1,7 +1,8 @@
 import { Component } from '@angular/core'
-import { IonicPage, NavController, NavParams, ToastController } from 'ionic-angular'
+import { IonicPage, NavController, NavParams, Platform, ToastController } from 'ionic-angular'
 import { InAppBrowser } from '@ionic-native/in-app-browser'
 import { Clipboard } from '@ionic-native/clipboard'
+import * as webClipboard from 'clipboard-polyfill'
 
 import { TranslateService } from '@ngx-translate/core'
 import { Wallet } from '../../providers/providers'
@@ -21,10 +22,21 @@ export class AddressPage {
     private iab: InAppBrowser,
     public navCtrl: NavController,
     public navParams: NavParams,
+    private platform: Platform,
     private toastCtrl: ToastController,
     private translate: TranslateService,
     private wallet: Wallet
   ) {
+    if (!this.platform.is('cordova')) {
+      this.clipboard = {
+        copy: (text) => {
+          return webClipboard.writeText(text)
+        },
+        paste: () => {
+          return Promise.reject(new Error('unsupported'))
+        }
+      }
+    }
     this.address = this.navParams.get('address')
     this.wallet.getQR(this.wallet.getPaymentRequestURL(this.address)).then((url: string) => {
       this.qrCodeURL = url

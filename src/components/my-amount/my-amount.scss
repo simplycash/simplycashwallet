@@ -1,5 +1,12 @@
-my-amount {
-
+.md my-amount button.custom-clear-btn {
+  margin: 0 8px 0 0 !important;
+  height: 100% !important;
+  width: 30px !important;
+}
+.ios my-amount button.custom-clear-btn {
+  margin: 0 !important;
+  height: 100% !important;
+  width: 30px !important;
 }
 .list-md > my-amount:last-child .item-block .item-inner {
   border-bottom: 0px;

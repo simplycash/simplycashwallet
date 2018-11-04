@@ -41,6 +41,7 @@
     "bs58": "^2.0.0",
     "buffer": "^5.1.0",
     "buffer-compare": "^1.0.0",
+    "clipboard-polyfill": "^2.7.0",
     "cordova-android": "6.4.0",
     "cordova-clipboard": "^1.2.1",
     "cordova-ios": "4.5.4",

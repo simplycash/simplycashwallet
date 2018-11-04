@@ -792,16 +792,26 @@ export class Wallet {
     let skipNotification: boolean = (allTxids.length === 0 && results[4].length > 1) || this.app.getRootNav().getActive().component.pageName === 'HistoryPage'
     if (!skipNotification) {
       let unit: string = this.getPreferredUnit()
+      let isCordova: boolean = this.platform.is('cordova')
       newTxs.forEach((tx) => {
         if (tx.delta <= 0) {
           return
         }
-        this.localNotifications.schedule({
-          id: this.notificationId++,
-          text: `${this.translate.instant('RECEIVED')} ${(this.convertUnit('SATS', unit, tx.delta.toString()) || '').replace(/\.?0+$/,'')} ${unit}`,
-          data: { page: 'HistoryPage', navParams: {} },
-          foreground: true // need to modify @ionic-native/local-notifications ILocalNotification interface
-        })
+        let msg: string = `${this.translate.instant('RECEIVED')} ${(this.convertUnit('SATS', unit, tx.delta.toString()) || '').replace(/\.?0+$/,'')} ${unit}`
+        if (isCordova) {
+          this.localNotifications.schedule({
+            id: this.notificationId++,
+            text: msg,
+            data: { page: 'HistoryPage', navParams: {} },
+            foreground: true // need to modify @ionic-native/local-notifications ILocalNotification interface
+          })
+        } else {
+          this.toastCtrl.create({
+            message: msg,
+            position: 'bottom',
+            duration: 3000
+          }).present()
+        }
       })
     }
 

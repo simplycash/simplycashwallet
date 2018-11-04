@@ -14,11 +14,12 @@
 // To declare rules for a specific mode, create a child rule
 // for the .md, .ios, or .wp mode classes. The mode class is
 // automatically applied to the <body> element in the app.
+
 ion-app {
   background-color: transparent !important;
 }
 
-.platform-android {
+ion-app.platform-android:not(.platform-mobileweb) {
   ion-header {
     padding-top: 20px;
     background-color: color($colors, primary);

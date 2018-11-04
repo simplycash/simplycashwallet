@@ -5,7 +5,7 @@
       <ion-icon name="logo-bitcoin" item-end [attr.notify]="wallet.getUnseenTxids().length > 0 ? '' : null"></ion-icon>
       {{ 'HISTORY' | translate }}
     </ion-item>
-    <ion-item (click)="pushSendPage($event)">
+    <ion-item (click)="pushSendPage($event)" *ngIf="platform.is('cordova')">
       <ion-icon name="paper-plane" item-end></ion-icon>
       {{ 'SEND' | translate }}
     </ion-item>

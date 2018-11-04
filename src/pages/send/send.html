@@ -29,6 +29,7 @@
         #address
         value="{{ addressValue }}"
         type="text"
+        (paste)="sp_handlePaste($event)"
         [readonly]="addressValue ? '' : null"
         [clearInput]="addressValue ? false : true"></ion-input>
     </ion-item>

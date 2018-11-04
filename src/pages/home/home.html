@@ -43,8 +43,22 @@
       <img *ngIf="qrCodeURL" class="qrcode" [src]="qrCodeURL" (click)="share()"/>
     </div>
 
-    <div class="camera-field" (touchstart)="startScan()" (touchend)="stopScan()">
+    <div *ngIf="!clipboardContent && platform.is('cordova')" class="camera-field" (touchstart)="startScan()" (touchend)="stopScan()">
       <ion-icon name="md-camera"></ion-icon>
+    </div>
+
+    <div *ngIf="clipboardContent && platform.is('cordova')" class="quick-send-chip-container">
+      <ion-chip class="quick-send-chip" (click)="quickSend()">
+        <ion-icon name="paper-plane"></ion-icon>
+        <ion-label>{{ 'COPIED_ADDRESS' | translate }}</ion-label>
+        <button ion-button clear color="primary" (click)="clearClipboard(); $event.stopPropagation()">
+          <ion-icon name="close"></ion-icon>
+        </button>
+      </ion-chip>
+    </div>
+
+    <div *ngIf="!platform.is('cordova')" class="send-field" (click)="navCtrl.push('SendPage')">
+      <ion-icon name="paper-plane"></ion-icon>
     </div>
   </div>
 
@@ -56,17 +70,5 @@
       </ion-buttons>
     </ion-toolbar>
   </div>
-
-  <ion-chip
-    class="quick-send-chip"
-    [attr.elevated]="wallet.isOffline() ? '' : null"
-    *ngIf="clipboardContent"
-    (click)="quickSend()">
-    <ion-icon name="paper-plane"></ion-icon>
-    <ion-label>{{ 'COPIED_ADDRESS' | translate }}</ion-label>
-    <button ion-button clear color="primary" (click)="clearClipboard(); $event.stopPropagation()">
-      <ion-icon name="close"></ion-icon>
-    </button>
-  </ion-chip>
 
 </ion-content>

@@ -12,6 +12,7 @@ import { Wallet } from '../providers/providers'
   (window as any).handleOpenURL_LastURL = url
 }
 
+window.location.hash = ''
 
 @Component({
   template: `<ion-nav #content [root]="rootPage"></ion-nav>`
@@ -37,25 +38,27 @@ export class MyApp {
       if (this.platform.is('android')) {
         this.statusBar.backgroundColorByHexString("#00000000");
       }
-      try {
-        this.localNotifications.on('click').subscribe((notification) => {
-          if (
-            this.app._appRoot._overlayPortal.getActive() ||
-            this.app._appRoot._loadingPortal.getActive() ||
-            this.app._appRoot._modalPortal.getActive() ||
-            this.app._appRoot._toastPortal.getActive()
-          ) {
-            return
-          }
-          let data: any = notification.data
-          if (data.page === 'HistoryPage' && this.navCtrl.getActive().component.pageName !== 'HistoryPage') {
-            this.ngZone.run(() => {
-              this.navCtrl.push('HistoryPage', data.navParams)
-            })
-          }
-        })
-      } catch (err) {
-        console.log(err)
+      if (this.platform.is('cordova')) {
+        try {
+          this.localNotifications.on('click').subscribe((notification) => {
+            if (
+              this.app._appRoot._overlayPortal.getActive() ||
+              this.app._appRoot._loadingPortal.getActive() ||
+              this.app._appRoot._modalPortal.getActive() ||
+              this.app._appRoot._toastPortal.getActive()
+            ) {
+              return
+            }
+            let data: any = notification.data
+            if (data.page === 'HistoryPage' && this.navCtrl.getActive().component.pageName !== 'HistoryPage') {
+              this.ngZone.run(() => {
+                this.navCtrl.push('HistoryPage', data.navParams)
+              })
+            }
+          })
+        } catch (err) {
+          console.log(err)
+        }
       }
       try {
         await this.initTranslate()
@@ -65,7 +68,9 @@ export class MyApp {
       try {
         await this.wallet.startWallet()
         await this.navCtrl.setRoot('HomePage')
-        this.splashScreen.hide()
+        if (this.platform.is('cordova')) {
+          this.splashScreen.hide()
+        }
       } catch (err) {
         console.log(err)
         this.alertCtrl.create({

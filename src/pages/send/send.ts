@@ -3,6 +3,7 @@ import { AlertController, IonicPage, ModalController, NavController, NavParams, 
 import { TranslateService } from '@ngx-translate/core';
 import { Wallet } from '../../providers/providers'
 import { Clipboard } from '@ionic-native/clipboard'
+import * as webClipboard from 'clipboard-polyfill'
 
 @IonicPage()
 @Component({
@@ -29,6 +30,7 @@ export class SendPage {
   private currentClipboardContent: string
   private lastRawClipboardContent: string
   private resumeSub: any
+  private focusEventListener: any
 
   private showQuickSendHint: boolean = false
 
@@ -44,6 +46,16 @@ export class SendPage {
     private translate: TranslateService,
     private wallet: Wallet
   ) {
+    if (!this.platform.is('cordova')) {
+      this.clipboard = {
+        copy: (text) => {
+          return webClipboard.writeText(text)
+        },
+        paste: () => {
+          return Promise.reject(new Error('unsupported'))
+        }
+      }
+    }
     this.initPage(this.navParams.get('info'))
   }
 
@@ -80,9 +92,16 @@ export class SendPage {
   }
 
   ionViewWillEnter() {
-    this.resumeSub = this.platform.resume.subscribe(() => {
-      this.sp_handleClipboard()
-    })
+    if (this.platform.is('cordova')) {
+      this.resumeSub = this.platform.resume.subscribe(() => {
+        this.sp_handleClipboard()
+      })
+    } else {
+      this.focusEventListener = () => {
+        this.sp_handleClipboard()
+      }
+      window.addEventListener('focus', this.focusEventListener)
+    }
     this.sp_handleClipboard()
   }
 
@@ -100,7 +119,11 @@ export class SendPage {
   }
 
   ionViewDidLeave() {
-    this.resumeSub.unsubscribe()
+    if (this.platform.is('cordova')) {
+      this.resumeSub.unsubscribe()
+    } else {
+      window.removeEventListener('focus', this.focusEventListener)
+    }
   }
 
   confirmSend() {
@@ -268,7 +291,7 @@ export class SendPage {
 
     if (txComplete) {
       await this.clipboard.copy('').catch((err: any) => {
-        
+
       })
     }
 
@@ -366,6 +389,13 @@ export class SendPage {
   resetForm() {
     this.addressEl.value = ''
     this.myAmountEl.clear()
+  }
+
+  sp_handlePaste(ev: any) {
+    let text: string = ev.clipboardData.getData('text')
+    if (typeof this.wallet.getAddressFormat(text) === 'undefined') {
+      this.sp_handleURL(text)
+    }
   }
 
   sp_handleClipboard() {

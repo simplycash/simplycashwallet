@@ -4,6 +4,7 @@ import { QRScanner, QRScannerStatus } from '@ionic-native/qr-scanner'
 import { SocialSharing } from '@ionic-native/social-sharing'
 import { StatusBar } from '@ionic-native/status-bar'
 import { Clipboard } from '@ionic-native/clipboard'
+import * as webClipboard from 'clipboard-polyfill'
 // import { Keyboard } from '@ionic-native/keyboard'
 import { TranslateService } from '@ngx-translate/core'
 import { Wallet } from '../../providers/providers'
@@ -41,6 +42,7 @@ export class HomePage {
   private firstTimeEnter: boolean = true
   private clipboardContent: string = ''
   private resumeSub: any
+  private focusEventListener: any
 
   private timestamp: number
 
@@ -68,23 +70,41 @@ export class HomePage {
     this.priceCallback = () => {
       this.timestamp = new Date().getTime()
     }
-    this.qrScanner.prepare().then((status: QRScannerStatus) => {
-      if (status.authorized) {
-        this.cameraAccess = true
-      }
-      return this.qrScanner.destroy()
-    }).catch((err: any) => {
+    if (this.platform.is('cordova')) {
+      this.qrScanner.prepare().then((status: QRScannerStatus) => {
+        if (status.authorized) {
+          this.cameraAccess = true
+        }
+        return this.qrScanner.destroy()
+      }).catch((err: any) => {
 
-    })
+      })
+    } else {
+      this.clipboard = {
+        copy: (text) => {
+          return webClipboard.writeText(text)
+        },
+        paste: () => {
+          return Promise.reject(new Error('unsupported'))
+        }
+      }
+    }
   }
 
   ionViewWillEnter() {
     this.wallet.subscribeUpdate(this.updateCallback)
     this.wallet.subscribePrice(this.priceCallback)
     this.priceCallback()
-    this.resumeSub = this.platform.resume.subscribe(() => {
-      this.handleClipboard()
-    })
+    if (this.platform.is('cordova')) {
+      this.resumeSub = this.platform.resume.subscribe(() => {
+        this.handleClipboard()
+      })
+    } else {
+      this.focusEventListener = () => {
+        this.handleClipboard()
+      }
+      window.addEventListener('focus', this.focusEventListener)
+    }
     this.handleClipboard()
   }
 
@@ -98,7 +118,11 @@ export class HomePage {
   ionViewDidLeave() {
     this.wallet.unsubscribeUpdate(this.updateCallback)
     this.wallet.unsubscribePrice(this.priceCallback)
-    this.resumeSub.unsubscribe()
+    if (this.platform.is('cordova')) {
+      this.resumeSub.unsubscribe()
+    } else {
+      window.removeEventListener('focus', this.focusEventListener)
+    }
   }
 
   ionViewWillUnload() {
@@ -130,7 +154,7 @@ export class HomePage {
   }
 
   async share() {
-    if (this.isSharing) {
+    if (this.isSharing || !this.platform.is('cordova')) {
       return
     }
     let message: string = `${this.translate.instant('MY_BITCOIN_CASH_ADDRESS')}:\n${this.displayedAddress}\n\n`
@@ -292,7 +316,7 @@ export class HomePage {
       this.clipboardContent = ''
       // return this.handleClipboard()
     }).catch((err: any) => {
-
+      console.log(err)
     })
   }
 

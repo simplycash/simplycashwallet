@@ -69,11 +69,15 @@ page-home {
     flex-direction: column;
   }
 
+  .quick-send-chip-container {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 50px;
+  }
+
   .quick-send-chip {
-    position: absolute;
-    bottom: 25px;
-    left: 50%;
-    transform: translate(-50%, 0);
     background-color: color($colors, light);
   }
 
@@ -87,6 +91,16 @@ page-home {
     justify-content: center;
     align-items: center;
     font-size: 2rem;
+    min-height: 50px;
+  }
+
+  .send-field {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 2rem;
+    min-height: 50px;
   }
 
   .send-btn {

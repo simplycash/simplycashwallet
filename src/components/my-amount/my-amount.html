@@ -12,6 +12,7 @@
     (ionBlur)="isTyping = false"></ion-input>
     <button
       *ngIf="!fixedAmount && isTyping"
+      class="custom-clear-btn"
       ion-button clear item-end icon-only color="dark"
       (touchstart)="clear()"
       (mousedown)="clear()">

@@ -1,6 +1,5 @@
 import { Component } from '@angular/core'
-import { AlertController, IonicPage, NavController } from 'ionic-angular'
-import { Clipboard } from '@ionic-native/clipboard'
+import { AlertController, IonicPage, NavController, Platform } from 'ionic-angular'
 import { InAppBrowser } from '@ionic-native/in-app-browser'
 import { LocalNotifications } from '@ionic-native/local-notifications'
 
@@ -22,10 +21,10 @@ export class HistoryPage {
 
   constructor(
     public alertCtrl: AlertController,
-    private clipboard: Clipboard,
     private iab: InAppBrowser,
     private localNotifications: LocalNotifications,
     public navCtrl: NavController,
+    private platform: Platform,
     private wallet: Wallet
   ) {
     this.updateCallback = () => {
@@ -35,22 +34,24 @@ export class HistoryPage {
   }
 
   ionViewDidLoad() {
-    this.localNotifications.getAll().then((items: any) => {
-      items.forEach((item: any) => {
-        try {
-          if (JSON.parse(item.data).page !== 'HistoryPage') {
+    if (this.platform.is('cordova')) {
+      this.localNotifications.getAll().then((items: any) => {
+        items.forEach((item: any) => {
+          try {
+            if (JSON.parse(item.data).page !== 'HistoryPage') {
+              return
+            }
+          } catch (err) {
             return
           }
-        } catch (err) {
-          return
-        }
-        this.localNotifications.clear(item.id).catch((err: any) => {
-          console.log(err)
+          this.localNotifications.clear(item.id).catch((err: any) => {
+            console.log(err)
+          })
         })
+      }).catch((err: any) => {
+        console.log(err)
       })
-    }).catch((err: any) => {
-      console.log(err)
-    })
+    }
   }
 
   ionViewDidLeave() {
@@ -114,10 +115,6 @@ export class HistoryPage {
   today() {
     let date: Date = new Date()
     return [date.getFullYear(), ('0'+(date.getMonth()+1)).slice(-2), ('0'+date.getDate()).slice(-2)].join('-')
-  }
-
-  copyToClipboard(txid: string) {
-    this.clipboard.copy(txid)
   }
 
   changeUnit() {

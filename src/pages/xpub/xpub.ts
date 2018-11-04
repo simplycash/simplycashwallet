@@ -1,6 +1,7 @@
 import { Component } from '@angular/core'
-import { IonicPage, NavController, NavParams } from 'ionic-angular'
+import { IonicPage, NavController, NavParams, Platform } from 'ionic-angular'
 import { Clipboard } from '@ionic-native/clipboard'
+import * as webClipboard from 'clipboard-polyfill'
 import { Wallet } from '../../providers/providers'
 
 /**
@@ -24,8 +25,19 @@ export class XpubPage {
     private clipboard: Clipboard,
     public navCtrl: NavController,
     public navParams: NavParams,
+    private platform: Platform,
     private wallet: Wallet
   ) {
+    if (!this.platform.is('cordova')) {
+      this.clipboard = {
+        copy: (text) => {
+          return webClipboard.writeText(text)
+        },
+        paste: () => {
+          return Promise.reject(new Error('unsupported'))
+        }
+      }
+    }
     this.refresh()
   }
 
