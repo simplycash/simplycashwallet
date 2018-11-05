@@ -23,13 +23,17 @@ export class Wallet {
   private DUMMY_KEY: string = 'well... at least better than plain text ¯\\_(ツ)_/¯'
   private STATE: any = Object.freeze({ CLOSED: 1, OFFLINE: 2, CONNECTING: 3, CONNECTED: 4, SYNCING: 5, SYNCED: 6 })
   private WALLET_KEY: string = '_wallet'
-  private WS_URL: string = 'https://ws.simply.cash:3000'
   private ADDRESS_LIMIT: number = 100
 
   private UNITS: { [key: string]: { rate: number, dp: number } } = {
-    'BCH': {rate: 1, dp: 8},
-    'BITS': {rate: 1e6, dp: 2},
-    'SATS': {rate: 1e8, dp: 0}
+    'BCH': { rate: 1, dp: 8 },
+    'BITS': { rate: 1e6, dp: 2 },
+    'SATS': { rate: 1e8, dp: 0 }
+  }
+
+  private CHAINS: { [key: string]: { wsURL: string } } = {
+    'ABC': { wsURL: 'https://abc.simply.cash:3000' },
+    'SV': { wsURL: 'https://sv.simply.cash:3000' }
   }
 
   private supportedAddressFormats: string[] = ['legacy', 'cashaddr', 'bitpay']
@@ -72,6 +76,7 @@ export class Wallet {
       }[]
     },
     preference: {
+      chain: string,
       showBalance: boolean,
       unitIndex: number,
       cryptoUnit: string,
@@ -84,6 +89,7 @@ export class Wallet {
     }
   }
   private defaultPreference: any = {
+    chain: 'ABC',
     showBalance: true,
     unitIndex: 0,
     cryptoUnit: 'BCH',
@@ -550,7 +556,7 @@ export class Wallet {
     let encrypted: string = cipher.update(mnemonic, 'utf8', 'hex')
     encrypted += cipher.final('hex')
 
-    return this.updateStorage({
+    let obj: any = {
       keys: {
         encMnemonic: encrypted,
         xpub: xpub,
@@ -563,7 +569,15 @@ export class Wallet {
         history: []
       },
       preference: Object.assign({}, this.defaultPreference)
-    }).then((value) => {
+    }
+
+    try {
+      obj.preference.chain = this.getPreferredChain()
+    } catch (err) {
+
+    }
+
+    return this.updateStorage(obj).then((value) => {
       console.log('successfully created new wallet')
       return value
     })
@@ -680,10 +694,7 @@ export class Wallet {
   }
 
   tryToConnectAndSync() {
-    this.socket = io(this.WS_URL, {
-      // query: {
-      //   xpub: this.stored.keys.xpub
-      // },
+    this.socket = io(this.CHAINS[this.getPreferredChain()].wsURL, {
       autoConnect: false,
       reconnection: true,
       reconnectionAttempts: 1,
@@ -767,14 +778,13 @@ export class Wallet {
     let targetAddresses: string[] = fullSync ? undefined : this.pendingAddresses.slice()
     this.pendingAddresses.length = 0
     let results: any[] = await Promise.all([
-      this.apiWS('finaladdresspair').then(result => this.generateNewAddresses(result)),
+      this.apiWS('finaladdresspair').then(result => this.syncAddresses(result)),
       this.apiWS('unusedreceiveaddress'),
       this.apiWS('unusedchangeaddress'),
       this.apiWS('utxos', { addresses: targetAddresses }),
       this.apiWS('history', { addresses: targetAddresses })
     ])
-    Array.prototype.push.apply(this.stored.addresses.receive, results[0].receive)
-    Array.prototype.push.apply(this.stored.addresses.change, results[0].change)
+
     if (!this.isMyReceiveAddress(results[1]) || !this.isMyChangeAddress(results[2])) {
       throw new Error('invalid address')
     }
@@ -930,8 +940,11 @@ export class Wallet {
     this.changeState(this.STATE.SYNCED)
   }
 
-  async generateNewAddresses(pair: any) {
+  async syncAddresses(pair: any) {
     let newAddresses: any = { receive: [], change: [] }
+
+    this.stored.addresses.receive.length = Math.min(pair.receive + 1, this.stored.addresses.receive.length)
+    this.stored.addresses.change.length = Math.min(pair.change + 1, this.stored.addresses.change.length)
 
     if (pair.receive === this.stored.addresses.receive.length - 1 && pair.change === this.stored.addresses.change.length - 1) {
         return newAddresses
@@ -948,6 +961,8 @@ export class Wallet {
       await this.delay(0)
       newAddresses.change.push(d[1].derive(i).publicKey.toAddress().toString())
     }
+    Array.prototype.push.apply(this.stored.addresses.receive, newAddresses.receive)
+    Array.prototype.push.apply(this.stored.addresses.change, newAddresses.change)
     return newAddresses
   }
 
@@ -1541,6 +1556,25 @@ export class Wallet {
     let paymentACK: any = PaymentACK.decode(response)
 
     return paymentACK.memo
+  }
+
+  //switch chain
+
+  getSupportedChains() {
+    return Object.keys(this.CHAINS)
+  }
+
+  getPreferredChain() {
+    return this.stored.preference.chain
+  }
+
+  async setPreferredChain(chain: string) {
+    this.closeWallet()
+    this.stored.preference.chain = chain
+    this.stored.cache.utxos = []
+    this.stored.cache.history = []
+    await this.updateStorage()
+    await this.startWallet()
   }
 
   //web socket

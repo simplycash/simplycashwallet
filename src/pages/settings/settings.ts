@@ -15,6 +15,8 @@ import { Wallet } from '../../providers/providers'
   templateUrl: 'settings.html'
 })
 export class SettingsPage {
+  private chain: string
+  private supportedChains: string[]
   private cryptoUnit: string
   private supportedCryptoUnits: string[]
   private currency: string
@@ -36,6 +38,8 @@ export class SettingsPage {
     public viewCtrl: ViewController,
     private wallet: Wallet
   ) {
+    this.chain = this.wallet.getPreferredChain()
+    this.supportedChains = this.wallet.getSupportedChains()
     this.cryptoUnit = this.wallet.getPreferredCryptoUnit()
     this.supportedCryptoUnits = this.wallet.getSupportedCryptoUnits()
     this.currency = this.wallet.getPreferredCurrency()
@@ -64,6 +68,10 @@ export class SettingsPage {
   pushMorePage() {
     this.viewCtrl.dismiss()
     this.app.getRootNav().push('MorePage')
+  }
+
+  setChain() {
+    return this.wallet.setPreferredChain(this.chain).catch((err: any) => {console.log(err)})
   }
 
   setCryptoUnit() {

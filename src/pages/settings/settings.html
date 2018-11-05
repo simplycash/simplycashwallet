@@ -10,6 +10,12 @@
       {{ 'SEND' | translate }}
     </ion-item>
     <ion-item>
+      <ion-label>{{ 'CHAIN' | translate }}</ion-label>
+      <ion-select [(ngModel)]="chain" (ionChange)="setChain()">
+        <ion-option *ngFor="let sc of supportedChains" [value]="sc">{{ sc }}</ion-option>
+      </ion-select>
+    </ion-item>
+    <ion-item>
       <ion-label>{{ 'CRYPTO_UNIT' | translate }}</ion-label>
       <ion-select [(ngModel)]="cryptoUnit" (ionChange)="setCryptoUnit()">
         <ion-option *ngFor="let su of supportedCryptoUnits" [value]="su">{{ su }}</ion-option>

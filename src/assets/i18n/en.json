@@ -1,4 +1,5 @@
 {
+  "CHAIN": "chain",
   "CLIPBOARD_PERMISSION": "please allow clipboard access",
   "BACK": "back",
   "ADDRESS_COPIED": "address copied",
