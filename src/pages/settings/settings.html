@@ -9,12 +9,12 @@
       <ion-icon name="paper-plane" item-end></ion-icon>
       {{ 'SEND' | translate }}
     </ion-item>
-    <ion-item>
+    <!-- <ion-item>
       <ion-label>{{ 'CHAIN' | translate }}</ion-label>
       <ion-select [(ngModel)]="chain" (ionChange)="setChain()">
         <ion-option *ngFor="let sc of supportedChains" [value]="sc">{{ sc }}</ion-option>
       </ion-select>
-    </ion-item>
+    </ion-item> -->
     <ion-item>
       <ion-label>{{ 'CRYPTO_UNIT' | translate }}</ion-label>
       <ion-select [(ngModel)]="cryptoUnit" (ionChange)="setCryptoUnit()">
@@ -38,10 +38,6 @@
       <ion-label>CashAddr</ion-label>
       <ion-toggle [(ngModel)]="useCashAddr" (ionChange)="setAddressFormat()"></ion-toggle>
     </ion-item>
-    <!-- <ion-item *ngIf="canUseFingerprint">
-      <ion-label>fingerprint</ion-label>
-      <ion-toggle [(ngModel)]="useFingerprint" (ionChange)="setFingerprint()"></ion-toggle>
-    </ion-item> -->
     <ion-item (click)="pushMorePage($event)">{{ 'MORE' | translate }}...</ion-item>
   </ion-list>
 

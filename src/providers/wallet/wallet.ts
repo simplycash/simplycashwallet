@@ -32,7 +32,7 @@ export class Wallet {
   }
 
   private CHAINS: { [key: string]: { wsURL: string } } = {
-    'ABC': { wsURL: 'https://abc.simply.cash:3000' },
+    'ABC': { wsURL: 'https://ws.simply.cash:3000' },
     'SV': { wsURL: 'https://sv.simply.cash:3000' }
   }
 
