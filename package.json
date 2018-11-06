@@ -23,7 +23,7 @@
     "@ionic-native/app-version": "^4.17.0",
     "@ionic-native/camera": "4.3.3",
     "@ionic-native/clipboard": "^4.5.3",
-    "@ionic-native/core": "4.4.0",
+    "@ionic-native/core": "^4.11.0",
     "@ionic-native/fingerprint-aio": "^4.9.0",
     "@ionic-native/globalization": "^4.7.0",
     "@ionic-native/in-app-browser": "^4.5.3",
@@ -75,7 +75,7 @@
     "node-forge": "^0.7.5",
     "protobufjs": "^6.8.6",
     "qrcode": "^1.2.0",
-    "rxjs": "5.5.2",
+    "rxjs": "^5.5.11",
     "socket.io-client": "^2.0.4",
     "sw-toolbox": "3.6.0",
     "zone.js": "0.8.18"
