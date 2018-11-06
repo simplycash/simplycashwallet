@@ -1,6 +1,7 @@
 import { HttpClient, HttpClientModule } from '@angular/common/http';
 import { ErrorHandler, NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
+import { AppVersion } from '@ionic-native/app-version';
 import { Clipboard } from '@ionic-native/clipboard';
 import { Globalization } from '@ionic-native/globalization';
 import { InAppBrowser } from '@ionic-native/in-app-browser';
@@ -48,6 +49,7 @@ export function createTranslateLoader(http: HttpClient) {
   ],
   providers: [
     Wallet,
+    AppVersion,
     Clipboard,
     Globalization,
     InAppBrowser,

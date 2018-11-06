@@ -20,6 +20,7 @@
     "@angular/http": "5.0.3",
     "@angular/platform-browser": "5.0.3",
     "@angular/platform-browser-dynamic": "5.0.3",
+    "@ionic-native/app-version": "^4.17.0",
     "@ionic-native/camera": "4.3.3",
     "@ionic-native/clipboard": "^4.5.3",
     "@ionic-native/core": "4.4.0",
@@ -46,6 +47,7 @@
     "cordova-clipboard": "^1.2.1",
     "cordova-ios": "4.5.4",
     "cordova-plugin-add-swift-support": "^1.7.2",
+    "cordova-plugin-app-version": "^0.1.9",
     "cordova-plugin-badge": "^0.8.7",
     "cordova-plugin-compat": "^1.2.0",
     "cordova-plugin-customurlscheme": "^4.3.0",
@@ -105,7 +107,8 @@
       "cordova-plugin-globalization": {},
       "cordova-plugin-fingerprint-aio": {
         "FACEID_USAGE_DESCRIPTION": " "
-      }
+      },
+      "cordova-plugin-app-version": {}
     },
     "platforms": [
       "android",

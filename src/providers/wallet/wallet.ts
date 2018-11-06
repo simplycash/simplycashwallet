@@ -3,9 +3,11 @@ import { HttpClient } from '@angular/common/http'
 import 'rxjs/add/operator/catch'
 import 'rxjs/add/operator/toPromise'
 import { Storage } from '@ionic/storage'
-import { TranslateService } from '@ngx-translate/core';
+import { TranslateService } from '@ngx-translate/core'
 import { AlertController, App, Events, LoadingController, Platform, ToastController } from 'ionic-angular'
-import { FingerprintAIO } from '@ionic-native/fingerprint-aio';
+import { AppVersion } from '@ionic-native/app-version'
+import { FingerprintAIO } from '@ionic-native/fingerprint-aio'
+import { InAppBrowser } from '@ionic-native/in-app-browser'
 import { LocalNotifications } from '@ionic-native/local-notifications'
 import { SplashScreen } from '@ionic-native/splash-screen'
 import 'rxjs/add/operator/timeout'
@@ -102,9 +104,11 @@ export class Wallet {
   constructor(
     public alertCtrl: AlertController,
     public app: App,
+    private appVersion: AppVersion,
     public events: Events,
     private http: HttpClient,
     private faio: FingerprintAIO,
+    private iab: InAppBrowser,
     public loadingCtrl: LoadingController,
     private localNotifications: LocalNotifications,
     private platform: Platform,
@@ -703,7 +707,9 @@ export class Wallet {
     })
     this.socket.on('connect', async () => {
       try {
-        let challenge: any = await this.apiWS('challengev2', {}, true)
+        let challenge: any = await this.apiWS('challengev2', {
+          version: this.platform.is('cordova') ? (await this.appVersion.getVersionNumber()) : undefined
+        }, true)
         let challengeBuffer: any = Buffer.from(challenge.nonce, 'hex')
         let response: any = Buffer.alloc(4)
         let x: string = ''
@@ -732,6 +738,9 @@ export class Wallet {
         console.log(err)
         this.socket.close()
         this.changeState(this.STATE.OFFLINE)
+        if (err.message === 'update') {
+          this.showUpdateAlert()
+        }
       }
     })
     let timer: number
@@ -1575,6 +1584,33 @@ export class Wallet {
     this.stored.cache.history = []
     await this.updateStorage()
     await this.startWallet()
+  }
+
+  //update alert
+
+  showUpdateAlert() {
+    if (!this.platform.is('cordova')) {
+      return
+    }
+    let updateAlert = this.alertCtrl.create({
+      enableBackdropDismiss: false,
+      title: this.translate.instant('PLEASE_UPDATE'),
+      buttons: [{
+        text: this.translate.instant('CANCEL')
+      },{
+        text: this.translate.instant('UPDATE'),
+        handler: () => {
+          let url: string
+          if (this.platform.is('android')) {
+            url = 'https://play.google.com/store/apps/details?id=cash.simply.wallet'
+          } else {
+            url = 'https://itunes.apple.com/app/id1398370340'
+          }
+          this.iab.create(url, '_system')
+        }
+      }]
+    })
+    updateAlert.present()
   }
 
   //web socket
