@@ -33,10 +33,11 @@ export class Wallet {
     'SATS': { rate: 1e8, dp: 0 }
   }
 
-  private CHAINS: { [key: string]: { wsURL: string } } = {
-    'ABC': { wsURL: 'https://ws.simply.cash:3000' },
-    'SV': { wsURL: 'https://sv.simply.cash:3000' }
-  }
+  private WS_URL: string = 'https://ws.simply.cash:3000'
+  // private CHAINS: { [key: string]: { wsURL: string } } = {
+  //   'ABC': { wsURL: 'https://abc.simply.cash:3000' },
+  //   'SV': { wsURL: 'https://sv.simply.cash:3000' }
+  // }
 
   private supportedAddressFormats: string[] = ['legacy', 'cashaddr', 'bitpay']
 
@@ -78,7 +79,7 @@ export class Wallet {
       }[]
     },
     preference: {
-      chain: string,
+      // chain: string,
       showBalance: boolean,
       unitIndex: number,
       cryptoUnit: string,
@@ -91,7 +92,7 @@ export class Wallet {
     }
   }
   private defaultPreference: any = {
-    chain: 'ABC',
+    // chain: 'ABC',
     showBalance: true,
     unitIndex: 0,
     cryptoUnit: 'BCH',
@@ -575,11 +576,11 @@ export class Wallet {
       preference: Object.assign({}, this.defaultPreference)
     }
 
-    try {
-      obj.preference.chain = this.getPreferredChain()
-    } catch (err) {
-
-    }
+    // try {
+    //   obj.preference.chain = this.getPreferredChain()
+    // } catch (err) {
+    //
+    // }
 
     return this.updateStorage(obj).then((value) => {
       console.log('successfully created new wallet')
@@ -684,6 +685,10 @@ export class Wallet {
         delete value.preference.pinHash;
         willUpdate = true
       }
+      if (value.preference.hasOwnProperty('chain')) {
+        delete (value.preference as any).chain
+        willUpdate = true
+      }
       if (willUpdate) {
         value = await this.updateStorage(value)
       }
@@ -698,7 +703,7 @@ export class Wallet {
   }
 
   tryToConnectAndSync() {
-    this.socket = io(this.CHAINS[this.getPreferredChain()].wsURL, {
+    this.socket = io(this.WS_URL, {
       autoConnect: false,
       reconnection: true,
       reconnectionAttempts: 1,
@@ -1569,22 +1574,22 @@ export class Wallet {
 
   //switch chain
 
-  getSupportedChains() {
-    return Object.keys(this.CHAINS)
-  }
-
-  getPreferredChain() {
-    return this.stored.preference.chain
-  }
-
-  async setPreferredChain(chain: string) {
-    this.closeWallet()
-    this.stored.preference.chain = chain
-    this.stored.cache.utxos = []
-    this.stored.cache.history = []
-    await this.updateStorage()
-    await this.startWallet()
-  }
+  // getSupportedChains() {
+  //   return Object.keys(this.CHAINS)
+  // }
+  //
+  // getPreferredChain() {
+  //   return this.stored.preference.chain
+  // }
+  //
+  // async setPreferredChain(chain: string) {
+  //   this.closeWallet()
+  //   this.stored.preference.chain = chain
+  //   this.stored.cache.utxos = []
+  //   this.stored.cache.history = []
+  //   await this.updateStorage()
+  //   await this.startWallet()
+  // }
 
   //update alert
 
