@@ -4,12 +4,17 @@ import { LocalNotifications } from '@ionic-native/local-notifications'
 import { SplashScreen } from '@ionic-native/splash-screen'
 import { StatusBar } from '@ionic-native/status-bar'
 import { TranslateService } from '@ngx-translate/core'
-import { AlertController, App, Config, NavController, Platform } from 'ionic-angular'
+import { AlertController, App, Config, LoadingController, NavController, Platform } from 'ionic-angular'
 
+import 'rxjs/add/operator/first'
 import { Wallet } from '../providers/providers'
 
 (window as any).handleOpenURL = (url: string) => {
   (window as any).handleOpenURL_LastURL = url
+}
+
+if (window.location.hash === '#/recover') {
+  (window as any).recoveryMode = true
 }
 
 window.location.hash = ''
@@ -26,6 +31,7 @@ export class MyApp {
     private app: App,
     private config: Config,
     private globalization: Globalization,
+    private loadingCtrl: LoadingController,
     private localNotifications: LocalNotifications,
     private ngZone: NgZone,
     private platform: Platform,
@@ -65,20 +71,25 @@ export class MyApp {
       } catch (err) {
         console.log(err)
       }
-      try {
-        await this.wallet.startWallet()
-        await this.navCtrl.setRoot('HomePage')
-        if (this.platform.is('cordova')) {
-          this.splashScreen.hide()
+      if (window.hasOwnProperty('recoveryMode')) {
+        delete (window as any).recoveryMode
+        await this.promptForMenmonic()
+      } else {
+        try {
+          await this.wallet.startWallet()
+          await this.navCtrl.setRoot('HomePage')
+          if (this.platform.is('cordova')) {
+            this.splashScreen.hide()
+          }
+        } catch (err) {
+          console.log(err)
+          this.alertCtrl.create({
+            enableBackdropDismiss: false,
+            title: this.translate.instant('ERROR'),
+            message: this.translate.instant('ERR_START_WALLET_FAILED'),
+            buttons: ['ok']
+          }).present()
         }
-      } catch (err) {
-        console.log(err)
-        this.alertCtrl.create({
-          enableBackdropDismiss: false,
-          title: this.translate.instant('ERROR'),
-          message: this.translate.instant('ERR_START_WALLET_FAILED'),
-          buttons: ['ok']
-        }).present()
       }
     })
   }
@@ -87,6 +98,7 @@ export class MyApp {
     this.translate.setDefaultLang('en')
     let browserLang: string
     let prefix: string
+    let lang: string
     if (this.platform.is('cordova')) {
       browserLang = (await this.globalization.getPreferredLanguage()).value || ''
     } else {
@@ -97,18 +109,102 @@ export class MyApp {
     if (browserLang && ['en', 'ja', 'zh'].indexOf(prefix) !== -1) {
       if (prefix === 'zh') {
         if (browserLang.match(/-TW|CHT|Hant|HK|yue/i)) {
-          this.translate.use('zh-cmn-Hant')
+          lang = 'zh-cmn-Hant'
         } else /*if (browserLang.match(/-CN|CHS|Hans/i))*/ {
-          this.translate.use('zh-cmn-Hans')
+          lang = 'zh-cmn-Hans'
         }
       } else {
-        this.translate.use(prefix)
+        lang = prefix
       }
     } else {
-      this.translate.use('en')
+      lang = 'en'
     }
+    await new Promise((resolve, reject) => {
+      this.translate.use(lang).first().subscribe(() => {
+        resolve()
+      })
+    })
     this.translate.get(['BACK']).subscribe(values => {
       this.config.set('ios', 'backButtonText', values.BACK)
+    })
+  }
+
+  // copied from more.ts, no cancel button
+  async promptForMenmonic() {
+    let recoverAlert = this.alertCtrl.create({
+      enableBackdropDismiss: false,
+      title: this.translate.instant('RECOVER_WALLET'),
+      message: `${this.translate.instant('RECOVERY_HINT')}<br>(${this.translate.instant('DERIVATION_PATH')}: m/44'/145'/0')`,
+      inputs: [{
+        name: 'mnemonic',
+        placeholder: this.translate.instant('RECOVERY_PHRASE')
+      }],
+      buttons: [/*{
+        text: this.translate.instant('CANCEL'),
+        handler: data => {}
+      },*/{
+        text: this.translate.instant('RECOVER'),
+        handler: data => {
+          if (this.mnemonicIsValid(data.mnemonic)) {
+            recoverAlert.dismiss().then(() => {
+              this.recover(data.mnemonic)
+            })
+          }
+          return false
+        }
+      }]
+    })
+    await recoverAlert.present()
+  }
+
+  // copied from more.ts
+  mnemonicIsValid(m: string) {
+    m = m.trim()
+    if (!this.wallet.validateMnemonic(m)) {
+      this.alertCtrl.create({
+        enableBackdropDismiss: false,
+        title: this.translate.instant('ERROR'),
+        message: this.translate.instant('ERR_INVALID_RECOVERY_PHRASE'),
+        buttons: ['ok']
+      }).present()
+      return false
+    } else {
+      return true
+    }
+  }
+
+  // copied from more.ts
+  async recover(m: string) {
+    m = m.trim()
+    let error: Error
+    let loader = this.loadingCtrl.create({
+      content: this.translate.instant('RECOVERING')+'...'
+    })
+    loader.present().then(() => {
+      return this.wallet.recoverWalletFromMnemonic(m)
+    }).then(() => {
+      return this.app.getRootNav().setRoot('HomePage')
+    }).catch((err: any) => {
+      console.log(err)
+      error = err
+    }).then(() => {
+      return loader.dismiss()
+    }).then(() => {
+      if (!error) {
+        this.alertCtrl.create({
+          enableBackdropDismiss: false,
+          title: this.translate.instant('SUCCESS'),
+          message: this.translate.instant('RECOVER_SUCCESS'),
+          buttons: ['ok']
+        }).present()
+      } else {
+        this.alertCtrl.create({
+          enableBackdropDismiss: false,
+          title: this.translate.instant('ERROR'),
+          message: this.translate.instant('RECOVER_FAILED'),
+          buttons: ['ok']
+        }).present()
+      }
     })
   }
 }
