@@ -95,7 +95,7 @@ export class ConfirmPage {
         title: this.translate.instant('TX_COMPLETE'),
         message: memo,
         buttons: [{
-          text: 'ok',
+          text: this.translate.instant('OK'),
           handler: () => {
             successAlert.dismiss().then(() => {
               this.navCtrl.popToRoot()
@@ -137,7 +137,7 @@ export class ConfirmPage {
         enableBackdropDismiss: false,
         title: this.translate.instant('TX_COMPLETE'),
         buttons: [{
-          text: 'ok',
+          text: this.translate.instant('OK'),
           handler: () => {
             successAlert.dismiss().then(() => {
               this.navCtrl.popToRoot()

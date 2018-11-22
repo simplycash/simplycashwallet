@@ -33,6 +33,7 @@ export class Wallet {
     'SATS': { rate: 1e8, dp: 0 }
   }
 
+  private ANNOUNCEMENT_URL: string = 'https://simply.cash/announcement.json'
   private WS_URL: string = 'https://ws.simply.cash:3000'
   // private CHAINS: { [key: string]: { wsURL: string } } = {
   //   'ABC': { wsURL: 'https://abc.simply.cash:3000' },
@@ -88,7 +89,8 @@ export class Wallet {
       password: boolean,
       fingerprint: boolean,
       pinHash: string,
-      pin: string
+      pin: string,
+      lastAnnouncement: string
     }
   }
   private defaultPreference: any = {
@@ -99,7 +101,8 @@ export class Wallet {
     currency: 'USD',
     addressFormat: 'cashaddr',
     password: false,
-    fingerprint: false
+    fingerprint: false,
+    lastAnnouncement: ''
   }
 
   constructor(
@@ -124,6 +127,7 @@ export class Wallet {
     this.platform.resume.subscribe(() =>{
       this.isPaused = false
       if (this.isOffline()) {
+        this.showAnnouncement()
         this.tryToConnectAndSync()
       }
     })
@@ -216,7 +220,7 @@ export class Wallet {
             return false
           }
         },{
-          text: 'ok',
+          text: this.translate.instant('OK'),
           handler: data => {
             if (data.pin1.length > 0 && data.pin1 === data.pin2) {
               pinAlert.dismiss().then(() => {
@@ -257,7 +261,7 @@ export class Wallet {
             return false
           }
         },{
-          text: 'ok',
+          text: this.translate.instant('OK'),
           handler: data => {
             let m: string
             try {
@@ -302,7 +306,7 @@ export class Wallet {
         title: this.translate.instant('ERROR'),
         message: this.translate.instant('ERR_AUTH_UNAVAILABLE'),
         buttons: [{
-          text: 'ok',
+          text: this.translate.instant('OK'),
           handler: data => {
             naAlert.dismiss().then(() => {
               resolve()
@@ -597,6 +601,7 @@ export class Wallet {
 
   startWallet() {
     return this.loadWalletFromStorage().then(() => {
+      this.showAnnouncement()
       this.tryToConnectAndSync() // hopefully will not throw error
       return // will not wait for connection
     })
@@ -649,7 +654,7 @@ export class Wallet {
                 placeholder: this.translate.instant('ENTER_PIN')
               }],
               buttons: [{
-                text: 'ok',
+                text: this.translate.instant('OK'),
                 handler: data => {
                   let p = value.preference.pinHash.split(':')
                   let salt = Buffer.from(p[0], 'hex')
@@ -700,6 +705,33 @@ export class Wallet {
     })
     this.stored = value
     this.changeState(this.STATE.OFFLINE)
+  }
+
+  async showAnnouncement() {
+    let ann: string
+    try {
+      ann = (await this.http.get(this.ANNOUNCEMENT_URL).toPromise())['en']
+    } catch (err) {
+      console.log(err)
+    }
+    if (!ann || this.stored.preference.lastAnnouncement === ann) {
+      return
+    }
+    let annAlert = this.alertCtrl.create({
+      enableBackdropDismiss: false,
+      title: this.translate.instant('ANNOUNCEMENT'),
+      message: ann,
+      buttons: [{
+        text: this.translate.instant('DO_NOT_SHOW_AGAIN'),
+        handler: () => {
+          this.stored.preference.lastAnnouncement = ann
+          this.updateStorage()
+        }
+      },{
+        text: this.translate.instant('OK')
+      }]
+    })
+    await annAlert.present()
   }
 
   tryToConnectAndSync() {

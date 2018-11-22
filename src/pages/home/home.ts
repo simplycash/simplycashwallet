@@ -176,6 +176,7 @@ export class HomePage {
   }
 
   reconnect(ev: any) {
+    this.wallet.showAnnouncement()
     this.wallet.tryToConnectAndSync()
   }
 

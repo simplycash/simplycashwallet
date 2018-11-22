@@ -63,7 +63,7 @@ export class SweepPage {
         title: this.translate.instant('ERROR'),
         message: message,
         buttons: [{
-          text: 'ok',
+          text: this.translate.instant('OK'),
           handler: () => {
             errorAlert.dismiss().then(() => {
               this.navCtrl.pop()
@@ -123,7 +123,7 @@ export class SweepPage {
         enableBackdropDismiss: false,
         title: this.translate.instant('TX_COMPLETE'),
         buttons: [{
-          text: 'ok',
+          text: this.translate.instant('OK'),
           handler: () => {
             successAlert.dismiss().then(() => {
               this.navCtrl.popToRoot()

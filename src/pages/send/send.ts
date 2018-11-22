@@ -136,7 +136,7 @@ export class SendPage {
           text: this.translate.instant('CANCEL')
         },
         {
-          text: 'ok',
+          text: this.translate.instant('OK'),
           handler: () => {
             ans = true
           }
@@ -159,7 +159,7 @@ export class SendPage {
           text: this.translate.instant('CANCEL')
         },
         {
-          text: 'ok',
+          text: this.translate.instant('OK'),
           handler: () => {
             ans = true
           }
@@ -315,7 +315,7 @@ export class SendPage {
         title: this.translate.instant('TX_COMPLETE'),
         message: memo,
         buttons: [{
-          text: 'ok',
+          text: this.translate.instant('OK'),
           handler: () => {
             successAlert.dismiss().then(() => {
               this.navCtrl.popToRoot()
@@ -355,7 +355,7 @@ export class SendPage {
         enableBackdropDismiss: false,
         title: this.translate.instant('TX_COMPLETE'),
         buttons: [{
-          text: 'ok',
+          text: this.translate.instant('OK'),
           handler: () => {
             successAlert.dismiss().then(() => {
               this.navCtrl.popToRoot()

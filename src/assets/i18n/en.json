@@ -1,4 +1,7 @@
 {
+  "ANNOUNCEMENT": "announcement",
+  "OK": "ok",
+  "DO_NOT_SHOW_AGAIN": "don't show again",
   "PLEASE_UPDATE": "please update to the latest version",
   "UPDATE": "update",
   "CHAIN": "chain",
