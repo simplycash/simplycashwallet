@@ -122,6 +122,6 @@ export class HistoryPage {
   }
 
   showTx(txid: string) {
-    this.iab.create('https://blockchair.com/bitcoin-cash/transaction/'+txid, '_system')
+    this.iab.create('https://bchsvexplorer.com/tx/'+txid, '_system')
   }
 }

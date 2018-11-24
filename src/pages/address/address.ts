@@ -69,7 +69,7 @@ export class AddressPage {
 
   viewOnBlockExplorer() {
     let cashAddr: string = this.wallet.convertAddress(undefined, 'cashaddr', this.address)
-    this.iab.create('https://blockchair.com/bitcoin-cash/address/'+cashAddr, '_system')
+    this.iab.create('https://bchsvexplorer.com/address/'+cashAddr, '_system')
   }
 
 }
