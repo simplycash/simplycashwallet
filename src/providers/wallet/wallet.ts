@@ -1506,6 +1506,9 @@ export class Wallet {
   // BIP70
 
   async getRequestFromMerchant(url: string) {
+    if (1 + 1 === 2) {
+      throw new Error('suspended')
+    }
     let p0: Promise<ArrayBuffer> = this.http.get(url, {
       headers: {
         'Accept': 'application/bitcoincash-paymentrequest'
