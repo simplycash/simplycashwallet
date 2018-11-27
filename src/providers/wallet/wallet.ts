@@ -35,10 +35,7 @@ export class Wallet {
 
   private ANNOUNCEMENT_URL: string = 'https://simply.cash/announcement.json'
   private WS_URL: string = 'https://ws.simply.cash:3000'
-  // private CHAINS: { [key: string]: { wsURL: string } } = {
-  //   'ABC': { wsURL: 'https://abc.simply.cash:3000' },
-  //   'SV': { wsURL: 'https://sv.simply.cash:3000' }
-  // }
+  private VERSION: string = '0.0.54'
 
   private supportedAddressFormats: string[] = ['legacy', 'cashaddr', 'bitpay']
 
@@ -80,7 +77,6 @@ export class Wallet {
       }[]
     },
     preference: {
-      // chain: string,
       showBalance: boolean,
       unitIndex: number,
       cryptoUnit: string,
@@ -712,7 +708,12 @@ export class Wallet {
   async showAnnouncement() {
     let ann: string
     try {
-      ann = (await this.http.get(this.ANNOUNCEMENT_URL).toPromise())['en']
+      let o = await this.http.get(this.ANNOUNCEMENT_URL, {
+        params: {
+          t: new Date().getTime().toString()
+        }
+      }).toPromise()
+      ann = (o[this.VERSION] || o['default'])['en']
     } catch (err) {
       console.log(err)
     }
@@ -747,7 +748,7 @@ export class Wallet {
     this.socket.on('connect', async () => {
       try {
         let challenge: any = await this.apiWS('challengev2', {
-          version: this.platform.is('cordova') ? (await this.appVersion.getVersionNumber()) : undefined
+          version: this.VERSION
         }, true)
         let challengeBuffer: any = Buffer.from(challenge.nonce, 'hex')
         let response: any = Buffer.alloc(4)
