@@ -28,7 +28,7 @@ export class Wallet {
   private ADDRESS_LIMIT: number = 100
 
   private UNITS: { [key: string]: { rate: number, dp: number } } = {
-    'BCH': { rate: 1, dp: 8 },
+    'BSV': { rate: 1, dp: 8 },
     'BITS': { rate: 1e6, dp: 2 },
     'SATS': { rate: 1e8, dp: 0 }
   }
@@ -97,7 +97,7 @@ export class Wallet {
     // chain: 'ABC',
     showBalance: true,
     unitIndex: 0,
-    cryptoUnit: 'BCH',
+    cryptoUnit: 'BSV',
     currency: 'USD',
     addressFormat: 'cashaddr',
     password: false,
@@ -1236,7 +1236,7 @@ export class Wallet {
     }
     let uri: string = 'bitcoincash:' + address
     if (sat) {
-      uri += '?amount=' + this.convertUnit('SATS', 'BCH', sat.toString()).replace(/\.?0+$/,'')
+      uri += '?amount=' + this.convertUnit('SATS', 'BSV', sat.toString()).replace(/\.?0+$/,'')
     }
     console.log(uri)
     return uri
@@ -1291,7 +1291,7 @@ export class Wallet {
     if (typeof params.amount !== 'undefined') {
       let amount: number = parseFloat(params.amount)
       if (amount > 0) {
-        satoshis = parseFloat(this.convertUnit('BCH', 'SATS', amount.toString()))
+        satoshis = parseFloat(this.convertUnit('BSV', 'SATS', amount.toString()))
       }
     }
     if (typeof params.r !== 'undefined') {

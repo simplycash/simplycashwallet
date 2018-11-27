@@ -113,7 +113,7 @@ export class MyAmountComponent {
       newValue = ''
     } else {
       newValue = this.wallet.convertUnit(this.fromUnit, unit, this.fromAmount) || '0'
-      if (unit === 'BCH') {
+      if (unit === 'BSV') {
         newValue = newValue.replace(/\.?0+$/,'')
       }
     }
