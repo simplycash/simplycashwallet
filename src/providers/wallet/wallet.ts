@@ -88,8 +88,6 @@ export class Wallet {
       addressFormat: string,
       password: boolean,
       fingerprint: boolean,
-      pinHash: string,
-      pin: string,
       lastAnnouncement: string
     }
   }
@@ -692,6 +690,10 @@ export class Wallet {
       }
       if (value.preference.hasOwnProperty('chain')) {
         delete (value.preference as any).chain
+        willUpdate = true
+      }
+      if (value.preference.cryptoUnit === 'BCH') {
+        value.preference.cryptoUnit = 'BSV'
         willUpdate = true
       }
       if (willUpdate) {
