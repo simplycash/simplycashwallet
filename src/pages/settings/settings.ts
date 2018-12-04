@@ -15,17 +15,13 @@ import { Wallet } from '../../providers/providers'
   templateUrl: 'settings.html'
 })
 export class SettingsPage {
-  // private chain: string
-  // private supportedChains: string[]
   private cryptoUnit: string
   private supportedCryptoUnits: string[]
   private currency: string
   private supportedCurrencies: string[]
   private protection: string
   private supportedProtections: string[]
-  private useCashAddr: boolean
-  // private canUseFingerprint: boolean = false
-  // private useFingerprint: boolean
+  // private useCashAddr: boolean
 
   constructor(
     public alertCtrl: AlertController,
@@ -38,21 +34,13 @@ export class SettingsPage {
     public viewCtrl: ViewController,
     private wallet: Wallet
   ) {
-    // this.chain = this.wallet.getPreferredChain()
-    // this.supportedChains = this.wallet.getSupportedChains()
     this.cryptoUnit = this.wallet.getPreferredCryptoUnit()
     this.supportedCryptoUnits = this.wallet.getSupportedCryptoUnits()
     this.currency = this.wallet.getPreferredCurrency()
     this.supportedCurrencies = this.wallet.getSupportedCurrencies()
     this.protection = this.wallet.getPreferredProtection()
     this.supportedProtections = this.wallet.getSupportedProtections()
-    this.useCashAddr = this.wallet.getPreferredAddressFormat() === 'cashaddr'
-    // this.useFingerprint = this.wallet.isUsingFingerprint()
-    // this.wallet.canUseFingerprint().then(() => {
-    //   this.canUseFingerprint = true
-    // }).catch((err: any) => {
-    //   this.canUseFingerprint = false
-    // })
+    // this.useCashAddr = this.wallet.getPreferredAddressFormat() === 'cashaddr'
   }
 
   pushHistoryPage() {
@@ -69,10 +57,6 @@ export class SettingsPage {
     this.viewCtrl.dismiss()
     this.app.getRootNav().push('MorePage')
   }
-
-  // setChain() {
-  //   return this.wallet.setPreferredChain(this.chain).catch((err: any) => {console.log(err)})
-  // }
 
   setCryptoUnit() {
     return this.wallet.setPreferredCryptoUnit(this.cryptoUnit).catch((err: any) => {console.log(err)})
@@ -97,48 +81,12 @@ export class SettingsPage {
     }
   }
 
-  setAddressFormat() {
-    if (this.useCashAddr) {
-      return this.wallet.setPreferredAddressFormat('cashaddr').catch((err: any) => {console.log(err)})
-    } else {
-      return this.wallet.setPreferredAddressFormat('legacy').catch((err: any) => {console.log(err)})
-    }
-  }
-
-  // setFingerprint() {
-  //   if (this.useFingerprint === this.wallet.isUsingFingerprint()) {
-  //     return
+  // setAddressFormat() {
+  //   if (this.useCashAddr) {
+  //     return this.wallet.setPreferredAddressFormat('cashaddr').catch((err: any) => {console.log(err)})
+  //   } else {
+  //     return this.wallet.setPreferredAddressFormat('legacy').catch((err: any) => {console.log(err)})
   //   }
-  //   if (!this.useFingerprint) {
-  //     return this.wallet.setUsingFingerprint(false).catch((err: any) => {
-  //       this.useFingerprint = this.wallet.isUsingFingerprint()
-  //     })
-  //   }
-  //   let reminderAlert = this.alertCtrl.create({
-  //     enableBackdropDismiss: false,
-  //     title: 'Warning!',
-  //     message: 'DO BACKUP YOUR RECOVERY PHRASE BEFORE ENABLING FINGERPRINT.<br>If for some reason the fingerprint data is lost or changed, you will need to recover this wallet using the recovery phrase.<br>The recovery phrase can be found in settings > more... > backup wallet',
-  //     buttons: [{
-  //       text: 'cancel',
-  //       handler: data => {
-  //         this.useFingerprint = false
-  //       }
-  //     },{
-  //       text: 'enable',
-  //       handler: data => {
-  //         reminderAlert.dismiss().then(() => {
-  //           this.wallet.setUsingFingerprint(true).catch((err: any) => {
-  //             // this.alertCtrl.create({
-  //             //   message: err
-  //             // }).present()
-  //             this.useFingerprint = this.wallet.isUsingFingerprint()
-  //           })
-  //         })
-  //         return false
-  //       }
-  //     }]
-  //   })
-  //   reminderAlert.present()
   // }
 
 }

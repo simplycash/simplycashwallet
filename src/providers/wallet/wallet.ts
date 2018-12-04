@@ -35,7 +35,7 @@ export class Wallet {
 
   private ANNOUNCEMENT_URL: string = 'https://simply.cash/announcement.json'
   private WS_URL: string = 'https://ws.simply.cash:3000'
-  private VERSION: string = '0.0.54'
+  private VERSION: string = '0.0.55'
 
   private supportedAddressFormats: string[] = ['legacy', 'cashaddr', 'bitpay']
 
@@ -88,12 +88,11 @@ export class Wallet {
     }
   }
   private defaultPreference: any = {
-    // chain: 'ABC',
     showBalance: true,
     unitIndex: 0,
     cryptoUnit: 'BSV',
     currency: 'USD',
-    addressFormat: 'cashaddr',
+    addressFormat: 'legacy',
     password: false,
     fingerprint: false,
     lastAnnouncement: ''
@@ -327,28 +326,6 @@ export class Wallet {
     })
   }
 
-  // async canUseFingerprint() {
-  //   return await this.keychainTouchId.isAvailable()
-  // }
-  //
-  // isUsingFingerprint() {
-  //   return this.stored.preference.fingerprint || false
-  // }
-  //
-  // async setUsingFingerprint(willEnable: boolean) {
-  //   if (this.isUsingFingerprint() === willEnable) {
-  //     return
-  //   }
-  //   if (willEnable) {
-  //     await this.keychainTouchId.save('_mnemonic', await this.getMnemonic())
-  //     this.stored.keys.mnemonic = ''
-  //   } else {
-  //     this.stored.keys.mnemonic = await this.getMnemonic()
-  //   }
-  //   this.stored.preference.fingerprint = willEnable
-  //   return await this.updateStorage()
-  // }
-
   //show balance
   getShowBalance() {
     return this.stored.preference.showBalance
@@ -574,12 +551,6 @@ export class Wallet {
       preference: Object.assign({}, this.defaultPreference)
     }
 
-    // try {
-    //   obj.preference.chain = this.getPreferredChain()
-    // } catch (err) {
-    //
-    // }
-
     return this.updateStorage(obj).then((value) => {
       console.log('successfully created new wallet')
       return value
@@ -692,6 +663,10 @@ export class Wallet {
         value.preference.cryptoUnit = 'BSV'
         willUpdate = true
       }
+      if (value.preference.addressFormat !== 'legacy') {
+        value.preference.addressFormat = 'legacy'
+        willUpdate = true
+      }
       if (willUpdate) {
         value = await this.updateStorage(value)
       }
@@ -708,11 +683,7 @@ export class Wallet {
   async showAnnouncement() {
     let ann: string
     try {
-      let o = await this.http.get(this.ANNOUNCEMENT_URL, {
-        params: {
-          t: new Date().getTime().toString()
-        }
-      }).toPromise()
+      let o = await this.http.get(this.ANNOUNCEMENT_URL).toPromise()
       ann = (o[this.VERSION] || o['default'])['en']
     } catch (err) {
       console.log(err)
@@ -1061,16 +1032,6 @@ export class Wallet {
     console.log('unsubscribePreferredUnit: '+result)
   }
 
-  subscribePreferredAddressFormat(callback: Function) {
-    this.events.subscribe('wallet:preferredaddressformat', callback)
-    console.log('subscribePreferredAddressFormat')
-  }
-
-  unsubscribePreferredAddressFormat(callback: Function) {
-    let result = this.events.unsubscribe('wallet:preferredaddressformat', callback)
-    console.log('unsubscribePreferredAddressFormat: '+result)
-  }
-
   //helper
 
   delay(ms: number) {
@@ -1205,7 +1166,6 @@ export class Wallet {
   }
 
   getMnemonic(password?: string) {
-    // if (!this.isUsingFingerprint()) {
       let decipher = crypto.createDecipher('aes192', password || this.DUMMY_KEY)
       let encrypted: string = this.stored.keys.encMnemonic
       let decrypted: string = decipher.update(encrypted, 'hex', 'utf8')
@@ -1215,20 +1175,6 @@ export class Wallet {
       } else {
         throw new Error('invalid password')
       }
-    // }
-    // try {
-    //   return await this.keychainTouchId.verify('_mnemonic','')
-    // } catch (err) {
-    //   if (err !== 'Cancelled') {
-    //     this.alertCtrl.create({
-    //       enableBackdropDismiss: false,
-    //       title: 'Error',
-    //       message: 'Fingerprint data is lost.<br>To recover this wallet, go to settings > more... > recover wallet',
-    //       buttons: ['ok']
-    //     }).present()
-    //   }
-    //   throw new Error('cancelled')
-    // }
   }
 
   getPaymentRequestURL(address: string, sat?: number) {
@@ -1609,25 +1555,6 @@ export class Wallet {
 
     return paymentACK.memo
   }
-
-  //switch chain
-
-  // getSupportedChains() {
-  //   return Object.keys(this.CHAINS)
-  // }
-  //
-  // getPreferredChain() {
-  //   return this.stored.preference.chain
-  // }
-  //
-  // async setPreferredChain(chain: string) {
-  //   this.closeWallet()
-  //   this.stored.preference.chain = chain
-  //   this.stored.cache.utxos = []
-  //   this.stored.cache.history = []
-  //   await this.updateStorage()
-  //   await this.startWallet()
-  // }
 
   //update alert
 

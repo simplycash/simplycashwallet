@@ -51,19 +51,19 @@ export class AddressesPage {
         balance: this.wallet.convertUnit('SATS', 'BSV', utxo.satoshis.toString())
       }
     })
-    if (this.wallet.getPreferredAddressFormat() === 'cashaddr') {
-      this.currentReceiveAddr = this.wallet.convertAddress('legacy', 'cashaddr', this.currentReceiveAddr)
-      this.currentChangeAddr = this.wallet.convertAddress('legacy', 'cashaddr', this.currentChangeAddr)
-      this.receiveAddrs.forEach((item: any) => {
-        item.address = this.wallet.convertAddress('legacy', 'cashaddr', item.address)
-      })
-      this.changeAddrs.forEach((item: any) => {
-        item.address = this.wallet.convertAddress('legacy', 'cashaddr', item.address)
-      })
-      this.unspentAddrs.forEach((item: any) => {
-        item.address = this.wallet.convertAddress('legacy', 'cashaddr', item.address)
-      })
-    }
+    // if (this.wallet.getPreferredAddressFormat() === 'cashaddr') {
+    //   this.currentReceiveAddr = this.wallet.convertAddress('legacy', 'cashaddr', this.currentReceiveAddr)
+    //   this.currentChangeAddr = this.wallet.convertAddress('legacy', 'cashaddr', this.currentChangeAddr)
+    //   this.receiveAddrs.forEach((item: any) => {
+    //     item.address = this.wallet.convertAddress('legacy', 'cashaddr', item.address)
+    //   })
+    //   this.changeAddrs.forEach((item: any) => {
+    //     item.address = this.wallet.convertAddress('legacy', 'cashaddr', item.address)
+    //   })
+    //   this.unspentAddrs.forEach((item: any) => {
+    //     item.address = this.wallet.convertAddress('legacy', 'cashaddr', item.address)
+    //   })
+    // }
     await loader.dismiss()
   }
 

@@ -34,10 +34,10 @@
         <ion-option *ngFor="let p of supportedProtections" [value]="p">{{ p | translate }}</ion-option>
       </ion-select>
     </ion-item>
-    <ion-item>
+    <!-- <ion-item>
       <ion-label>CashAddr</ion-label>
       <ion-toggle [(ngModel)]="useCashAddr" (ionChange)="setAddressFormat()"></ion-toggle>
-    </ion-item>
+    </ion-item> -->
     <ion-item (click)="pushMorePage($event)">{{ 'MORE' | translate }}...</ion-item>
   </ion-list>
 
