@@ -5,9 +5,9 @@
   <title>simply cash</title>
   <meta name="viewport" content="" id="viewport-meta-tag">
   <script>
-    let adjustViewport = () => {
-      let MAX_WIDTH = 500
-      let viewport = document.getElementById('viewport-meta-tag')
+    var adjustViewport = function() {
+      var MAX_WIDTH = 500
+      var viewport = document.getElementById('viewport-meta-tag')
       if (screen.width > MAX_WIDTH) {
         viewport.setAttribute("content", "viewport-fit=cover, width=" + MAX_WIDTH + ", user-scalable=no")
       } else {
