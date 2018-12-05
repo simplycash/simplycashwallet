@@ -402,8 +402,8 @@ export class SendPage {
     if (!this.canLeave) {
       return
     }
-    this.canLeave = false
     this.clipboard.paste().then((content: string) => {
+      this.canLeave = false
       if (typeof this.firstClipboardContent === 'undefined') {
         this.firstClipboardContent = content
       }
