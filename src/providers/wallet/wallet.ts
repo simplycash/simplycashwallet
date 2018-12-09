@@ -1203,8 +1203,11 @@ export class Wallet {
     let label: string
     let message: string
 
-    let missingPrefix: boolean = false
-    if (text.indexOf('bitcoincash:') !== 0) {
+    let missingPrefix: boolean
+    if (text.slice(0, 12).toLowerCase() === 'bitcoincash:') {
+      text = 'bitcoincash:' + text.slice(12)
+      missingPrefix = false
+    } else {
       text = 'bitcoincash:' + text
       missingPrefix = true
     }
