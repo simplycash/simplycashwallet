@@ -21,33 +21,33 @@ import { Buffer } from 'buffer'
 
 @Injectable()
 export class Wallet {
-  private DUMMY_KEY: string = 'well... at least better than plain text ¯\\_(ツ)_/¯'
-  private STATE: any = Object.freeze({ CLOSED: 1, OFFLINE: 2, CONNECTING: 3, CONNECTED: 4, SYNCING: 5, SYNCED: 6 })
-  private WALLET_KEY: string = '_wallet'
-  private ADDRESS_LIMIT: number = 100
+  public DUMMY_KEY: string = 'well... at least better than plain text ¯\\_(ツ)_/¯'
+  public STATE: any = Object.freeze({ CLOSED: 1, OFFLINE: 2, CONNECTING: 3, CONNECTED: 4, SYNCING: 5, SYNCED: 6 })
+  public WALLET_KEY: string = '_wallet'
+  public ADDRESS_LIMIT: number = 100
 
-  private UNITS: { [key: string]: { rate: number, dp: number } } = {
+  public UNITS: { [key: string]: { rate: number, dp: number } } = {
     'BSV': { rate: 1, dp: 8 },
     'BITS': { rate: 1e6, dp: 2 },
     'SATS': { rate: 1e8, dp: 0 }
   }
 
-  private ANNOUNCEMENT_URL: string = 'https://simply.cash/announcement.json'
-  private WS_URL: string = 'https://ws.simply.cash:3000'
-  private VERSION: string = '0.0.56'
+  public ANNOUNCEMENT_URL: string = 'https://simply.cash/announcement.json'
+  public WS_URL: string = 'https://ws.simply.cash:3000'
+  public VERSION: string = '0.0.56'
 
-  private supportedAddressFormats: string[] = ['legacy', 'cashaddr', 'bitpay']
+  public supportedAddressFormats: string[] = ['legacy', 'cashaddr', 'bitpay']
 
-  private isPaused: boolean = false
-  private socket: any
-  private socketRequestId: number = 0
+  public isPaused: boolean = false
+  public socket: any
+  public socketRequestId: number = 0
 
-  private state: number = this.STATE.CLOSED
-  private syncTaskId: number = 0
-  private pendingAddresses: string[] = []
-  private notificationId: number = 0
+  public state: number = this.STATE.CLOSED
+  public syncTaskId: number = 0
+  public pendingAddresses: string[] = []
+  public notificationId: number = 0
 
-  private stored: {
+  public stored: {
     keys: {
       encMnemonic: string,
       xpub: string
@@ -86,7 +86,7 @@ export class Wallet {
       lastAnnouncement: string
     }
   }
-  private defaultPreference: any = {
+  public defaultPreference: any = {
     showBalance: true,
     unitIndex: 0,
     cryptoUnit: 'BSV',
@@ -101,16 +101,16 @@ export class Wallet {
     public alertCtrl: AlertController,
     public app: App,
     public events: Events,
-    private http: HttpClient,
-    private faio: FingerprintAIO,
-    private iab: InAppBrowser,
+    public http: HttpClient,
+    public faio: FingerprintAIO,
+    public iab: InAppBrowser,
     public loadingCtrl: LoadingController,
-    private localNotifications: LocalNotifications,
-    private platform: Platform,
-    private splashScreen: SplashScreen,
+    public localNotifications: LocalNotifications,
+    public platform: Platform,
+    public splashScreen: SplashScreen,
     public storage: Storage,
-    private toastCtrl: ToastController,
-    private translate: TranslateService
+    public toastCtrl: ToastController,
+    public translate: TranslateService
   ) {
     this.platform.pause.subscribe(() =>{
       this.isPaused = true

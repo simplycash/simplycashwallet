@@ -15,52 +15,52 @@ import { Wallet } from '../../providers/providers'
 })
 export class HomePage {
 
-  private address: string
-  private displayedAddress: string
-  private amount: number
-  private qrCodeURL: string
-  private isSharing: boolean = false
+  public address: string
+  public displayedAddress: string
+  public amount: number
+  public qrCodeURL: string
+  public isSharing: boolean = false
 
-  private updateCallback: Function
-  private priceCallback: Function
+  public updateCallback: Function
+  public priceCallback: Function
 
-  private cameraAccess: boolean = false
-  private pauseSub: any
-  private scanSub: any
-  private scanState: string = 'stopped'
-  private isTransparent: boolean = false
+  public cameraAccess: boolean = false
+  public pauseSub: any
+  public scanSub: any
+  public scanState: string = 'stopped'
+  public isTransparent: boolean = false
 
-  private scanBeginTime: number
-  private scanEndTime: number
+  public scanBeginTime: number
+  public scanEndTime: number
 
-  private hint: any
-  private hintTimer: number
-  private copyToast: any
-  private copyToastTimer: number
+  public hint: any
+  public hintTimer: number
+  public copyToast: any
+  public copyToastTimer: number
 
-  private firstTimeEnter: boolean = true
-  private clipboardContent: string = ''
-  private resumeSub: any
-  private focusEventListener: any
+  public firstTimeEnter: boolean = true
+  public clipboardContent: string = ''
+  public resumeSub: any
+  public focusEventListener: any
 
-  private timestamp: number
+  public timestamp: number
 
   constructor(
     public alertCtrl: AlertController,
-    private app: App,
-    private ref: ChangeDetectorRef,
-    private clipboard: Clipboard,
-    // private keyboard: Keyboard,
+    public app: App,
+    public ref: ChangeDetectorRef,
+    public clipboard: Clipboard,
+    // public keyboard: Keyboard,
     public loadingCtrl: LoadingController,
     public navCtrl: NavController,
-    private ngZone: NgZone,
-    private platform: Platform,
+    public ngZone: NgZone,
+    public platform: Platform,
     public popoverCtrl: PopoverController,
-    private qrScanner: QRScanner,
-    private socialSharing: SocialSharing,
-    private toastCtrl: ToastController,
-    private translate: TranslateService,
-    private wallet: Wallet
+    public qrScanner: QRScanner,
+    public socialSharing: SocialSharing,
+    public toastCtrl: ToastController,
+    public translate: TranslateService,
+    public wallet: Wallet
   ) {
     this.updateCallback = () => {
       this.refresh()

@@ -15,19 +15,19 @@ export class MyAmountComponent {
   @ViewChild('amount') amountEl
   @ViewChild('amount', { read: ElementRef }) amountElNative
 
-  private inputEl: any
-  private touch: boolean = false
-  private inputTouch: boolean = false
+  public inputEl: any
+  public touch: boolean = false
+  public inputTouch: boolean = false
 
-  private fromUnit: string
-  private fromAmount: string
+  public fromUnit: string
+  public fromAmount: string
 
-  private preferredUnitCallback: Function
-  private priceCallback: Function
+  public preferredUnitCallback: Function
+  public priceCallback: Function
 
-  private isTyping: boolean = false
+  public isTyping: boolean = false
 
-  constructor(private wallet: Wallet) {
+  constructor(public wallet: Wallet) {
     this.preferredUnitCallback = (sym: string) => {
       this.updateInputField()
     }

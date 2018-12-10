@@ -13,38 +13,38 @@ import * as webClipboard from 'clipboard-polyfill'
 export class SendPage {
   @ViewChild('address') addressEl
   @ViewChild('myAmount') myAmountEl
-  private info: any
-  private labelValue: string
-  private messageValue: string
-  private addressValue: string
-  private merchantValue: string
-  private memoValue: string
-  private rValue: string
-  private outputSum: number
-  private predefinedRecipient: boolean
+  public info: any
+  public labelValue: string
+  public messageValue: string
+  public addressValue: string
+  public merchantValue: string
+  public memoValue: string
+  public rValue: string
+  public outputSum: number
+  public predefinedRecipient: boolean
 
-  private canLeave: boolean = true
+  public canLeave: boolean = true
 
-  private firstClipboardContent: string
-  private activeClipboardContent: string
-  private currentClipboardContent: string
-  private lastRawClipboardContent: string
-  private resumeSub: any
-  private focusEventListener: any
+  public firstClipboardContent: string
+  public activeClipboardContent: string
+  public currentClipboardContent: string
+  public lastRawClipboardContent: string
+  public resumeSub: any
+  public focusEventListener: any
 
-  private showQuickSendHint: boolean = false
+  public showQuickSendHint: boolean = false
 
   constructor(
     public alertCtrl: AlertController,
     public navCtrl: NavController,
-    private navParams: NavParams,
+    public navParams: NavParams,
     public appCtrl: App,
-    private clipboard: Clipboard,
+    public clipboard: Clipboard,
     public loadingCtrl: LoadingController,
     public modalCtrl: ModalController,
-    private platform: Platform,
-    private translate: TranslateService,
-    private wallet: Wallet
+    public platform: Platform,
+    public translate: TranslateService,
+    public wallet: Wallet
   ) {
     if (!this.platform.is('cordova')) {
       this.clipboard = {

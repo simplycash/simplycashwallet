@@ -10,19 +10,19 @@ import { Wallet } from '../../providers/providers'
 })
 export class AddressesPage {
 
-  private currentReceiveAddr: string
-  private currentChangeAddr: string
-  private receiveAddrs: { index: number, address: string }[]
-  private changeAddrs: { index: number, address: string }[]
-  private unspentAddrs: { address: string, balance: string }[]
-  private type: string = 'receive'
+  public currentReceiveAddr: string
+  public currentChangeAddr: string
+  public receiveAddrs: { index: number, address: string }[]
+  public changeAddrs: { index: number, address: string }[]
+  public unspentAddrs: { address: string, balance: string }[]
+  public type: string = 'receive'
 
   constructor(
     public loadingCtrl: LoadingController,
     public navCtrl: NavController,
     public navParams: NavParams,
-    private translate: TranslateService,
-    private wallet: Wallet
+    public translate: TranslateService,
+    public wallet: Wallet
   ) {
   }
 

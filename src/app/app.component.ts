@@ -27,18 +27,18 @@ export class MyApp {
   rootPage: string
 
   constructor(
-    private alertCtrl: AlertController,
-    private app: App,
-    private config: Config,
-    private globalization: Globalization,
-    private loadingCtrl: LoadingController,
-    private localNotifications: LocalNotifications,
-    private ngZone: NgZone,
-    private platform: Platform,
-    private statusBar: StatusBar,
-    private splashScreen: SplashScreen,
-    private translate: TranslateService,
-    private wallet: Wallet
+    public alertCtrl: AlertController,
+    public app: App,
+    public config: Config,
+    public globalization: Globalization,
+    public loadingCtrl: LoadingController,
+    public localNotifications: LocalNotifications,
+    public ngZone: NgZone,
+    public platform: Platform,
+    public statusBar: StatusBar,
+    public splashScreen: SplashScreen,
+    public translate: TranslateService,
+    public wallet: Wallet
   ) {
     platform.ready().then(async () => {
       if (this.platform.is('android')) {

@@ -17,19 +17,19 @@ import { Wallet } from '../../providers/providers'
 })
 export class SweepPage {
   @ViewChild('myAmount') myAmountEl
-  private wif: string
-  private wifInfo: { address: string, balance: number, utxos: any[] }
-  private address: string
-  private balance: number
-  private canLeave: boolean = true
+  public wif: string
+  public wifInfo: { address: string, balance: number, utxos: any[] }
+  public address: string
+  public balance: number
+  public canLeave: boolean = true
 
   constructor(
     public alertCtrl: AlertController,
-    private loadingCtrl: LoadingController,
+    public loadingCtrl: LoadingController,
     public navCtrl: NavController,
     public navParams: NavParams,
-    private translate: TranslateService,
-    private wallet: Wallet
+    public translate: TranslateService,
+    public wallet: Wallet
   ) {
   }
 

@@ -14,23 +14,23 @@ import { Wallet } from '../../providers/providers'
   templateUrl: 'settings.html'
 })
 export class SettingsPage {
-  private cryptoUnit: string
-  private supportedCryptoUnits: string[]
-  private currency: string
-  private supportedCurrencies: string[]
-  private protection: string
-  private supportedProtections: string[]
-  // private useCashAddr: boolean
+  public cryptoUnit: string
+  public supportedCryptoUnits: string[]
+  public currency: string
+  public supportedCurrencies: string[]
+  public protection: string
+  public supportedProtections: string[]
+  // public useCashAddr: boolean
 
   constructor(
     public alertCtrl: AlertController,
     public app: App,
     public navCtrl: NavController,
     public navParams: NavParams,
-    private platform: Platform,
+    public platform: Platform,
     public translate: TranslateService,
     public viewCtrl: ViewController,
-    private wallet: Wallet
+    public wallet: Wallet
   ) {
     this.cryptoUnit = this.wallet.getPreferredCryptoUnit()
     this.supportedCryptoUnits = this.wallet.getSupportedCryptoUnits()

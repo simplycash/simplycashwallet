@@ -18,15 +18,15 @@ import { Wallet } from '../../providers/providers'
 })
 export class XpubPage {
 
-  private xpub: string
-  private qrCodeURL: string
+  public xpub: string
+  public qrCodeURL: string
 
   constructor(
-    private clipboard: Clipboard,
+    public clipboard: Clipboard,
     public navCtrl: NavController,
     public navParams: NavParams,
-    private platform: Platform,
-    private wallet: Wallet
+    public platform: Platform,
+    public wallet: Wallet
   ) {
     if (!this.platform.is('cordova')) {
       this.clipboard = {

@@ -5,7 +5,7 @@ import { Wallet } from '../../providers/providers'
   name: 'convertAddressPipe',
 })
 export class ConvertAddressPipe implements PipeTransform {
-  constructor(private wallet: Wallet) {
+  constructor(public wallet: Wallet) {
 
   }
   transform(legacyAddress: string, ...args) {

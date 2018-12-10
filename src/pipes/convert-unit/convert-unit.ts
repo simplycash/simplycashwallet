@@ -5,7 +5,7 @@ import { Wallet } from '../../providers/providers'
   name: 'convertUnitPipe',
 })
 export class ConvertUnitPipe implements PipeTransform {
-  constructor(private wallet: Wallet) {
+  constructor(public wallet: Wallet) {
 
   }
   transform(amountSAT: string, ...args) {

@@ -15,12 +15,12 @@ export class MorePage {
   constructor(
     public alertCtrl: AlertController,
     public app: App,
-    private iab: InAppBrowser,
+    public iab: InAppBrowser,
     public loadingCtrl: LoadingController,
     public navCtrl: NavController,
     public navParams: NavParams,
-    private translate: TranslateService,
-    private wallet: Wallet
+    public translate: TranslateService,
+    public wallet: Wallet
   ) {
 
   }

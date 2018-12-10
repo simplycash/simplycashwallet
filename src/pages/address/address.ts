@@ -13,19 +13,19 @@ import { Wallet } from '../../providers/providers'
   templateUrl: 'address.html',
 })
 export class AddressPage {
-  private address: string
-  private qrCodeURL: string
-  private copyToast: any
-  private copyToastTimer: number
+  public address: string
+  public qrCodeURL: string
+  public copyToast: any
+  public copyToastTimer: number
   constructor(
-    private clipboard: Clipboard,
-    private iab: InAppBrowser,
+    public clipboard: Clipboard,
+    public iab: InAppBrowser,
     public navCtrl: NavController,
     public navParams: NavParams,
-    private platform: Platform,
-    private toastCtrl: ToastController,
-    private translate: TranslateService,
-    private wallet: Wallet
+    public platform: Platform,
+    public toastCtrl: ToastController,
+    public translate: TranslateService,
+    public wallet: Wallet
   ) {
     if (!this.platform.is('cordova')) {
       this.clipboard = {

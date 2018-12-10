@@ -13,19 +13,19 @@ import { Wallet } from '../../providers/providers'
 export class HistoryPage {
 
   public static readonly pageName = 'HistoryPage'
-  private currentUnit: string = this.wallet.getPreferredUnit()
-  private balance: number
-  private txs: { txid: string, date: string, time: string, delta: number, seen: boolean }[] = []
-  private dateGroups: { date: string, txs: any[] }[] = []
-  private updateCallback: Function
+  public currentUnit: string = this.wallet.getPreferredUnit()
+  public balance: number
+  public txs: { txid: string, date: string, time: string, delta: number, seen: boolean }[] = []
+  public dateGroups: { date: string, txs: any[] }[] = []
+  public updateCallback: Function
 
   constructor(
     public alertCtrl: AlertController,
-    private iab: InAppBrowser,
-    private localNotifications: LocalNotifications,
+    public iab: InAppBrowser,
+    public localNotifications: LocalNotifications,
     public navCtrl: NavController,
-    private platform: Platform,
-    private wallet: Wallet
+    public platform: Platform,
+    public wallet: Wallet
   ) {
     this.updateCallback = () => {
       this.refresh()
