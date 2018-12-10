@@ -1,8 +1,7 @@
-import { ChangeDetectorRef, Component, NgZone, ViewChild } from '@angular/core'
-import { AlertController, App, IonicPage, LoadingController, NavController, NavParams, Platform, PopoverController, ToastController } from 'ionic-angular'
+import { ChangeDetectorRef, Component, NgZone } from '@angular/core'
+import { AlertController, App, IonicPage, LoadingController, NavController, Platform, PopoverController, ToastController } from 'ionic-angular'
 import { QRScanner, QRScannerStatus } from '@ionic-native/qr-scanner'
 import { SocialSharing } from '@ionic-native/social-sharing'
-import { StatusBar } from '@ionic-native/status-bar'
 import { Clipboard } from '@ionic-native/clipboard'
 import * as webClipboard from 'clipboard-polyfill'
 // import { Keyboard } from '@ionic-native/keyboard'
@@ -59,7 +58,6 @@ export class HomePage {
     public popoverCtrl: PopoverController,
     private qrScanner: QRScanner,
     private socialSharing: SocialSharing,
-    private statusBar: StatusBar,
     private toastCtrl: ToastController,
     private translate: TranslateService,
     private wallet: Wallet
@@ -220,7 +218,6 @@ export class HomePage {
         })
       })
       this.isTransparent = true
-      // this.statusBar.hide()
       this.qrScanner.show()
     } catch (err) {
       console.log(err)
@@ -277,7 +274,6 @@ export class HomePage {
         this.destroyScanner()
       }, 200)
     }
-    // this.statusBar.show()
     // this.qrScanner.hide()
   }
 

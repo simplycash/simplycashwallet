@@ -1,5 +1,5 @@
 import { Component, ViewChild } from '@angular/core'
-import { AlertController, IonicPage, ModalController, NavController, NavParams, App, LoadingController, Platform, ToastController } from 'ionic-angular'
+import { AlertController, IonicPage, ModalController, NavController, NavParams, App, LoadingController, Platform } from 'ionic-angular'
 import { TranslateService } from '@ngx-translate/core';
 import { Wallet } from '../../providers/providers'
 import { Clipboard } from '@ionic-native/clipboard'
@@ -349,7 +349,7 @@ export class SendPage {
   async broadcast(loader: any) {
     try {
       loader.setContent(this.translate.instant('BROADCASTING')+'...')
-      let txid: string = await this.wallet.broadcastTx(this.info.hex)
+      await this.wallet.broadcastTx(this.info.hex)
       await loader.dismiss()
       let successAlert = this.alertCtrl.create({
         enableBackdropDismiss: false,

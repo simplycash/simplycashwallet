@@ -117,7 +117,7 @@ export class SweepPage {
   async broadcast(hex: string, loader: any) {
     try {
       loader.setContent(this.translate.instant('BROADCASTING')+'...')
-      let txid: string = await this.wallet.broadcastTx(hex)
+      await this.wallet.broadcastTx(hex)
       await loader.dismiss()
       let successAlert = this.alertCtrl.create({
         enableBackdropDismiss: false,

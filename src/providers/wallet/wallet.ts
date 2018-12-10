@@ -5,7 +5,6 @@ import 'rxjs/add/operator/toPromise'
 import { Storage } from '@ionic/storage'
 import { TranslateService } from '@ngx-translate/core'
 import { AlertController, App, Events, LoadingController, Platform, ToastController } from 'ionic-angular'
-import { AppVersion } from '@ionic-native/app-version'
 import { FingerprintAIO } from '@ionic-native/fingerprint-aio'
 import { InAppBrowser } from '@ionic-native/in-app-browser'
 import { LocalNotifications } from '@ionic-native/local-notifications'
@@ -101,7 +100,6 @@ export class Wallet {
   constructor(
     public alertCtrl: AlertController,
     public app: App,
-    private appVersion: AppVersion,
     public events: Events,
     private http: HttpClient,
     private faio: FingerprintAIO,
@@ -740,7 +738,7 @@ export class Wallet {
           xpub: this.stored.keys.xpub
         }, true)
         this.changeState(this.STATE.CONNECTED)
-        let results: any[] = await Promise.all([
+        await Promise.all([
           this.apiWS('price.subscribe').then((price) => {this.updatePrice(price)}),
           this.apiWS('address.subscribe'),
           this.syncEverything(true)
@@ -794,7 +792,7 @@ export class Wallet {
   async syncEverything(fullSync?: boolean) {
     this.changeState(this.STATE.SYNCING)
 
-    let id: number = this.syncTaskId++
+    this.syncTaskId++
     let targetAddresses: string[] = fullSync ? undefined : this.pendingAddresses.slice()
     this.pendingAddresses.length = 0
     let results: any[] = await Promise.all([

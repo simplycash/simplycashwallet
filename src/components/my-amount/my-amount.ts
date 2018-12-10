@@ -1,4 +1,4 @@
-import { Component, ElementRef, ViewChild, Input, Output, EventEmitter, AfterViewInit, OnDestroy } from '@angular/core'
+import { Component, ElementRef, ViewChild, Input, Output, EventEmitter } from '@angular/core'
 import { Wallet } from '../../providers/providers'
 
 //what a mess!
@@ -18,7 +18,6 @@ export class MyAmountComponent {
   private inputEl: any
   private touch: boolean = false
   private inputTouch: boolean = false
-  private blurTimer: number
 
   private fromUnit: string
   private fromAmount: string

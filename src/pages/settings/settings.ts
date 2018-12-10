@@ -1,7 +1,6 @@
 import { Component } from '@angular/core'
 import { TranslateService } from '@ngx-translate/core'
 import { AlertController, App, IonicPage, NavController, NavParams, Platform, ViewController } from 'ionic-angular'
-import { InAppBrowser } from '@ionic-native/in-app-browser'
 import { Wallet } from '../../providers/providers'
 
 /**
@@ -26,7 +25,6 @@ export class SettingsPage {
   constructor(
     public alertCtrl: AlertController,
     public app: App,
-    private iab: InAppBrowser,
     public navCtrl: NavController,
     public navParams: NavParams,
     private platform: Platform,
