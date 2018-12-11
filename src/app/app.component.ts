@@ -119,6 +119,7 @@ export class MyApp {
     } else {
       lang = 'en'
     }
+    (window as any).translationLanguage = lang
     await new Promise((resolve, reject) => {
       this.translate.use(lang).first().subscribe(() => {
         resolve()

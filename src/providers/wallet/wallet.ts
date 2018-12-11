@@ -682,7 +682,8 @@ export class Wallet {
     let ann: string
     try {
       let o = await this.http.get(this.ANNOUNCEMENT_URL).toPromise()
-      ann = (o[this.VERSION] || o['default'])['en']
+      let v = o[this.VERSION] || o['default']
+      ann = v[(window as any).translationLanguage] || v['en']
     } catch (err) {
       console.log(err)
     }
