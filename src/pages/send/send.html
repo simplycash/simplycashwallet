@@ -64,6 +64,10 @@
     </button>
   </div>
 
+  <div *ngIf="info.bip70 && !info.verified" class="warn-bip70-unverified" padding>
+    {{ 'WARN_BIP70_UNVERIFIED' | translate }}
+  </div>
+
   <div *ngIf="showQuickSendHint" class="quick-send-hint" padding>
     {{ 'QUICK_SEND_HINT' | translate }}
   </div>

@@ -1,4 +1,5 @@
 {
+  "WARN_BIP70_UNVERIFIED": "unable to verify recipient's identity",
   "ANNOUNCEMENT": "announcement",
   "OK": "ok",
   "DO_NOT_SHOW_AGAIN": "don't show again",

@@ -1,4 +1,5 @@
 {
+  "WARN_BIP70_UNVERIFIED": "受取人の身元を確認できません",
   "ANNOUNCEMENT": "通告",
   "OK": "ok",
   "DO_NOT_SHOW_AGAIN": "今後表示しない",

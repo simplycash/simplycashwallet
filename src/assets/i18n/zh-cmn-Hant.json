@@ -1,4 +1,5 @@
 {
+  "WARN_BIP70_UNVERIFIED": "無法驗證收款人的身份",
   "ANNOUNCEMENT": "公告",
   "OK": "ok",
   "DO_NOT_SHOW_AGAIN": "不要再顯示",

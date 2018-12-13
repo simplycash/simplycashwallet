@@ -5,4 +5,7 @@ page-send {
   .quick-send-hint {
     color: #999999;
   }
+  .warn-bip70-unverified {
+    color: color($colors, danger);
+  }
 }
