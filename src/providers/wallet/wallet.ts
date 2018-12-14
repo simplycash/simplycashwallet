@@ -1186,17 +1186,15 @@ export class Wallet {
   }
 
   getPaymentRequestURL(address: string, sat?: number) {
-    sat = sat > 0 ? sat : undefined
     let af: string = this.getAddressFormat(address)
     if (!af) {
       throw new Error('invalid address')
     }
-    let uri: string = 'bitcoincash:' + address
-    if (sat) {
-      uri += '?amount=' + this.convertUnit('SATS', 'BSV', sat.toString()).replace(/\.?0+$/,'')
+    if (sat > 0) {
+      return 'bitcoincash:' + address + '?amount=' + this.convertUnit('SATS', 'BSV', sat.toString()).replace(/\.?0+$/,'')
+    } else {
+      return address
     }
-    console.log(uri)
-    return uri
   }
 
   getQR(text: string) {
@@ -1211,21 +1209,28 @@ export class Wallet {
     let label: string
     let message: string
 
-    let missingPrefix: boolean
-    if (text.slice(0, 12).toLowerCase() === 'bitcoincash:') {
-      text = 'bitcoincash:' + text.slice(12)
-      missingPrefix = false
+    let missingPrefix: boolean = false
+    if (text.match(/^bitcoin:/gi)) {
+      text = text.slice(8)
+    } else if (text.match(/^bitcoincash:/gi)) {
+      text = text.slice(12)
+    } else if (text.match(/^bitcoin[-_]cash:/gi)) {
+      text = text.slice(13)
+    } else if (text.match(/^bitcoinsv:/gi)) {
+      text = text.slice(10)
+    } else if (text.match(/^bitcoin[-_]sv:/gi)) {
+      text = text.slice(11)
     } else {
-      text = 'bitcoincash:' + text
       missingPrefix = true
     }
+    text = 'bitcoincash:' + text
 
     let addr: string
     let i: number = text.indexOf('?')
     if (i === -1) {
       addr = text.slice(12)
     } else if (missingPrefix) {
-        return
+      return
     } else {
       addr = text.slice(12, i)
     }
