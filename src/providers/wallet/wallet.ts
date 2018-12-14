@@ -15,8 +15,8 @@ import * as bitcoincash from 'bitcoincashjs'
 import io from 'socket.io-client'
 import * as protobuf from 'protobufjs'
 import * as crypto from 'crypto-browserify'
-import { Certificate, CertificateChainValidationEngine } from 'pkijs'
-import * as asn1js from 'asn1js'
+// import { Certificate, CertificateChainValidationEngine } from 'pkijs'
+// import * as asn1js from 'asn1js'
 import { Buffer } from 'buffer'
 
 
@@ -35,7 +35,7 @@ export class Wallet {
 
   public ANNOUNCEMENT_URL: string = 'https://simply.cash/announcement.json'
   public WS_URL: string = 'https://ws.simply.cash:3000'
-  public VERSION: string = '0.0.57'
+  public VERSION: string = '0.0.58'
   public SIG_ALGO = Object.freeze({
     '1.2.840.113549.1.1.1': 'RSA-SHA1',
     '1.2.840.113549.1.1.5': 'RSA-SHA1',
@@ -1500,60 +1500,60 @@ export class Wallet {
     // validate
     let cname: string
     let verified: boolean = false
-    if (paymentRequest.pkiType !== 'none') {
-      try {
-        // ca
-        let caCertStrs: string[] = (await this.http.get('assets/cacerts.txt', {
-          responseType: 'text'
-        }).toPromise() as string).trim().split('\r\n')
-        let caCerts: any[] = caCertStrs.map((str: string, j) => {
-          let asn1 = asn1js.fromBER(new Uint8Array(Buffer.from(str, 'base64')).buffer)
-          let cert = new Certificate({ schema: asn1.result })
-          return cert
-        })
-        // chain
-        let X509Certificates: any = root.lookupType("payments.X509Certificates")
-        let chainData: Uint8Array[] = X509Certificates.decode(paymentRequest.pkiData).certificate
-        let certs: any[] = chainData.map((certData: Uint8Array) => {
-          let asn1 = asn1js.fromBER(new Uint8Array(certData).buffer)
-          let cert = new Certificate({ schema: asn1.result })
-          return cert
-        })
-        // try to retrieve merchant name
-        try {
-          cname = certs[0].subject.typesAndValues.find(attr => attr.type === '2.5.4.3').value.valueBlock.value
-        } catch (err) {
-          console.log(err)
-        }
-        if (paymentRequest.pkiType !== 'x509+sha256' && paymentRequest.pkiType !== 'x509+sha1') {
-          throw new Error('unsupported pki')
-        }
-        // chain validation
-        let chainValidation = await new CertificateChainValidationEngine({
-          trustedCerts: caCerts,
-          certs: certs
-        }).verify()
-        if (chainValidation.result !== true) {
-          throw new Error('untrusted certificate')
-        }
-        let signature = paymentRequest.signature
-        paymentRequest.signature = new Uint8Array(0)
-        let dataToSign = PaymentRequest.encode(paymentRequest).finish()
-        paymentRequest.signature = signature
-        let pem = '-----BEGIN CERTIFICATE-----\r\n' + Buffer.from(chainData[0]).toString('base64').match(/.{1,64}/g).join('\r\n') + '\r\n-----END CERTIFICATE-----'
-        let sigAlgo = this.SIG_ALGO[certs[0].signatureAlgorithm.algorithmId]
-        if (typeof sigAlgo === 'undefined') {
-          throw new Error('unsupported signature algorithm')
-        }
-        let signatureIsValid = crypto.createVerify(sigAlgo).update(dataToSign).verify(pem, signature)
-        if (!signatureIsValid) {
-          throw new Error('invalid signature')
-        }
-        verified = true
-      } catch (err) {
-        console.log(err)
-      }
-    }
+    // if (paymentRequest.pkiType !== 'none') {
+    //   try {
+    //     // ca
+    //     let caCertStrs: string[] = (await this.http.get('assets/cacerts.txt', {
+    //       responseType: 'text'
+    //     }).toPromise() as string).trim().split('\r\n')
+    //     let caCerts: any[] = caCertStrs.map((str: string, j) => {
+    //       let asn1 = asn1js.fromBER(new Uint8Array(Buffer.from(str, 'base64')).buffer)
+    //       let cert = new Certificate({ schema: asn1.result })
+    //       return cert
+    //     })
+    //     // chain
+    //     let X509Certificates: any = root.lookupType("payments.X509Certificates")
+    //     let chainData: Uint8Array[] = X509Certificates.decode(paymentRequest.pkiData).certificate
+    //     let certs: any[] = chainData.map((certData: Uint8Array) => {
+    //       let asn1 = asn1js.fromBER(new Uint8Array(certData).buffer)
+    //       let cert = new Certificate({ schema: asn1.result })
+    //       return cert
+    //     })
+    //     // try to retrieve merchant name
+    //     try {
+    //       cname = certs[0].subject.typesAndValues.find(attr => attr.type === '2.5.4.3').value.valueBlock.value
+    //     } catch (err) {
+    //       console.log(err)
+    //     }
+    //     if (paymentRequest.pkiType !== 'x509+sha256' && paymentRequest.pkiType !== 'x509+sha1') {
+    //       throw new Error('unsupported pki')
+    //     }
+    //     // chain validation
+    //     let chainValidation = await new CertificateChainValidationEngine({
+    //       trustedCerts: caCerts,
+    //       certs: certs
+    //     }).verify()
+    //     if (chainValidation.result !== true) {
+    //       throw new Error('untrusted certificate')
+    //     }
+    //     let signature = paymentRequest.signature
+    //     paymentRequest.signature = new Uint8Array(0)
+    //     let dataToSign = PaymentRequest.encode(paymentRequest).finish()
+    //     paymentRequest.signature = signature
+    //     let pem = '-----BEGIN CERTIFICATE-----\r\n' + Buffer.from(chainData[0]).toString('base64').match(/.{1,64}/g).join('\r\n') + '\r\n-----END CERTIFICATE-----'
+    //     let sigAlgo = this.SIG_ALGO[certs[0].signatureAlgorithm.algorithmId]
+    //     if (typeof sigAlgo === 'undefined') {
+    //       throw new Error('unsupported signature algorithm')
+    //     }
+    //     let signatureIsValid = crypto.createVerify(sigAlgo).update(dataToSign).verify(pem, signature)
+    //     if (!signatureIsValid) {
+    //       throw new Error('invalid signature')
+    //     }
+    //     verified = true
+    //   } catch (err) {
+    //     console.log(err)
+    //   }
+    // }
 
     // return data
     let outputs: any = paymentDetails.outputs.map((output) => {
