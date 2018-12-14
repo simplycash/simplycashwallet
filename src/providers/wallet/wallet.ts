@@ -35,7 +35,7 @@ export class Wallet {
 
   public ANNOUNCEMENT_URL: string = 'https://simply.cash/announcement.json'
   public WS_URL: string = 'https://ws.simply.cash:3000'
-  public VERSION: string = '0.0.56'
+  public VERSION: string = '0.0.57'
   public SIG_ALGO = Object.freeze({
     '1.2.840.113549.1.1.1': 'RSA-SHA1',
     '1.2.840.113549.1.1.5': 'RSA-SHA1',
