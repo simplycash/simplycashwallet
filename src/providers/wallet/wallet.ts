@@ -1548,11 +1548,19 @@ export class Wallet {
         throw new Error('invalid time string')
       }
       let arr = s.match(/\d\d/g)
-      let d = Date.parse(arr[0]+arr[1]+'-'+arr[2]+'-'+arr[3]+' '+arr[4]+':'+arr[5]+':'+arr[6])
-      if (isNaN(d)) {
+      let t = new Date(
+        parseInt(arr[0] + arr[1]),
+        parseInt(arr[2]) - 1,
+        parseInt(arr[3]),
+        parseInt(arr[4]),
+        parseInt(arr[5]),
+        parseInt(arr[6]),
+        0
+      ).getTime()
+      if (isNaN(t)) {
         throw new Error('invalid time string')
       }
-      return d
+      return t
     }
   }
 
