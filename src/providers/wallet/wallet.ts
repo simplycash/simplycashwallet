@@ -15,9 +15,8 @@ import * as bitcoincash from 'bitcoincashjs'
 import io from 'socket.io-client'
 import * as protobuf from 'protobufjs'
 import * as crypto from 'crypto-browserify'
-// import { Certificate, CertificateChainValidationEngine } from 'pkijs'
-// import * as asn1js from 'asn1js'
-import { Buffer } from 'buffer'
+import * as jsrsasign from 'jsrsasign'
+import { Buffer } from 'buffer/'
 
 
 @Injectable()
@@ -1470,6 +1469,93 @@ export class Wallet {
 
   // BIP70
 
+  getCommonNameFromCert(cert: Uint8Array) {
+    let certificate = new jsrsasign.X509()
+    certificate.readCertHex(Buffer.from(cert).toString('hex'))
+    let cn = certificate.getSubjectString().split(/\s*[^\\]?\/\s*/).find(s => {
+      return s.match(/^CN=/gi)
+    })
+    if (typeof cn !== 'undefined') {
+      return cn.slice(3).trim()
+    }
+  }
+
+  verifySignature(dataHash: Uint8Array, cert: Uint8Array, signature: Uint8Array) {
+    return jsrsasign.X509.getPublicKeyFromCertHex(Buffer.from(cert).toString('hex')).verifyWithMessageHash(Buffer.from(dataHash).toString('hex'), Buffer.from(signature).toString('hex'))
+  }
+
+  async verifyCertificateChain(chainData: Uint8Array[]) {
+    // trusted
+    let trustedCertificates: any[] = (await this.http.get('assets/cacerts.txt', {
+      responseType: 'text'
+    }).toPromise() as string).trim().split('\r\n').map((s: string) => {
+      return Buffer.from(s, 'base64').toString('hex')
+    })
+    // chain
+    let certificates: string[] = chainData.map((b: Uint8Array) => {
+      return Buffer.from(b).toString('hex')
+    })
+    // chain validation
+    for (let i = 0; i < certificates.length; i++) {
+      // cert
+      let certificateHex = certificates[i]
+      let certificate = new jsrsasign.X509()
+      certificate.readCertHex(certificateHex)
+      // check time
+      let now = new Date().getTime()
+      let notBefore = convertToTime(certificate.getNotBefore())
+      let notAfter = convertToTime(certificate.getNotAfter())
+      if (now < notBefore || now > notAfter) {
+        return false
+      }
+      // ca
+      let caCertificateHex
+      if(i + 1 < certificates.length) {
+        caCertificateHex = certificates[i + 1]
+      } else {
+        let issuerHex = certificate.getIssuerHex()
+        caCertificateHex = trustedCertificates.find(hex => {
+          let tc = new jsrsasign.X509()
+          tc.readCertHex(hex)
+          return tc.getSubjectHex() === issuerHex
+        })
+        if (typeof caCertificateHex === 'undefined') {
+          return false
+        }
+      }
+      // Verify against CA
+      let certStruct = jsrsasign.ASN1HEX.getTLVbyList(certificate.hex, 0, [0])
+      let algorithm = certificate.getSignatureAlgorithmField()
+      let signatureHex = certificate.getSignatureValueHex()
+      let signature = new jsrsasign.crypto.Signature({alg: algorithm})
+      signature.init('-----BEGIN CERTIFICATE-----\r\n' + Buffer.from(caCertificateHex, 'hex').toString('base64').match(/.{1,64}/g).join('\r\n') + '\r\n-----END CERTIFICATE-----')
+      signature.updateHex(certStruct)
+      if (!signature.verify(signatureHex)) {
+        return false
+      }
+    }
+    return true
+
+    function convertToTime(s: string) {
+      if (s.length === 13) {
+        let yy = parseInt(s.slice(0, 2))
+        if (yy >= 50) {
+          s = '19' + s
+        } else {
+          s = '20' + s
+        }
+      } else if (s.length !== 15) {
+        throw new Error('invalid time string')
+      }
+      let arr = s.match(/\d\d/g)
+      let d = Date.parse(arr[0]+arr[1]+'-'+arr[2]+'-'+arr[3]+' '+arr[4]+':'+arr[5]+':'+arr[6])
+      if (isNaN(d)) {
+        throw new Error('invalid time string')
+      }
+      return d
+    }
+  }
+
   async getRequestFromMerchant(url: string) {
     if (1 + 1 === 2) {
       throw new Error('suspended')
@@ -1500,60 +1586,25 @@ export class Wallet {
     // validate
     let cname: string
     let verified: boolean = false
-    // if (paymentRequest.pkiType !== 'none') {
-    //   try {
-    //     // ca
-    //     let caCertStrs: string[] = (await this.http.get('assets/cacerts.txt', {
-    //       responseType: 'text'
-    //     }).toPromise() as string).trim().split('\r\n')
-    //     let caCerts: any[] = caCertStrs.map((str: string, j) => {
-    //       let asn1 = asn1js.fromBER(new Uint8Array(Buffer.from(str, 'base64')).buffer)
-    //       let cert = new Certificate({ schema: asn1.result })
-    //       return cert
-    //     })
-    //     // chain
-    //     let X509Certificates: any = root.lookupType("payments.X509Certificates")
-    //     let chainData: Uint8Array[] = X509Certificates.decode(paymentRequest.pkiData).certificate
-    //     let certs: any[] = chainData.map((certData: Uint8Array) => {
-    //       let asn1 = asn1js.fromBER(new Uint8Array(certData).buffer)
-    //       let cert = new Certificate({ schema: asn1.result })
-    //       return cert
-    //     })
-    //     // try to retrieve merchant name
-    //     try {
-    //       cname = certs[0].subject.typesAndValues.find(attr => attr.type === '2.5.4.3').value.valueBlock.value
-    //     } catch (err) {
-    //       console.log(err)
-    //     }
-    //     if (paymentRequest.pkiType !== 'x509+sha256' && paymentRequest.pkiType !== 'x509+sha1') {
-    //       throw new Error('unsupported pki')
-    //     }
-    //     // chain validation
-    //     let chainValidation = await new CertificateChainValidationEngine({
-    //       trustedCerts: caCerts,
-    //       certs: certs
-    //     }).verify()
-    //     if (chainValidation.result !== true) {
-    //       throw new Error('untrusted certificate')
-    //     }
-    //     let signature = paymentRequest.signature
-    //     paymentRequest.signature = new Uint8Array(0)
-    //     let dataToSign = PaymentRequest.encode(paymentRequest).finish()
-    //     paymentRequest.signature = signature
-    //     let pem = '-----BEGIN CERTIFICATE-----\r\n' + Buffer.from(chainData[0]).toString('base64').match(/.{1,64}/g).join('\r\n') + '\r\n-----END CERTIFICATE-----'
-    //     let sigAlgo = this.SIG_ALGO[certs[0].signatureAlgorithm.algorithmId]
-    //     if (typeof sigAlgo === 'undefined') {
-    //       throw new Error('unsupported signature algorithm')
-    //     }
-    //     let signatureIsValid = crypto.createVerify(sigAlgo).update(dataToSign).verify(pem, signature)
-    //     if (!signatureIsValid) {
-    //       throw new Error('invalid signature')
-    //     }
-    //     verified = true
-    //   } catch (err) {
-    //     console.log(err)
-    //   }
-    // }
+    if (paymentRequest.pkiType !== 'none') {
+      try {
+        if (paymentRequest.pkiType !== 'x509+sha256' && paymentRequest.pkiType !== 'x509+sha1') {
+          throw new Error('unsupported pki')
+        }
+        let X509Certificates: any = root.lookupType("payments.X509Certificates")
+        let chainData: Uint8Array[] = X509Certificates.decode(paymentRequest.pkiData).certificate
+        let signature: Uint8Array = paymentRequest.signature
+        paymentRequest.signature = new Uint8Array(0)
+        let dataHash: Uint8Array = crypto.createHash(paymentRequest.pkiType.split('+')[1]).update(PaymentRequest.encode(paymentRequest).finish()).digest()
+        paymentRequest.signature = signature
+        if (await this.verifyCertificateChain(chainData) && this.verifySignature(dataHash, chainData[0], signature)) {
+          verified = true
+          cname = this.getCommonNameFromCert(chainData[0])
+        }
+      } catch (err) {
+        console.log(err)
+      }
+    }
 
     // return data
     let outputs: any = paymentDetails.outputs.map((output) => {
