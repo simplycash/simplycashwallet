@@ -2,6 +2,11 @@
 
   <ion-navbar color="primary">
     <ion-title>{{ 'HISTORY' | translate }}</ion-title>
+    <ion-buttons end>
+      <button ion-button *ngIf="wallet.isConnecting() || wallet.isSyncing()">
+        <ion-spinner color="light"></ion-spinner>
+      </button>
+    </ion-buttons>
   </ion-navbar>
 
 </ion-header>
