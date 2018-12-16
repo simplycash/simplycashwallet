@@ -1488,7 +1488,7 @@ export class Wallet {
     // trusted
     let trustedCertificates: any[] = (await this.http.get('assets/cacerts.txt', {
       responseType: 'text'
-    }).toPromise() as string).trim().split('\r\n').map((s: string) => {
+    }).toPromise() as string).trim().split(/\r?\n/g).map((s: string) => {
       return Buffer.from(s, 'base64').toString('hex')
     })
     // chain
