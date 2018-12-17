@@ -1,4 +1,4 @@
-# simply cash - bitcoin cash wallet
+# simply cash - bitcoin sv wallet
 simply cash is built using [Ionic Framework](https://ionicframework.com)
 
 1. follow step 1 [here](https://ionicframework.com/getting-started) to install ionic and android platform tools
