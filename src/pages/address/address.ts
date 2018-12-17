@@ -68,7 +68,7 @@ export class AddressPage {
   }
 
   viewOnBlockExplorer() {
-    this.iab.create('https://bchsvexplorer.com/address/'+this.address, '_system')
+    this.iab.create('https://blockchair.com/bitcoin-sv/address/'+this.address, '_system')
   }
 
 }
