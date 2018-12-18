@@ -48,7 +48,7 @@ export class MorePage {
     }
   }
 
-  async promptForMenmonic() {
+  async promptForMnemonic() {
     let recoverAlert = this.alertCtrl.create({
       enableBackdropDismiss: false,
       title: this.translate.instant('RECOVER_WALLET'),

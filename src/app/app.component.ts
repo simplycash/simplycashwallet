@@ -73,7 +73,7 @@ export class MyApp {
       }
       if (window.hasOwnProperty('recoveryMode')) {
         delete (window as any).recoveryMode
-        await this.promptForMenmonic()
+        await this.promptForMnemonic()
       } else {
         try {
           await this.wallet.startWallet()
@@ -131,7 +131,7 @@ export class MyApp {
   }
 
   // copied from more.ts, no cancel button
-  async promptForMenmonic() {
+  async promptForMnemonic() {
     let recoverAlert = this.alertCtrl.create({
       enableBackdropDismiss: false,
       title: this.translate.instant('RECOVER_WALLET'),
