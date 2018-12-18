@@ -35,14 +35,6 @@ export class Wallet {
   public ANNOUNCEMENT_URL: string = 'https://simply.cash/announcement.json'
   public WS_URL: string = 'https://ws.simply.cash:3000'
   public VERSION: string = '0.0.58'
-  public SIG_ALGO = Object.freeze({
-    '1.2.840.113549.1.1.1': 'RSA-SHA1',
-    '1.2.840.113549.1.1.5': 'RSA-SHA1',
-    '1.2.840.113549.1.1.11': 'RSA-SHA256',
-    '1.2.840.10045.2.1': 'DSA-SHA1',
-    '1.2.840.10045.4.1': 'DSA-SHA1',
-    '1.2.840.10045.4.3.2': 'DSA-SHA256'
-  })
 
   public supportedAddressFormats: string[] = ['legacy', 'cashaddr', 'bitpay']
 
