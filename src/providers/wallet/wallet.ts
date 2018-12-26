@@ -1372,29 +1372,23 @@ export class Wallet {
         let i: number = 0
         acc = 0
         utxos = []
-        // if change is dust (<546), add 1 more utxo
-        while (acc < satoshis + fee_tentative + 546 && i < availableUtxos.length) {
+        while (true) {
           let utxo: any = availableUtxos[i]
           acc += utxo.satoshis
           utxos.push(utxo)
           i++
+          let excess: number = acc - satoshis - fee_tentative
+          if (excess >= 0 && excess <= 34 || excess >= 546 || i >= availableUtxos.length) {
+            break
+          }
         }
         toAmount = satoshis
         if (acc < toAmount + fee_tentative) {
-          if (acc < toAmount) {
-            throw new Error('not enough fund')
-          } else if (changeAmount === 0) {
-            throw new Error('not enough fund')
-          } else {
-            fee_tentative = 0
-            changeAmount = 0
-          }
-        } else if (changeAmount !== 0) {
-          changeAmount = acc - toAmount - fee_tentative
-          if (changeAmount < 546) {
-            fee_tentative = 0
-            changeAmount = 0
-          }
+          throw new Error('not enough fund')
+        }
+        changeAmount = acc - toAmount - fee_tentative
+        if (changeAmount < 546) {
+          changeAmount = 0
         }
       }
       let ustx: bitcoincash.Transaction = new bitcoincash.Transaction()
