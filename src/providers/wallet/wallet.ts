@@ -158,9 +158,7 @@ export class Wallet {
   async setPreferredProtection(p: string, m: string) {
     if (p === 'PIN') {
       let pw = await this.newPIN()
-      let cipher = crypto.createCipher('aes192', pw)
-      let encrypted: string = cipher.update(m, 'utf8', 'hex')
-      encrypted += cipher.final('hex')
+      let encrypted: string = this._encryptText(m, pw)
       this.stored.keys.encMnemonic = encrypted
       this.stored.preference.password = true
       this.stored.preference.fingerprint = false
@@ -169,16 +167,12 @@ export class Wallet {
         await this.fingerprintNAPrompt()
         throw new Error('auth unavailable')
       }
-      let cipher = crypto.createCipher('aes192', this.DUMMY_KEY)
-      let encrypted: string = cipher.update(m, 'utf8', 'hex')
-      encrypted += cipher.final('hex')
+      let encrypted: string = this._encryptText(m, this.DUMMY_KEY)
       this.stored.keys.encMnemonic = encrypted
       this.stored.preference.password = false
       this.stored.preference.fingerprint = true
     } else if (p === 'OFF') {
-      let cipher = crypto.createCipher('aes192', this.DUMMY_KEY)
-      let encrypted: string = cipher.update(m, 'utf8', 'hex')
-      encrypted += cipher.final('hex')
+      let encrypted: string = this._encryptText(m, this.DUMMY_KEY)
       this.stored.keys.encMnemonic = encrypted
       this.stored.preference.password = false
       this.stored.preference.fingerprint = false
@@ -530,9 +524,7 @@ export class Wallet {
     let xpub: string = hdPublicKey.toString()
     let addresses: any = this.generateAddresses(hdPrivateKey)
 
-    let cipher = crypto.createCipher('aes192', this.DUMMY_KEY)
-    let encrypted: string = cipher.update(mnemonic, 'utf8', 'hex')
-    encrypted += cipher.final('hex')
+    let encrypted: string = this._encryptText(mnemonic, this.DUMMY_KEY)
 
     let obj: any = {
       keys: {
@@ -579,10 +571,8 @@ export class Wallet {
       console.log('wallet found in storage')
       let willUpdate = false
       if (value.keys.hasOwnProperty('mnemonic') && !value.keys.hasOwnProperty('encMnemonic')) {
-        let cipher = crypto.createCipher('aes192', this.DUMMY_KEY)
-        let encrypted: string = cipher.update(value.keys.mnemonic, 'utf8', 'hex')
-        encrypted += cipher.final('hex')
-        delete value.keys.mnemonic;
+        let encrypted: string = this._encryptText(value.keys.mnemonic, this.DUMMY_KEY)
+        delete value.keys.mnemonic
         value.keys.encMnemonic = encrypted
         willUpdate = true
       }
@@ -590,16 +580,12 @@ export class Wallet {
         if (typeof value.preference.pin === 'undefined' || value.preference.pin === null) {
           value.preference.password = false
         } else {
-          let decipher = crypto.createDecipher('aes192', this.DUMMY_KEY)
-          let decrypted: string = decipher.update(value.keys.encMnemonic, 'hex', 'utf8')
-          decrypted += decipher.final('utf8')
-          let cipher = crypto.createCipher('aes192', value.preference.pin)
-          let encrypted: string = cipher.update(decrypted, 'utf8', 'hex')
-          encrypted += cipher.final('hex')
+          let decrypted: string = this._decryptText(value.keys.encMnemonic, this.DUMMY_KEY)
+          let encrypted: string = this._encryptText(decrypted, value.preference.pin)
           value.keys.encMnemonic = encrypted
           value.preference.password = true
         }
-        delete value.preference.pin;
+        delete value.preference.pin
         willUpdate = true
       }
       if (value.preference.hasOwnProperty('pinHash')) {
@@ -607,7 +593,7 @@ export class Wallet {
           value.preference.password = false
         } else {
           this.splashScreen.hide()
-          let pw = await new Promise((resolve, reject) => {
+          let pw: string = await new Promise<string>((resolve, reject) => {
             let pinAlert = this.alertCtrl.create({
               enableBackdropDismiss: false,
               title: 'PIN',
@@ -641,16 +627,12 @@ export class Wallet {
             })
             pinAlert.present()
           })
-          let decipher = crypto.createDecipher('aes192', this.DUMMY_KEY)
-          let decrypted: string = decipher.update(value.keys.encMnemonic, 'hex', 'utf8')
-          decrypted += decipher.final('utf8')
-          let cipher = crypto.createCipher('aes192', pw)
-          let encrypted: string = cipher.update(decrypted, 'utf8', 'hex')
-          encrypted += cipher.final('hex')
+          let decrypted: string = this._decryptText(value.keys.encMnemonic, this.DUMMY_KEY)
+          let encrypted: string = this._encryptText(decrypted, pw)
           value.keys.encMnemonic = encrypted
           value.preference.password = true
         }
-        delete value.preference.pinHash;
+        delete value.preference.pinHash
         willUpdate = true
       }
       if (value.preference.hasOwnProperty('chain')) {
@@ -1165,15 +1147,26 @@ export class Wallet {
   }
 
   getMnemonic(password?: string) {
-      let decipher = crypto.createDecipher('aes192', password || this.DUMMY_KEY)
-      let encrypted: string = this.stored.keys.encMnemonic
-      let decrypted: string = decipher.update(encrypted, 'hex', 'utf8')
-      decrypted += decipher.final('utf8')
-      if (this.validateMnemonic(decrypted)) {
-        return decrypted
-      } else {
-        throw new Error('invalid password')
-      }
+    let decrypted: string = this._decryptText(this.stored.keys.encMnemonic, password || this.DUMMY_KEY)
+    if (this.validateMnemonic(decrypted)) {
+      return decrypted
+    } else {
+      throw new Error('invalid password')
+    }
+  }
+
+  _encryptText(text: string, password: string) {
+    let cipher = crypto.createCipher('aes192', password)
+    let encrypted: string = cipher.update(text, 'utf8', 'hex')
+    encrypted += cipher.final('hex')
+    return encrypted
+  }
+
+  _decryptText(cipherText: string, password: string) {
+    let decipher = crypto.createDecipher('aes192', password)
+    let decrypted: string = decipher.update(cipherText, 'hex', 'utf8')
+    decrypted += decipher.final('utf8')
+    return decrypted
   }
 
   getPaymentRequestURL(address: string, sat?: number) {
