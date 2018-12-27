@@ -356,9 +356,6 @@ export class Wallet {
   }
 
   setPreferredCurrency(sym: string) {
-    // if (this.getSupportedCurrencies().indexOf(sym) === -1) {
-    //   return Promise.resolve()
-    // }
     this.stored.preference.currency = sym
     setImmediate(() => {
       this.events.publish('wallet:preferredcurrency', sym)
@@ -394,9 +391,7 @@ export class Wallet {
     if (isNaN(amount)) {
       return undefined
     }
-    // if (from === to) {
-    //   return amountStr
-    // }
+    // even if from === to
     let fromUnit = this.UNITS[from]
     let toUnit = this.UNITS[to]
     if (fromUnit && toUnit && fromUnit.rate && toUnit.rate) {
@@ -930,7 +925,6 @@ export class Wallet {
       utxos: newUtxos,
       history: newHistory
     }
-    // console.log(this.stored.cache)
     await this.updateStorage()
     if (!this.isSyncing()) {
       return
@@ -1080,7 +1074,6 @@ export class Wallet {
     } catch (err) {
       return false
     }
-    // return bitcoincash.Address.isValid(a)
   }
 
   isMyReceiveAddress(address: string) {
@@ -1404,11 +1397,6 @@ export class Wallet {
       }
       hex_tentative = this.signTx(ustx, availableKeys)
       let fee_required: number = hex_tentative.length / 2
-      // console.log(fee_tentative)
-      // console.log(fee_required)
-      // console.log(changeAmount)
-      // console.log(hex_tentative)
-      // console.log(new bitcoincash.Transaction(hex_tentative).toObject())
       if (fee_tentative >= fee_required) {
         break
       } else {
