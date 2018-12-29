@@ -96,7 +96,7 @@
       "cordova-plugin-x-socialsharing": {},
       "cordova-clipboard": {},
       "cordova-plugin-customurlscheme": {
-        "URL_SCHEME": "bitcoincash",
+        "URL_SCHEME": "bitcoin",
         "ANDROID_SCHEME": " ",
         "ANDROID_HOST": " ",
         "ANDROID_PATHPREFIX": "/"

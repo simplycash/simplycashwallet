@@ -1168,7 +1168,7 @@ export class Wallet {
       throw new Error('invalid address')
     }
     if (sat > 0) {
-      return 'bitcoincash:' + address + '?amount=' + this.convertUnit('SATS', 'BSV', sat.toString()).replace(/\.?0+$/,'')
+      return 'bitcoin:' + address + '?sv&amount=' + this.convertUnit('SATS', 'BSV', sat.toString()).replace(/\.?0+$/,'')
     } else {
       return address
     }

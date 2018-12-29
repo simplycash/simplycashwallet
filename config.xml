@@ -93,7 +93,7 @@
     <plugin name="cordova-plugin-x-socialsharing" spec="^5.3.1" />
     <plugin name="cordova-clipboard" spec="^1.1.1" />
     <plugin name="cordova-plugin-customurlscheme" spec="^4.3.0">
-        <variable name="URL_SCHEME" value="bitcoincash" />
+        <variable name="URL_SCHEME" value="bitcoin" />
         <variable name="ANDROID_SCHEME" value=" " />
         <variable name="ANDROID_HOST" value=" " />
         <variable name="ANDROID_PATHPREFIX" value="/" />
