@@ -397,7 +397,7 @@ export class HomePage {
 
     // Check if app was resume by custom url scheme
     (window as any).handleOpenURL = (url: string) => {
-      if (this.platform.is('ios') && url.indexOf('bitcoincash:') !== 0) {
+      if (this.platform.is('ios') && !url.match(/^bitcoin([-_]?(sv|cash))?:.*$/gi)) {
         return
       }
       if (

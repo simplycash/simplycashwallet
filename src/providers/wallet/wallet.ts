@@ -1220,7 +1220,7 @@ export class Wallet {
 
     let kvs: string[] = text.slice(i+1).split('&')
     let j: number = kvs.findIndex((kv: string) => {
-      return kv.indexOf('req-') === 0
+      return kv.match(/^req-.*$/gi) && !kv.match(/^req-sv(=.*)?$/gi)
     })
     if (j !== -1) {
       return
