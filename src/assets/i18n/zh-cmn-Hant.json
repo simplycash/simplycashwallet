@@ -1,4 +1,5 @@
 {
+  "RECOVERY_PASSPHRASE": "BIP39 密碼",
   "WARN_DELETE_WALLET": "當前的錢包將被刪除",
   "CREATING": "正在創建",
   "CREATE_SUCCESS": "成功創建錢包",
@@ -82,7 +83,7 @@
   "RECIPIENT": "收款人",
   "RECOVER": "復原",
   "RECOVERING": "正在復原",
-  "RECOVERY_HINT": "要復原現有的錢包，請輸入復原短語。<br><br>要創建新的錢包，請留空白。",
+  "RECOVERY_HINT": "要創建新的錢包，請留空白。<br><br>要復原現有的錢包，請輸入復原短語。",
   "RECOVERY_PHRASE": "復原短語",
   "RECOVER_FAILED": "未能復原錢包",
   "RECOVER_SUCCESS": "成功復原錢包",

@@ -35,10 +35,19 @@ export class MorePage {
   async showWRP() {
     try {
       let m: string = await this.wallet.authorize()
+      let a: string[] = m.split(/:(.*)/)
+      let mnemonic: string = a[0]
+      let passphrase: string = a[1]
+      let message: string = this.translate.instant('RECOVERY_PHRASE') + ':<br>' + mnemonic + '<br><br>'
+      if (passphrase) {
+        passphrase = passphrase.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+        message += this.translate.instant('RECOVERY_PASSPHRASE') + ':<br>' + passphrase + '<br><br>'
+      }
+      message += this.translate.instant('DERIVATION_PATH') + ":<br>m/44'/145'/0'"
       await this.alertCtrl.create({
         enableBackdropDismiss: false,
         title: this.translate.instant('BACKUP_WALLET'),
-        message: `${this.translate.instant('RECOVERY_PHRASE')}:<br>${m}<br><br>${this.translate.instant('DERIVATION_PATH')}:<br>m/44'/145'/0'`,
+        message: message,
         buttons: ['ok']
       }).present()
     } catch (err) {
@@ -56,6 +65,9 @@ export class MorePage {
       inputs: [{
         name: 'mnemonic',
         placeholder: this.translate.instant('RECOVERY_PHRASE')
+      }, {
+        name: 'passphrase',
+        placeholder: this.translate.instant('RECOVERY_PASSPHRASE')
       }],
       buttons: [{
         text: this.translate.instant('CANCEL'),
@@ -67,7 +79,7 @@ export class MorePage {
             this.confirmDelete().then(() => {
               return recoverAlert.dismiss()
             }).then(() => {
-              this.recover(data.mnemonic)
+              this.recover(data.mnemonic, data.passphrase)
             }).catch((err) => {
               console.log(err)
             })
@@ -122,10 +134,11 @@ export class MorePage {
     }
   }
 
-  async recover(m: string) {
-    m = m ? m.trim() : undefined
+  async recover(mnemonic?: string, passphrase?: string) {
+    mnemonic = mnemonic ? mnemonic.trim() : undefined
+    passphrase = passphrase ? passphrase : undefined
     let translations: string[]
-    if (m) {
+    if (mnemonic) {
       translations = ['RECOVERING', 'RECOVER_SUCCESS', 'RECOVER_FAILED']
     } else {
       translations = ['CREATING', 'CREATE_SUCCESS', 'CREATE_FAILED']
@@ -135,7 +148,7 @@ export class MorePage {
       content: this.translate.instant(translations[0]) + '...'
     })
     loader.present().then(() => {
-      return this.wallet.recoverWalletFromMnemonic(m)
+      return this.wallet.recoverWalletFromMnemonic(mnemonic, passphrase)
     }).then(() => {
       return this.app.getRootNav().setRoot('HomePage')
     }).catch((err: any) => {

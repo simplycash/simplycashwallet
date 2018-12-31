@@ -512,14 +512,15 @@ export class Wallet {
     this.changeState(this.STATE.CLOSED)
   }
 
-  createWallet(m?: string) {
-    let mnemonic: string = m || this.createMnemonic()
-    let hdPrivateKey: bitcoincash.HDPrivateKey = this.getHDPrivateKeyFromMnemonic(mnemonic)
+  createWallet(mnemonic?: string, passphrase?: string) {
+    mnemonic = mnemonic || this.createMnemonic()
+    let m: string = passphrase ? mnemonic + ':' + passphrase : mnemonic
+    let hdPrivateKey: bitcoincash.HDPrivateKey = this.getHDPrivateKeyFromMnemonic(m)
     let hdPublicKey: bitcoincash.HDPublicKey = hdPrivateKey.hdPublicKey
     let xpub: string = hdPublicKey.toString()
     let addresses: any = this.generateAddresses(hdPrivateKey)
 
-    let encrypted: string = this._encryptText(mnemonic, this.DUMMY_KEY)
+    let encrypted: string = this._encryptText(m, this.DUMMY_KEY)
 
     let obj: any = {
       keys: {
@@ -542,9 +543,9 @@ export class Wallet {
     })
   }
 
-  recoverWalletFromMnemonic(m: string) {
+  recoverWalletFromMnemonic(mnemonic?: string, passphrase?: string) {
     this.closeWallet()
-    return this.createWallet(m).then(() => {
+    return this.createWallet(mnemonic, passphrase).then(() => {
       return this.startWallet()
     })
   }
@@ -1032,7 +1033,10 @@ export class Wallet {
   }
 
   getHDPrivateKeyFromMnemonic(m: string) {
-    return new bitcoincash.Mnemonic(m).toHDPrivateKey()
+    let a: string[] = m.split(/:(.*)/)
+    let mnemonic: string = a[0]
+    let passphrase: string = a[1]
+    return new bitcoincash.Mnemonic(mnemonic).toHDPrivateKey(passphrase)
       .derive(44, true)
       .derive(145, true)
       .derive(0, true)
@@ -1141,7 +1145,7 @@ export class Wallet {
 
   getMnemonic(password?: string) {
     let decrypted: string = this._decryptText(this.stored.keys.encMnemonic, password || this.DUMMY_KEY)
-    if (this.validateMnemonic(decrypted)) {
+    if (decrypted && this.validateMnemonic(decrypted.split(/:(.*)/)[0])) {
       return decrypted
     } else {
       throw new Error('invalid password')

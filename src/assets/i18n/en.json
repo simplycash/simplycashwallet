@@ -1,4 +1,5 @@
 {
+  "RECOVERY_PASSPHRASE": "BIP39 passphrase",
   "WARN_DELETE_WALLET": "the current wallet will be deleted",
   "CREATING": "creating",
   "CREATE_SUCCESS": "wallet has been created",
@@ -82,7 +83,7 @@
   "RECIPIENT": "recipient",
   "RECOVER": "recover",
   "RECOVERING": "recovering",
-  "RECOVERY_HINT": "To recover an existing wallet, enter the recovery phrase.<br><br>To create a new wallet, just leave it blank.",
+  "RECOVERY_HINT": "To create a new wallet, just leave it blank.<br><br>To recover an existing wallet, enter the recovery phrase.",
   "RECOVERY_PHRASE": "recovery phrase",
   "RECOVER_FAILED": "failed to recover wallet",
   "RECOVER_SUCCESS": "wallet has been recovered",
