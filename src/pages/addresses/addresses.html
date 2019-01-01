@@ -25,13 +25,13 @@
   <div [ngSwitch]="type">
 
     <ion-list *ngSwitchCase="'receive'" no-lines>
-      <ion-item *ngFor="let addr of receiveAddrs" (click)="pushAddressPage(addr)" [attr.current]="addr.address === currentReceiveAddr ? '' : null">
+      <ion-item *ngFor="let addr of receiveAddrs" (click)="pushAddressPage(addr)">
         {{ addr.path[1] }}&nbsp;{{ addr.address }}
       </ion-item>
     </ion-list>
 
     <ion-list *ngSwitchCase="'change'" no-lines>
-      <ion-item *ngFor="let addr of changeAddrs" (click)="pushAddressPage(addr)" [attr.current]="addr.address === currentChangeAddr ? '' : null">
+      <ion-item *ngFor="let addr of changeAddrs" (click)="pushAddressPage(addr)">
         {{ addr.path[1] }}&nbsp;{{ addr.address }}
       </ion-item>
     </ion-list>
