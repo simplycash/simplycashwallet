@@ -1,6 +1,5 @@
 import { Component } from '@angular/core'
 import { IonicPage, NavController, NavParams, Platform, ToastController } from 'ionic-angular'
-import { InAppBrowser } from '@ionic-native/in-app-browser'
 import { Clipboard } from '@ionic-native/clipboard'
 import * as webClipboard from 'clipboard-polyfill'
 
@@ -9,18 +8,16 @@ import { Wallet } from '../../providers/providers'
 
 @IonicPage()
 @Component({
-  selector: 'page-address',
-  templateUrl: 'address.html',
+  selector: 'page-wif',
+  templateUrl: 'wif.html',
 })
-export class AddressPage {
-  public address: string
-  public path: number[]
+export class WifPage {
+  public wif: string
   public qrCodeURL: string
   public copyToast: any
   public copyToastTimer: number
   constructor(
     public clipboard: Clipboard,
-    public iab: InAppBrowser,
     public navCtrl: NavController,
     public navParams: NavParams,
     public platform: Platform,
@@ -38,20 +35,19 @@ export class AddressPage {
         }
       }
     }
-    this.address = this.navParams.get('address')
-    this.path = this.navParams.get('path')
-    this.wallet.getQR(this.wallet.getPaymentRequestURL(this.address)).then((url: string) => {
+    this.wif = this.navParams.get('wif')
+    this.wallet.getQR(this.wif).then((url: string) => {
       this.qrCodeURL = url
     })
   }
 
   copyToClipboard() {
-    this.clipboard.copy(this.address).then(() => {
+    this.clipboard.copy(this.wif).then(() => {
       if (this.copyToast) {
         window.clearTimeout(this.copyToastTimer)
       } else {
         this.copyToast = this.toastCtrl.create({
-          message: this.translate.instant('ADDRESS_COPIED'),
+          message: this.translate.instant('WIF_COPIED'),
           position: 'bottom',
           dismissOnPageChange: true
         })
@@ -66,26 +62,6 @@ export class AddressPage {
       }, 1000)
     }).catch((err: any) => {
 
-    })
-  }
-
-  viewOnBlockExplorer() {
-    this.iab.create('https://blockchair.com/bitcoin-sv/address/'+this.address, '_system')
-  }
-
-  async pushWifPage() {
-    let wif: string
-    try {
-      let m: string = await this.wallet.authorize()
-      wif = this.wallet.getWIF(this.path, m)
-    } catch (err) {
-      if (err.message !== 'cancelled') {
-        console.log(err)
-      }
-      return
-    }
-    this.navCtrl.push('WifPage', {
-      wif: wif
     })
   }
 

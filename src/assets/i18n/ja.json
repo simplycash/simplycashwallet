@@ -1,4 +1,5 @@
 {
+  "WIF_COPIED": "WIFをコピーしました",
   "RECOVERY_PASSPHRASE": "BIP39パスフレーズ",
   "WARN_DELETE_WALLET": "現在のウォレットは削除されます",
   "CREATING": "作成中",

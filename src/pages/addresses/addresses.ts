@@ -12,9 +12,9 @@ export class AddressesPage {
 
   public currentReceiveAddr: string
   public currentChangeAddr: string
-  public receiveAddrs: { index: number, address: string }[]
-  public changeAddrs: { index: number, address: string }[]
-  public unspentAddrs: { address: string, balance: string }[]
+  public receiveAddrs: { address: string, path: number[] }[]
+  public changeAddrs: { address: string, path: number[] }[]
+  public unspentAddrs: { address: string, balance: string, path: number[] }[]
   public type: string = 'receive'
 
   constructor(
@@ -35,20 +35,21 @@ export class AddressesPage {
     this.currentChangeAddr = this.wallet.getCacheChangeAddress()
     this.receiveAddrs = this.wallet.getAllReceiveAddresses().map((addr: string, i: number, arr: string[]) => {
       return {
-        index: i,
-        address: addr
+        address: addr,
+        path: [0, i]
       }
     }).reverse()
     this.changeAddrs = this.wallet.getAllChangeAddresses().map((addr: string, i: number, arr: string[]) => {
       return {
-        index: i,
-        address: addr
+        address: addr,
+        path: [1, i]
       }
     }).reverse()
     this.unspentAddrs = this.wallet.getCacheUtxos().map((utxo: any) => {
       return {
         address: utxo.address,
-        balance: this.wallet.convertUnit('SATS', 'BSV', utxo.satoshis.toString())
+        balance: this.wallet.convertUnit('SATS', 'BSV', utxo.satoshis.toString()),
+        path: utxo.path
       }
     })
     // if (this.wallet.getPreferredAddressFormat() === 'cashaddr') {
@@ -69,7 +70,8 @@ export class AddressesPage {
 
   pushAddressPage(addr: any) {
     this.navCtrl.push('AddressPage', {
-      address: addr.address
+      address: addr.address,
+      path: addr.path
     })
   }
 

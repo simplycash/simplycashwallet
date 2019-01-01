@@ -1327,6 +1327,10 @@ export class Wallet {
     return paths.map(path => d[path[0]].derive(path[1]).privateKey)
   }
 
+  getWIF(path: number[], m: string): string {
+    return this.getPrivateKeys([path], m)[0].toWIF()
+  }
+
   //tx
 
   async makeSignedTx(outputs: { script: bitcoincash.Script, satoshis: number }[], drain: boolean, m: string) {

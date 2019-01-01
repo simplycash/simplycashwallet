@@ -1,4 +1,5 @@
 {
+  "WIF_COPIED": "已复制WIF",
   "RECOVERY_PASSPHRASE": "BIP39 密码",
   "WARN_DELETE_WALLET": "当前的钱包将被删除",
   "CREATING": "正在创建",

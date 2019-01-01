@@ -1,5 +1,5 @@
 <!--
-  Generated template for the AddressPage page.
+  Generated template for the WifPage page.
 
   See http://ionicframework.com/docs/components/#navigation for more info on
   Ionic pages and navigation.
@@ -7,12 +7,7 @@
 <ion-header no-border>
 
   <ion-navbar color="primary">
-    <ion-title>{{ 'ADDRESS' | translate }}</ion-title>
-    <ion-buttons end>
-      <button ion-button icon-only (click)="pushWifPage()">
-        <ion-icon name="key"></ion-icon>
-      </button>
-    </ion-buttons>
+    <ion-title>WIF</ion-title>
   </ion-navbar>
 
 </ion-header>
@@ -20,16 +15,12 @@
 
 <ion-content no-bounce padding>
   <div *ngIf="qrCodeURL" text-center>
-    <p>{{ address }}</p>
+    <p>{{ wif }}</p>
     <img class="qrcode" [src]="qrCodeURL"/>
     <br>
     <button ion-button icon-left (click)="copyToClipboard()" clear>
       <ion-icon name="copy"></ion-icon>
       {{ 'COPY' | translate }}
-    </button>
-    <button ion-button icon-left (click)="viewOnBlockExplorer()" clear>
-      <ion-icon name="globe"></ion-icon>
-      {{ 'BLOCK_EXPLORER' | translate }}
     </button>
   </div>
 </ion-content>
