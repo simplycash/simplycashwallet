@@ -1321,17 +1321,17 @@ export class Wallet {
     return  tx.inputAmount - tx.outputAmount
   }
 
-  getRequiredKeys(utxos: any[], m: string): bitcoincash.PrivateKey[] {
+  getPrivateKeys(paths: number[][], m: string): bitcoincash.PrivateKey[] {
     let hdPrivateKey: bitcoincash.HDPrivateKey = this.getHDPrivateKeyFromMnemonic(m)
     let d: bitcoincash.HDPrivateKey[] = [hdPrivateKey.derive(0), hdPrivateKey.derive(1)]
-    return utxos.map(utxo => d[utxo.path[0]].derive(utxo.path[1]).privateKey)
+    return paths.map(path => d[path[0]].derive(path[1]).privateKey)
   }
 
   //tx
 
   async makeSignedTx(outputs: { script: bitcoincash.Script, satoshis: number }[], drain: boolean, m: string) {
     let au: any[] = this.getCacheUtxos()
-    let ak: bitcoincash.PrivateKey[] = this.getRequiredKeys(au, m)
+    let ak: bitcoincash.PrivateKey[] = this.getPrivateKeys(au.map(u => u.path), m)
     return this._makeSignedTx(outputs, drain, au, ak)
   }
 
