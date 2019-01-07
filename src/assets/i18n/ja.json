@@ -1,4 +1,5 @@
 {
+  "ERR_INVALID_DERIVATION_PATH": "無効な派生パス",
   "WIF_COPIED": "WIFをコピーしました",
   "RECOVERY_PASSPHRASE": "BIP39パスフレーズ",
   "WARN_DELETE_WALLET": "現在のウォレットは削除されます",
@@ -84,7 +85,7 @@
   "RECIPIENT": "受取人",
   "RECOVER": "復元",
   "RECOVERING": "復元中",
-  "RECOVERY_HINT": "新しいウォレットを作成するには、空白のままにします。<br><br>既存のウォレットを復元するには、復元フレーズを入力します。",
+  "RECOVERY_HINT": "新しいウォレットを作成するには、空白のままにします。既存のウォレットを復元するには、復元フレーズを入力します。",
   "RECOVERY_PHRASE": "復元フレーズ",
   "RECOVER_FAILED": "ウォレットの復元に失敗しました",
   "RECOVER_SUCCESS": "ウォレットが復元されました",

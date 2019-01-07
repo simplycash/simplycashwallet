@@ -35,15 +35,13 @@ export class MorePage {
   async showWRP() {
     try {
       let m: string = await this.wallet.authorize()
-      let a: string[] = m.split(/:(.*)/)
-      let mnemonic: string = a[0]
-      let passphrase: string = a[1]
-      let message: string = this.translate.instant('RECOVERY_PHRASE') + ':<br>' + mnemonic + '<br><br>'
-      if (passphrase) {
-        passphrase = passphrase.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
-        message += this.translate.instant('RECOVERY_PASSPHRASE') + ':<br>' + passphrase + '<br><br>'
+      let o: any = this.wallet.parseRecoveryString(m)
+      let message: string = this.translate.instant('RECOVERY_PHRASE') + ':<br>' + o.mnemonic + '<br><br>'
+      if (o.passphrase) {
+        o.passphrase = o.passphrase.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+        message += this.translate.instant('RECOVERY_PASSPHRASE') + ':<br>' + o.passphrase + '<br><br>'
       }
-      message += this.translate.instant('DERIVATION_PATH') + ":<br>m/44'/145'/0'"
+      message += this.translate.instant('DERIVATION_PATH') + ':<br>' + o.path
       await this.alertCtrl.create({
         enableBackdropDismiss: false,
         title: this.translate.instant('BACKUP_WALLET'),
@@ -61,10 +59,13 @@ export class MorePage {
     let recoverAlert = this.alertCtrl.create({
       enableBackdropDismiss: false,
       title: this.translate.instant('RECOVER_WALLET'),
-      message: `${this.translate.instant('RECOVERY_HINT')}<br><br>(${this.translate.instant('DERIVATION_PATH')}: m/44'/145'/0')`,
+      message: this.translate.instant('RECOVERY_HINT'),
       inputs: [{
         name: 'mnemonic',
         placeholder: this.translate.instant('RECOVERY_PHRASE')
+      }, {
+        name: 'path',
+        placeholder: "m/44'/145'/0'"
       }, {
         name: 'passphrase',
         placeholder: this.translate.instant('RECOVERY_PASSPHRASE')
@@ -75,11 +76,14 @@ export class MorePage {
       },{
         text: this.translate.instant('OK'),
         handler: data => {
-          if (!data.mnemonic || this.mnemonicIsValid(data.mnemonic)) {
+          if (
+            (!data.mnemonic || this.mnemonicIsValid(data.mnemonic)) &&
+            (!data.path || this.pathIsValid(data.path))
+          ) {
             this.confirmDelete().then(() => {
               return recoverAlert.dismiss()
             }).then(() => {
-              this.recover(data.mnemonic, data.passphrase)
+              this.recover(data.mnemonic, data.path, data.passphrase)
             }).catch((err) => {
               console.log(err)
             })
@@ -134,9 +138,25 @@ export class MorePage {
     }
   }
 
-  async recover(mnemonic?: string, passphrase?: string) {
+  pathIsValid(path: string) {
+    path = path.trim()
+    if (!path.match(/^m(\/\d+'?)*$/g)) {
+      this.alertCtrl.create({
+        enableBackdropDismiss: false,
+        title: this.translate.instant('ERROR'),
+        message: this.translate.instant('ERR_INVALID_DERIVATION_PATH'),
+        buttons: [this.translate.instant('OK')]
+      }).present()
+      return false
+    } else {
+      return true
+    }
+  }
+
+  async recover(mnemonic?: string, path?: string, passphrase?: string) {
     mnemonic = mnemonic ? mnemonic.trim() : undefined
-    passphrase = passphrase ? passphrase : undefined
+    path = path ? path.trim() : undefined
+    passphrase = passphrase || undefined
     let translations: string[]
     if (mnemonic) {
       translations = ['RECOVERING', 'RECOVER_SUCCESS', 'RECOVER_FAILED']
@@ -148,7 +168,7 @@ export class MorePage {
       content: this.translate.instant(translations[0]) + '...'
     })
     loader.present().then(() => {
-      return this.wallet.recoverWalletFromMnemonic(mnemonic, passphrase)
+      return this.wallet.recoverWalletFromMnemonic(mnemonic, path, passphrase)
     }).then(() => {
       return this.app.getRootNav().setRoot('HomePage')
     }).catch((err: any) => {

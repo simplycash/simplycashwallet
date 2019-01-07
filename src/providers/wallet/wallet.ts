@@ -512,9 +512,8 @@ export class Wallet {
     this.changeState(this.STATE.CLOSED)
   }
 
-  createWallet(mnemonic?: string, passphrase?: string) {
-    mnemonic = mnemonic || this.createMnemonic()
-    let m: string = passphrase ? mnemonic + ':' + passphrase : mnemonic
+  createWallet(mnemonic?: string, path?: string, passphrase?: string) {
+    let m: string = this.makeRecoveryString(mnemonic, path, passphrase)
     let hdPrivateKey: bitcoincash.HDPrivateKey = this.getHDPrivateKeyFromMnemonic(m)
     let hdPublicKey: bitcoincash.HDPublicKey = hdPrivateKey.hdPublicKey
     let xpub: string = hdPublicKey.toString()
@@ -543,9 +542,9 @@ export class Wallet {
     })
   }
 
-  recoverWalletFromMnemonic(mnemonic?: string, passphrase?: string) {
+  recoverWalletFromMnemonic(mnemonic?: string, path?: string, passphrase?: string) {
     this.closeWallet()
-    return this.createWallet(mnemonic, passphrase).then(() => {
+    return this.createWallet(mnemonic, path, passphrase).then(() => {
       return this.startWallet()
     })
   }
@@ -1033,13 +1032,24 @@ export class Wallet {
   }
 
   getHDPrivateKeyFromMnemonic(m: string) {
-    let a: string[] = m.split(/:(.*)/)
-    let mnemonic: string = a[0]
-    let passphrase: string = a[1]
-    return new bitcoincash.Mnemonic(mnemonic).toHDPrivateKey(passphrase)
-      .derive(44, true)
-      .derive(145, true)
-      .derive(0, true)
+    let o: any = this.parseRecoveryString(m)
+    return new bitcoincash.Mnemonic(o.mnemonic).toHDPrivateKey(o.passphrase).derive(o.path)
+  }
+
+  makeRecoveryString(mnemonic?: string, path?: string, passphrase?: string) {
+    mnemonic = mnemonic || this.createMnemonic()
+    path = path || "m/44'/145'/0'"
+    passphrase = passphrase || ''
+    return mnemonic + ':' + path + ':' + passphrase
+  }
+
+  parseRecoveryString(m: string) {
+    let a: string[] = m.split(':')
+    return {
+      mnemonic: a[0],
+      path: a[1] || "m/44'/145'/0'", // default path before version 0.0.60
+      passphrase: a.slice(2).join(':') || undefined
+    }
   }
 
   validateMnemonic(m: string) {
@@ -1145,7 +1155,7 @@ export class Wallet {
 
   getMnemonic(password?: string) {
     let decrypted: string = this._decryptText(this.stored.keys.encMnemonic, password || this.DUMMY_KEY)
-    if (decrypted && this.validateMnemonic(decrypted.split(/:(.*)/)[0])) {
+    if (decrypted && this.validateMnemonic(this.parseRecoveryString(decrypted).mnemonic)) {
       return decrypted
     } else {
       throw new Error('invalid password')

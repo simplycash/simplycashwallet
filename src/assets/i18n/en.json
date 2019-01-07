@@ -1,4 +1,5 @@
 {
+  "ERR_INVALID_DERIVATION_PATH": "invalid derivation path",
   "WIF_COPIED": "WIF copied",
   "RECOVERY_PASSPHRASE": "BIP39 passphrase",
   "WARN_DELETE_WALLET": "the current wallet will be deleted",
@@ -84,7 +85,7 @@
   "RECIPIENT": "recipient",
   "RECOVER": "recover",
   "RECOVERING": "recovering",
-  "RECOVERY_HINT": "To create a new wallet, just leave it blank.<br><br>To recover an existing wallet, enter the recovery phrase.",
+  "RECOVERY_HINT": "To create a new wallet, just leave it blank. To recover an existing wallet, enter the recovery phrase.",
   "RECOVERY_PHRASE": "recovery phrase",
   "RECOVER_FAILED": "failed to recover wallet",
   "RECOVER_SUCCESS": "wallet has been recovered",
