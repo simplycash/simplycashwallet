@@ -139,7 +139,7 @@ export class MorePage {
   }
 
   pathIsValid(path: string) {
-    path = path.trim()
+    path = path.trim().replace(/[‘’]/g,"'")
     if (!path.match(/^m(\/\d+'?)*$/g)) {
       this.alertCtrl.create({
         enableBackdropDismiss: false,
@@ -155,7 +155,7 @@ export class MorePage {
 
   async recover(mnemonic?: string, path?: string, passphrase?: string) {
     mnemonic = mnemonic ? mnemonic.trim() : undefined
-    path = path ? path.trim() : undefined
+    path = path ? path.trim().replace(/[‘’]/g,"'") : undefined
     passphrase = passphrase || undefined
     let translations: string[]
     if (mnemonic) {
