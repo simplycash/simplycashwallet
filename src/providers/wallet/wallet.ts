@@ -1408,6 +1408,14 @@ export class Wallet {
     })
   }
 
+  getFinalReceiveAddressIndex() {
+    return this.currentWallet.addresses.receive.length - 1
+  }
+
+  getFinalChangeAddressIndex() {
+    return this.currentWallet.addresses.change.length - 1
+  }
+
   getAllReceiveAddresses() {
     return this.currentWallet.addresses.receive.slice()
   }
@@ -1470,6 +1478,24 @@ export class Wallet {
     }
     let availableAmount: number = drain ? availableUtxos.map((curr) => curr.satoshis).reduce((acc, curr) => acc + curr) : 0
 
+    let agedAmount: number = 0
+    let agedUtxos: any[] = []
+    let recentUtxos: any[] = []
+    if (!drain) {
+      let limits: number[] = [
+        Math.max(0, this.getFinalReceiveAddressIndex() - 39),
+        Math.max(0, this.getFinalChangeAddressIndex() - 39)
+      ]
+      availableUtxos.forEach((u) => {
+        if (u.path[1] < limits[u.path[0]]) {
+          agedUtxos.push(u)
+          agedAmount += u.satoshis
+        } else {
+          recentUtxos.push(u)
+        }
+      })
+    }
+
     let acc: number
     let utxos: any[]
     let toAmount: number
@@ -1488,17 +1514,17 @@ export class Wallet {
         }
       } else {
         let i: number = 0
-        acc = 0
-        utxos = []
+        acc = agedAmount
+        utxos = agedUtxos.slice()
         while (true) {
-          let utxo: any = availableUtxos[i]
+          let excess: number = acc - satoshis - fee_tentative
+          if (excess >= 0 && excess <= 34 || excess >= 546 || i >= recentUtxos.length) {
+            break
+          }
+          let utxo: any = recentUtxos[i]
           acc += utxo.satoshis
           utxos.push(utxo)
           i++
-          let excess: number = acc - satoshis - fee_tentative
-          if (excess >= 0 && excess <= 34 || excess >= 546 || i >= availableUtxos.length) {
-            break
-          }
         }
         toAmount = satoshis
         if (acc < toAmount + fee_tentative) {
