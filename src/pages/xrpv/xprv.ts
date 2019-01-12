@@ -8,11 +8,11 @@ import { Wallet } from '../../providers/providers'
 
 @IonicPage()
 @Component({
-  selector: 'page-xpub',
-  templateUrl: 'xpub.html',
+  selector: 'page-xprv',
+  templateUrl: 'xprv.html',
 })
-export class XpubPage {
-  public xpub: string
+export class XprvPage {
+  public xprv: string
   public qrCodeURL: string
   public copyToast: any
   public copyToastTimer: number
@@ -35,28 +35,19 @@ export class XpubPage {
         }
       }
     }
-    this.refresh()
-  }
-
-  refresh() {
-    this.xpub = this.wallet.getXpub()
-    if (!this.xpub) {
-      return
-    }
-    return this.wallet.getQR(this.xpub).then((url: string) => {
+    this.xprv = this.navParams.get('xprv')
+    this.wallet.getQR(this.xprv).then((url: string) => {
       this.qrCodeURL = url
-    }).catch((err: any) => {
-      console.log(err)
     })
   }
 
   copyToClipboard() {
-    this.clipboard.copy(this.xpub).then(() => {
+    this.clipboard.copy(this.xprv).then(() => {
       if (this.copyToast) {
         window.clearTimeout(this.copyToastTimer)
       } else {
         this.copyToast = this.toastCtrl.create({
-          message: this.translate.instant('XPUB_COPIED'),
+          message: this.translate.instant('XPRV_COPIED'),
           position: 'bottom',
           dismissOnPageChange: true
         })
@@ -71,22 +62,6 @@ export class XpubPage {
       }, 1000)
     }).catch((err: any) => {
 
-    })
-  }
-
-  async pushXprvPage() {
-    let xprv: string
-    try {
-      let m: string = await this.wallet.authorize()
-      xprv = this.wallet.getXprv(m)
-    } catch (err) {
-      if (err.message !== 'cancelled') {
-        console.log(err)
-      }
-      return
-    }
-    this.navCtrl.push('XprvPage', {
-      xprv: xprv
     })
   }
 

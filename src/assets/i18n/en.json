@@ -1,4 +1,6 @@
 {
+  "XPUB_COPIED": "xpub copied",
+  "XPRV_COPIED": "xprv copied",
   "RENAME_WALLET": "wallet name",
   "WALLET": "wallet",
   "ERR_INVALID_WALLET_NAME": "invalid wallet name",

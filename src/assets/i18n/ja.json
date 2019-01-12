@@ -1,4 +1,6 @@
 {
+  "XPUB_COPIED": "xpubをコピーしました",
+  "XPRV_COPIED": "xprvをコピーしました",
   "RENAME_WALLET": "ウォレット名",
   "WALLET": "ウォレット",
   "ERR_INVALID_WALLET_NAME": "無効なウォレット名",

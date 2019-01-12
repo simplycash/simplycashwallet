@@ -1,4 +1,6 @@
 {
+  "XPUB_COPIED": "已複製 xpub",
+  "XPRV_COPIED": "已複製 xprv",
   "RENAME_WALLET": "錢包名稱",
   "WALLET": "錢包",
   "ERR_INVALID_WALLET_NAME": "錢包名稱無效",

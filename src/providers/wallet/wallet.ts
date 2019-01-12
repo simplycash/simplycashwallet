@@ -1463,6 +1463,10 @@ export class Wallet {
     return this.getPrivateKeys([path], m)[0].toWIF()
   }
 
+  getXprv(m: string): string {
+    return this.getHDPrivateKeyFromMnemonic(m).toString()
+  }
+
   //tx
 
   async makeSignedTx(outputs: { script: bitcoincash.Script, satoshis: number }[], drain: boolean, m: string) {

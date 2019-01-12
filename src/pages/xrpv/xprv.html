@@ -1,5 +1,5 @@
 <!--
-  Generated template for the XpubPage page.
+  Generated template for the XprvPage page.
 
   See http://ionicframework.com/docs/components/#navigation for more info on
   Ionic pages and navigation.
@@ -7,12 +7,7 @@
 <ion-header no-border>
 
   <ion-navbar color="primary">
-    <ion-title>xpub</ion-title>
-    <ion-buttons end>
-      <button ion-button icon-only (click)="pushXprvPage()">
-        <ion-icon name="key"></ion-icon>
-      </button>
-    </ion-buttons>
+    <ion-title>xprv</ion-title>
   </ion-navbar>
 
 </ion-header>
@@ -20,13 +15,12 @@
 
 <ion-content no-bounce padding>
   <div *ngIf="qrCodeURL" text-center>
-    <p>{{ xpub }}</p>
-    <img class="qrcode" [src]="qrCodeURL">
+    <p>{{ xprv }}</p>
+    <img class="qrcode" [src]="qrCodeURL"/>
     <br>
-    <button ion-button clear icon-left (click)="copyToClipboard()">
+    <button ion-button icon-left (click)="copyToClipboard()" clear>
       <ion-icon name="copy"></ion-icon>
       {{ 'COPY' | translate }}
     </button>
   </div>
-
 </ion-content>

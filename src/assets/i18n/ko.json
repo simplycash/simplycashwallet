@@ -1,4 +1,6 @@
 {
+  "XPUB_COPIED": "xpub가 복사되었다",
+  "XPRV_COPIED": "xprv가 복사되었다",
   "RENAME_WALLET": "지갑 이름",
   "WALLET": "지갑",
   "ERR_INVALID_WALLET_NAME": "잘못된 지갑 이름",
