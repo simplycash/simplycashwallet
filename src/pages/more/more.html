@@ -7,7 +7,15 @@
 <ion-header no-border>
 
   <ion-navbar color="primary">
-    <ion-title>{{ 'MORE' | translate }}...</ion-title>
+    <ion-title>{{ walletName }}</ion-title>
+    <ion-buttons end>
+      <button ion-button icon-only (click)="renameCurrentWallet()">
+        <ion-icon name="create"></ion-icon>
+      </button>
+      <button ion-button icon-only (click)="deleteCurrentWallet()">
+        <ion-icon name="trash"></ion-icon>
+      </button>
+    </ion-buttons>
   </ion-navbar>
 
 </ion-header>
@@ -16,7 +24,6 @@
 <ion-content no-bounce>
   <ion-list no-lines>
     <ion-item (click)="showWRP()">{{ 'BACKUP_WALLET' | translate }}</ion-item>
-    <ion-item (click)="promptForMnemonic()">{{ 'RECOVER_WALLET' | translate }}</ion-item>
     <ion-item (click)="pushAddressesPage()">{{ 'ADDRESSES' | translate }}</ion-item>
     <ion-item (click)="pushXpubPage()">xpub</ion-item>
     <ion-item (click)="launchTwitter()">

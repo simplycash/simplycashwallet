@@ -1,4 +1,7 @@
 {
+  "RENAME_WALLET": "钱包名称",
+  "WALLET": "钱包",
+  "ERR_INVALID_WALLET_NAME": "钱包名称无效",
   "ERR_INVALID_DERIVATION_PATH": "衍生路径无效",
   "WIF_COPIED": "已复制 WIF",
   "RECOVERY_PASSPHRASE": "BIP39 密码",

@@ -47,42 +47,47 @@ export class Wallet {
   public pendingAddresses: string[] = []
   public notificationId: number = 0
 
+  public currentWallet: any
   public stored: {
-    keys: {
-      encMnemonic: string,
-      xpub: string
-    },
-    addresses: {
-      receive: string[],
-      change: string[]
-    },
-    cache: {
-      receiveAddress: string,
-      changeAddress: string,
-      utxos: {
-        txid: string,
-        vout: number,
-        address: string,
-        path: number[],
-        scriptPubKey: string,
-        satoshis: number
-      }[],
-      history: {
-        txid: string,
-        timestamp: number,
-        friendlyTimestamp: number,
-        delta: number,
-        seen: boolean
-      }[]
-    },
+    version: string
+    wallets: {
+      name: string,
+      protection: string,
+      keys: {
+        encMnemonic: string,
+        xpub: string
+      },
+      addresses: {
+        receive: string[],
+        change: string[]
+      },
+      cache: {
+        receiveAddress: string,
+        changeAddress: string,
+        utxos: {
+          txid: string,
+          vout: number,
+          address: string,
+          path: number[],
+          scriptPubKey: string,
+          satoshis: number
+        }[],
+        history: {
+          txid: string,
+          timestamp: number,
+          friendlyTimestamp: number,
+          delta: number,
+          seen: boolean
+        }[]
+      }
+    }[],
     preference: {
+      defaultWallet: string,
       showBalance: boolean,
       unitIndex: number,
       cryptoUnit: string,
       currency: string,
       addressFormat: string,
-      password: boolean,
-      fingerprint: boolean,
       lastAnnouncement: string
     }
   }
@@ -92,8 +97,6 @@ export class Wallet {
     cryptoUnit: 'BSV',
     currency: 'USD',
     addressFormat: 'legacy',
-    password: false,
-    fingerprint: false,
     lastAnnouncement: ''
   }
 
@@ -146,10 +149,10 @@ export class Wallet {
   }
 
   getPreferredProtection() {
-    if (this.stored.preference.password === true) {
+    if (this.currentWallet.protection === 'password') {
       return 'PIN'
     }
-    if (this.stored.preference.fingerprint === true) {
+    if (this.currentWallet.protection === 'fingerprint') {
       return 'FINGERPRINT'
     }
     return 'OFF'
@@ -159,23 +162,20 @@ export class Wallet {
     if (p === 'PIN') {
       let pw = await this.newPIN()
       let encrypted: string = this._encryptText(m, pw)
-      this.stored.keys.encMnemonic = encrypted
-      this.stored.preference.password = true
-      this.stored.preference.fingerprint = false
+      this.currentWallet.keys.encMnemonic = encrypted
+      this.currentWallet.protection = 'password'
     } else if (p === 'FINGERPRINT') {
       if (!await this.canUseFingerprint()) {
         await this.fingerprintNAPrompt()
         throw new Error('auth unavailable')
       }
       let encrypted: string = this._encryptText(m, this.DUMMY_KEY)
-      this.stored.keys.encMnemonic = encrypted
-      this.stored.preference.password = false
-      this.stored.preference.fingerprint = true
+      this.currentWallet.keys.encMnemonic = encrypted
+      this.currentWallet.protection = 'fingerprint'
     } else if (p === 'OFF') {
       let encrypted: string = this._encryptText(m, this.DUMMY_KEY)
-      this.stored.keys.encMnemonic = encrypted
-      this.stored.preference.password = false
-      this.stored.preference.fingerprint = false
+      this.currentWallet.keys.encMnemonic = encrypted
+      this.currentWallet.protection = 'off'
     }
     return await this.updateStorage()
   }
@@ -508,11 +508,45 @@ export class Wallet {
     if (!this.isOffline() && !this.isClosed()) {
       this.socket.off('disconnect')
       this.socket.close()
+      this.changeState(this.STATE.CLOSED)
     }
-    this.changeState(this.STATE.CLOSED)
   }
 
-  createWallet(mnemonic?: string, path?: string, passphrase?: string) {
+  async createStorage() {
+    let obj: any = {
+      version: this.VERSION,
+      wallets: [],
+      preference: Object.assign({}, this.defaultPreference)
+    }
+    let value: any = await this.updateStorage(obj)
+    console.log('successfully created new storage')
+    return value
+  }
+
+  nextWalletName() {
+    let prefix: string = this.translate.instant('WALLET') + ' '
+    let i: number
+    if (this.stored && this.stored.wallets) {
+      let names: string[] = this.getAllWalletNames()
+      i = this.stored.wallets.length
+      do {
+        i++
+      } while (names.indexOf(prefix + i) !== -1)
+    } else {
+      i = 1
+    }
+    return prefix + i
+  }
+
+  getCurrentWalletName() {
+    return this.currentWallet.name
+  }
+
+  getAllWalletNames() {
+    return this.stored.wallets.map(w => w.name)
+  }
+
+  async createWallet(mnemonic?: string, path?: string, passphrase?: string, name?: string) {
     let m: string = this.makeRecoveryString(mnemonic, path, passphrase)
     let hdPrivateKey: bitcoincash.HDPrivateKey = this.getHDPrivateKeyFromMnemonic(m)
     let hdPublicKey: bitcoincash.HDPublicKey = hdPrivateKey.hdPublicKey
@@ -521,7 +555,9 @@ export class Wallet {
 
     let encrypted: string = this._encryptText(m, this.DUMMY_KEY)
 
-    let obj: any = {
+    let wallet: any = {
+      name: name || this.nextWalletName(),
+      protection: 'off',
       keys: {
         encMnemonic: encrypted,
         xpub: xpub,
@@ -532,21 +568,58 @@ export class Wallet {
         changeAddress: addresses.change[0],
         utxos: [],
         history: []
-      },
-      preference: Object.assign({}, this.defaultPreference)
+      }
     }
-
-    return this.updateStorage(obj).then((value) => {
-      console.log('successfully created new wallet')
-      return value
-    })
+    // this.stored has to be ready
+    this.stored.wallets.push(wallet)
+    this.stored.preference.defaultWallet = wallet.name
+    await this.updateStorage()
   }
 
-  recoverWalletFromMnemonic(mnemonic?: string, path?: string, passphrase?: string) {
+  async recoverWalletFromMnemonic(mnemonic?: string, path?: string, passphrase?: string, name?: string) {
     this.closeWallet()
-    return this.createWallet(mnemonic, path, passphrase).then(() => {
-      return this.startWallet()
-    })
+    await this.createWallet(mnemonic, path, passphrase, name)
+    await this.startWallet()
+  }
+
+  async switchWallet(name: string) {
+    if (!this.stored.wallets.find(w => w.name === name)) {
+      throw new Error('no such wallet')
+    }
+    this.closeWallet()
+    this.stored.preference.defaultWallet = name
+    await this.updateStorage()
+    await this.startWallet()
+  }
+
+  async renameWallet(oldName: string, newName: string) {
+    let w: any = this.stored.wallets.find(w => w.name === oldName)
+    if (!w) {
+      throw new Error('no such wallet')
+    }
+    w.name = newName
+    if (this.stored.preference.defaultWallet === oldName) {
+      this.stored.preference.defaultWallet = newName
+    }
+    await this.updateStorage()
+  }
+
+  async deleteWallet(name: string) {
+    let i: number = this.stored.wallets.findIndex(w => w.name === name)
+    if (i === -1) {
+      throw new Error('no such wallet')
+    }
+    this.closeWallet()
+    let names: string[] = this.getAllWalletNames().sort()
+    let deleted: any = this.stored.wallets.splice(i, 1)[0]
+    let j: number = names.indexOf(deleted.name)
+    let next: string = names[j + 1] || names[j - 1]
+    if (next) {
+      await this.switchWallet(next)
+    } else {
+      await this.updateStorage()
+      await this.startWallet()
+    }
   }
 
   startWallet() {
@@ -560,99 +633,140 @@ export class Wallet {
   async loadWalletFromStorage() {
     let value: any = await this.storage.get(this.WALLET_KEY)
     if (!value) {
-      console.log('nothing found in storage, will create new wallet')
-      value = await this.createWallet()
+      console.log('no stored object, will create a new one')
+      this.stored = await this.createStorage()
     } else {
-      console.log('wallet found in storage')
+      console.log('stored object found')
       let willUpdate = false
-      if (value.keys.hasOwnProperty('mnemonic') && !value.keys.hasOwnProperty('encMnemonic')) {
-        let encrypted: string = this._encryptText(value.keys.mnemonic, this.DUMMY_KEY)
-        delete value.keys.mnemonic
-        value.keys.encMnemonic = encrypted
-        willUpdate = true
-      }
-      if (value.preference.hasOwnProperty('pin')) {
-        if (typeof value.preference.pin === 'undefined' || value.preference.pin === null) {
-          value.preference.password = false
-        } else {
-          let decrypted: string = this._decryptText(value.keys.encMnemonic, this.DUMMY_KEY)
-          let encrypted: string = this._encryptText(decrypted, value.preference.pin)
+      // if before 0.0.61, turn it to 0.0.61
+      if (!value.hasOwnProperty('version')) {
+        // before 0.0.61
+        if (value.keys.hasOwnProperty('mnemonic') && !value.keys.hasOwnProperty('encMnemonic')) {
+          let encrypted: string = this._encryptText(value.keys.mnemonic, this.DUMMY_KEY)
+          delete value.keys.mnemonic
           value.keys.encMnemonic = encrypted
-          value.preference.password = true
+          willUpdate = true
         }
-        delete value.preference.pin
-        willUpdate = true
-      }
-      if (value.preference.hasOwnProperty('pinHash')) {
-        if (typeof value.preference.pinHash === 'undefined' || value.preference.pinHash === null) {
-          value.preference.password = false
-        } else {
-          this.splashScreen.hide()
-          let pw: string = await new Promise<string>((resolve, reject) => {
-            let pinAlert = this.alertCtrl.create({
-              enableBackdropDismiss: false,
-              title: 'PIN',
-              inputs: [{
-                name: 'pin',
-                type: 'password',
-                placeholder: this.translate.instant('ENTER_PIN')
-              }],
-              buttons: [{
-                text: this.translate.instant('OK'),
-                handler: data => {
-                  let p = value.preference.pinHash.split(':')
-                  let salt = Buffer.from(p[0], 'hex')
-                  let hash = crypto.createHash('sha256').update(salt).update(data.pin, 'utf8').digest('hex')
-                  let r = p[0] + ':' + hash
-                  if (r === value.preference.pinHash) {
-                    pinAlert.dismiss().then(() => {
-                      resolve(data.pin)
-                    })
-                  } else {
-                    this.alertCtrl.create({
-                      enableBackdropDismiss: false,
-                      title: this.translate.instant('ERROR'),
-                      message: this.translate.instant('ERR_INCORRECT_PIN'),
-                      buttons: ['ok']
-                    }).present()
+        if (value.preference.hasOwnProperty('pin')) {
+          if (typeof value.preference.pin === 'undefined' || value.preference.pin === null) {
+            value.preference.password = false
+          } else {
+            let decrypted: string = this._decryptText(value.keys.encMnemonic, this.DUMMY_KEY)
+            let encrypted: string = this._encryptText(decrypted, value.preference.pin)
+            value.keys.encMnemonic = encrypted
+            value.preference.password = true
+          }
+          delete value.preference.pin
+          willUpdate = true
+        }
+        if (value.preference.hasOwnProperty('pinHash')) {
+          if (typeof value.preference.pinHash === 'undefined' || value.preference.pinHash === null) {
+            value.preference.password = false
+          } else {
+            this.splashScreen.hide()
+            let pw: string = await new Promise<string>((resolve, reject) => {
+              let pinAlert = this.alertCtrl.create({
+                enableBackdropDismiss: false,
+                title: 'PIN',
+                inputs: [{
+                  name: 'pin',
+                  type: 'password',
+                  placeholder: this.translate.instant('ENTER_PIN')
+                }],
+                buttons: [{
+                  text: this.translate.instant('OK'),
+                  handler: data => {
+                    let p = value.preference.pinHash.split(':')
+                    let salt = Buffer.from(p[0], 'hex')
+                    let hash = crypto.createHash('sha256').update(salt).update(data.pin, 'utf8').digest('hex')
+                    let r = p[0] + ':' + hash
+                    if (r === value.preference.pinHash) {
+                      pinAlert.dismiss().then(() => {
+                        resolve(data.pin)
+                      })
+                    } else {
+                      this.alertCtrl.create({
+                        enableBackdropDismiss: false,
+                        title: this.translate.instant('ERROR'),
+                        message: this.translate.instant('ERR_INCORRECT_PIN'),
+                        buttons: ['ok']
+                      }).present()
+                    }
+                    return false
                   }
-                  return false
-                }
-              }]
+                }]
+              })
+              pinAlert.present()
             })
-            pinAlert.present()
-          })
-          let decrypted: string = this._decryptText(value.keys.encMnemonic, this.DUMMY_KEY)
-          let encrypted: string = this._encryptText(decrypted, pw)
-          value.keys.encMnemonic = encrypted
-          value.preference.password = true
+            let decrypted: string = this._decryptText(value.keys.encMnemonic, this.DUMMY_KEY)
+            let encrypted: string = this._encryptText(decrypted, pw)
+            value.keys.encMnemonic = encrypted
+            value.preference.password = true
+          }
+          delete value.preference.pinHash
+          willUpdate = true
         }
-        delete value.preference.pinHash
+        if (value.preference.hasOwnProperty('chain')) {
+          delete value.preference.chain
+          willUpdate = true
+        }
+        if (value.preference.cryptoUnit === 'BCH') {
+          value.preference.cryptoUnit = 'BSV'
+          willUpdate = true
+        }
+        if (value.preference.addressFormat !== 'legacy') {
+          value.preference.addressFormat = 'legacy'
+          willUpdate = true
+        }
+        // transition to 0.0.61
+        value.wallets = [{
+          name: this.translate.instant('WALLET') + ' 1',
+          protection: value.preference.password ? 'password' : value.preference.fingerprint ? 'fingerprint' : 'off',
+          keys: value.keys,
+          addresses: value.addresses,
+          cache: value.cache
+        }]
+        value.preference.defaultWallet = value.wallets[0].name
+        delete value.keys
+        delete value.addresses
+        delete value.cache
+        delete value.preference.password
+        delete value.preference.fingerprint
+        value.version = '0.0.61'
         willUpdate = true
       }
-      if (value.preference.hasOwnProperty('chain')) {
-        delete (value.preference as any).chain
-        willUpdate = true
-      }
-      if (value.preference.cryptoUnit === 'BCH') {
-        value.preference.cryptoUnit = 'BSV'
-        willUpdate = true
-      }
-      if (value.preference.addressFormat !== 'legacy') {
-        value.preference.addressFormat = 'legacy'
+      // ensure no missing preferences
+      Object.keys(this.defaultPreference).forEach((k) => {
+        if (typeof value.preference[k] === 'undefined') {
+          value.preference[k] = this.defaultPreference[k]
+          willUpdate = true
+        }
+      })
+      // upgrade version
+      if (value.version !== this.VERSION) {
+        value.version = this.VERSION
         willUpdate = true
       }
       if (willUpdate) {
         value = await this.updateStorage(value)
       }
+      this.stored = value
     }
-    Object.keys(this.defaultPreference).forEach((k) => {
-      if (typeof value.preference[k] === 'undefined') {
-        value.preference[k] = this.defaultPreference[k]
-      }
-    })
-    this.stored = value
+    // this.stored should be ready
+    if (this.stored.wallets.length === 0) {
+      console.log('no wallet, will create a new one')
+      // push new wallet and set as default
+      await this.createWallet()
+    }
+    this.currentWallet = this.stored.wallets.find(w => w.name === this.stored.preference.defaultWallet)
+    if (!this.currentWallet) {
+      // should not happen, but just in case
+      this.currentWallet = this.stored.wallets[0]
+      this.stored.preference.defaultWallet = this.currentWallet.name
+      await this.updateStorage()
+    }
     this.changeState(this.STATE.OFFLINE)
+    console.log('default wallet loaded')
   }
 
   async showAnnouncement() {
@@ -713,7 +827,7 @@ export class Wallet {
         }
         await this.apiWS('startwallet', {
           response: response.toString('hex'),
-          xpub: this.stored.keys.xpub
+          xpub: this.currentWallet.keys.xpub
         }, true)
         this.changeState(this.STATE.CONNECTED)
         await Promise.all([
@@ -789,7 +903,7 @@ export class Wallet {
     let allTxids: string[] = this.getAllTxids()
     let newTxs: any[]  = results[4].filter(tx => allTxids.indexOf(tx.txid) === -1)
     let oldTxs: any[]  = results[4].filter(tx => allTxids.indexOf(tx.txid) !== -1)
-    let lastConfirmed: any = this.stored.cache.history.find(tx => typeof tx.timestamp !== 'undefined')
+    let lastConfirmed: any = this.currentWallet.cache.history.find(tx => typeof tx.timestamp !== 'undefined')
     if (typeof lastConfirmed !== 'undefined') {
       newTxs = newTxs.filter(tx => typeof tx.timestamp === 'undefined' || tx.timestamp >= lastConfirmed.timestamp)
     }
@@ -825,12 +939,12 @@ export class Wallet {
     let currentTimestamp: number = Math.floor(new Date().getTime() / 1000)
     let newHistory: any[]
     if (fullSync) {
-      let oldUnconfirmed: any[] = this.stored.cache.history.filter(tx => typeof tx.timestamp === 'undefined')
+      let oldUnconfirmed: any[] = this.currentWallet.cache.history.filter(tx => typeof tx.timestamp === 'undefined')
       let newUnconfirmed: any[] = results[4].filter(tx => typeof tx.timestamp === 'undefined')
       let stillUnconfirmed: any[] = oldUnconfirmed.filter(otx => typeof newUnconfirmed.find(ntx => ntx.txid === otx.txid) !== 'undefined')
       let freshUnconfirmed: any[] = newUnconfirmed.filter(ntx => typeof stillUnconfirmed.find(stx => ntx.txid === stx.txid) === 'undefined')
 
-      let oldConfirmed: any[] = this.stored.cache.history.filter(tx => typeof tx.timestamp !== 'undefined')
+      let oldConfirmed: any[] = this.currentWallet.cache.history.filter(tx => typeof tx.timestamp !== 'undefined')
       let newConfirmed: any[] = results[4].filter(tx => typeof tx.timestamp !== 'undefined')
       newConfirmed = newConfirmed.map(n => oldUnconfirmed.find(o => o.txid === n.txid) || n)
       let stillConfirmed: any[] = oldConfirmed.filter(otx => typeof newConfirmed.find(ntx => ntx.txid === otx.txid) !== 'undefined')
@@ -856,7 +970,7 @@ export class Wallet {
           seen: false
         }
       })
-      let h2: any[] = this.stored.cache.history.map((h) => {
+      let h2: any[] = this.currentWallet.cache.history.map((h) => {
         let match: any = oldTxs.find(tx => tx.txid === h.txid)
         if (typeof match === 'undefined') {
           return h
@@ -895,7 +1009,7 @@ export class Wallet {
           txid: obj.txid,
           vout: obj.vout,
           address: obj.address,
-          //path relies on up-to-date this.stored.addresses
+          //path relies on up-to-date this.currentWallet.addresses
           path: this.getAddressTypeAndIndex(obj.address),
           scriptPubKey: obj.scriptPubKey,
           satoshis: obj.satoshis
@@ -903,7 +1017,7 @@ export class Wallet {
       }).filter(utxo => typeof utxo.path !== 'undefined')
     } else {
       let futxos: any[] = results[3].filter((nutxo) => {
-        return this.stored.cache.utxos.findIndex(outxo => outxo.txid === nutxo.txid && outxo.vout === nutxo.vout) === -1
+        return this.currentWallet.cache.utxos.findIndex(outxo => outxo.txid === nutxo.txid && outxo.vout === nutxo.vout) === -1
       }).map((utxo) => {
         return {
           txid: utxo.txid,
@@ -914,12 +1028,12 @@ export class Wallet {
           satoshis: utxo.satoshis
         }
       }).filter(utxo => typeof utxo.path !== 'undefined')
-      let rutxos: any[] = this.stored.cache.utxos.filter(outxo => targetAddresses.indexOf(outxo.address) === -1 || results[3].findIndex(nutxo => outxo.txid === nutxo.txid && outxo.vout === nutxo.vout) !== -1)
+      let rutxos: any[] = this.currentWallet.cache.utxos.filter(outxo => targetAddresses.indexOf(outxo.address) === -1 || results[3].findIndex(nutxo => outxo.txid === nutxo.txid && outxo.vout === nutxo.vout) !== -1)
       newUtxos = rutxos.concat(futxos)
     }
 
     //update cache
-    this.stored.cache = {
+    this.currentWallet.cache = {
       receiveAddress: results[1],
       changeAddress: results[2],
       utxos: newUtxos,
@@ -938,26 +1052,26 @@ export class Wallet {
   async syncAddresses(pair: any) {
     let newAddresses: any = { receive: [], change: [] }
 
-    this.stored.addresses.receive.length = Math.min(pair.receive + 1, this.stored.addresses.receive.length)
-    this.stored.addresses.change.length = Math.min(pair.change + 1, this.stored.addresses.change.length)
+    this.currentWallet.addresses.receive.length = Math.min(pair.receive + 1, this.currentWallet.addresses.receive.length)
+    this.currentWallet.addresses.change.length = Math.min(pair.change + 1, this.currentWallet.addresses.change.length)
 
-    if (pair.receive === this.stored.addresses.receive.length - 1 && pair.change === this.stored.addresses.change.length - 1) {
+    if (pair.receive === this.currentWallet.addresses.receive.length - 1 && pair.change === this.currentWallet.addresses.change.length - 1) {
         return newAddresses
     }
     let hdPublicKey: bitcoincash.HDPublicKey = this.getHDPublicKey()
     let d: bitcoincash.HDPublicKey[] = [hdPublicKey.derive(0), hdPublicKey.derive(1)]
     // let hdPrivateKey: bitcoincash.HDPrivateKey = this.getHDPrivateKeyFromMnemonic(this.getMnemonic())
     // let d: bitcoincash.HDPrivateKey[] = [hdPrivateKey.derive(0), hdPrivateKey.derive(1)]
-    for (let i = this.stored.addresses.receive.length; i <= pair.receive; i++) {
+    for (let i = this.currentWallet.addresses.receive.length; i <= pair.receive; i++) {
       await this.delay(0)
       newAddresses.receive.push(d[0].derive(i).publicKey.toAddress().toString())
     }
-    for (let i = this.stored.addresses.change.length; i <= pair.change; i++) {
+    for (let i = this.currentWallet.addresses.change.length; i <= pair.change; i++) {
       await this.delay(0)
       newAddresses.change.push(d[1].derive(i).publicKey.toAddress().toString())
     }
-    Array.prototype.push.apply(this.stored.addresses.receive, newAddresses.receive)
-    Array.prototype.push.apply(this.stored.addresses.change, newAddresses.change)
+    Array.prototype.push.apply(this.currentWallet.addresses.receive, newAddresses.receive)
+    Array.prototype.push.apply(this.currentWallet.addresses.change, newAddresses.change)
     return newAddresses
   }
 
@@ -1104,7 +1218,7 @@ export class Wallet {
 
   getAddressTypeAndIndex(address: string, type?: number) {
     if (typeof type === 'undefined' || type === 0) {
-      let ra: string[] = this.stored.addresses.receive
+      let ra: string[] = this.currentWallet.addresses.receive
       let ras: number = Math.max(0, ra.length - this.ADDRESS_LIMIT)
       let i = ra.indexOf(address, ras)
       if (i !== -1) {
@@ -1112,7 +1226,7 @@ export class Wallet {
       }
     }
     if (typeof type === 'undefined' || type === 1) {
-      let ca: string[] = this.stored.addresses.change
+      let ca: string[] = this.currentWallet.addresses.change
       let cas: number = Math.max(0, ca.length - this.ADDRESS_LIMIT)
       let j = ca.indexOf(address, cas)
       if (j !== -1) {
@@ -1123,16 +1237,16 @@ export class Wallet {
   }
 
   getAllTxids() {
-    return this.stored.cache.history.map(obj => obj.txid)
+    return this.currentWallet.cache.history.map(obj => obj.txid)
   }
 
   getUnseenTxids() {
-    return this.stored.cache.history.filter(obj => !obj.seen).map(obj => obj.txid)
+    return this.currentWallet.cache.history.filter(obj => !obj.seen).map(obj => obj.txid)
   }
 
   seeTheUnseen() {
     let touch: boolean = false
-    this.stored.cache.history.forEach((obj: any) => {
+    this.currentWallet.cache.history.forEach((obj: any) => {
       if (!touch && !obj.seen) {
         touch = true
       }
@@ -1146,15 +1260,15 @@ export class Wallet {
   //getters
 
   getHDPublicKey() {
-    return new bitcoincash.HDPublicKey(this.stored.keys.xpub)
+    return new bitcoincash.HDPublicKey(this.currentWallet.keys.xpub)
   }
 
   getXpub() {
-    return this.stored.keys.xpub
+    return this.currentWallet.keys.xpub
   }
 
   getMnemonic(password?: string) {
-    let decrypted: string = this._decryptText(this.stored.keys.encMnemonic, password || this.DUMMY_KEY)
+    let decrypted: string = this._decryptText(this.currentWallet.keys.encMnemonic, password || this.DUMMY_KEY)
     if (decrypted && this.validateMnemonic(this.parseRecoveryString(decrypted).mnemonic)) {
       return decrypted
     } else {
@@ -1295,35 +1409,35 @@ export class Wallet {
   }
 
   getAllReceiveAddresses() {
-    return this.stored.addresses.receive.slice()
+    return this.currentWallet.addresses.receive.slice()
   }
 
   getAllChangeAddresses() {
-    return this.stored.addresses.change.slice()
+    return this.currentWallet.addresses.change.slice()
   }
 
   getCacheReceiveAddress() {
-    return this.stored.cache.receiveAddress
+    return this.currentWallet.cache.receiveAddress
   }
 
   getCacheChangeAddress() {
-    return this.stored.cache.changeAddress
+    return this.currentWallet.cache.changeAddress
   }
 
   getCacheBalance() {
     let balance: number = 0
-    this.stored.cache.utxos.forEach((utxo: any) => {
+    this.currentWallet.cache.utxos.forEach((utxo: any) => {
       balance += utxo.satoshis
     })
     return balance
   }
 
   getCacheHistory() {
-    return this.stored.cache.history.slice()
+    return this.currentWallet.cache.history.slice()
   }
 
   getCacheUtxos() {
-    return this.stored.cache.utxos.slice()
+    return this.currentWallet.cache.utxos.slice()
   }
 
   getTxFee(serialized: any) {
@@ -1411,7 +1525,7 @@ export class Wallet {
         })
       }
       if (changeAmount > 0) {
-        ustx.fee(fee_tentative).change(this.stored.cache.changeAddress)
+        ustx.fee(fee_tentative).change(this.currentWallet.cache.changeAddress)
       }
       hex_tentative = this.signTx(ustx, availableKeys)
       let fee_required: number = hex_tentative.length / 2
@@ -1434,7 +1548,7 @@ export class Wallet {
       info = await this.getInfoFromWIF(wif)
     }
     let output: any = {
-      script: this.scriptFromAddress(this.stored.cache.receiveAddress),
+      script: this.scriptFromAddress(this.currentWallet.cache.receiveAddress),
       satoshis: 0
     }
     return await this._makeSignedTx([output], true, info.utxos, keys)

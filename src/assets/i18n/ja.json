@@ -1,4 +1,7 @@
 {
+  "RENAME_WALLET": "ウォレット名",
+  "WALLET": "ウォレット",
+  "ERR_INVALID_WALLET_NAME": "無効なウォレット名",
   "ERR_INVALID_DERIVATION_PATH": "無効な派生パス",
   "WIF_COPIED": "WIFをコピーしました",
   "RECOVERY_PASSPHRASE": "BIP39パスフレーズ",

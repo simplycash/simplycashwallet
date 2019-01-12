@@ -1,4 +1,7 @@
 {
+  "RENAME_WALLET": "지갑 이름",
+  "WALLET": "지갑",
+  "ERR_INVALID_WALLET_NAME": "잘못된 지갑 이름",
   "ERR_INVALID_DERIVATION_PATH": "잘못된 파생 경로",
   "WIF_COPIED": "WIF가 복사되었다",
   "RECOVERY_PASSPHRASE": "BIP39 암호",

@@ -1,4 +1,7 @@
 {
+  "RENAME_WALLET": "wallet name",
+  "WALLET": "wallet",
+  "ERR_INVALID_WALLET_NAME": "invalid wallet name",
   "ERR_INVALID_DERIVATION_PATH": "invalid derivation path",
   "WIF_COPIED": "WIF copied",
   "RECOVERY_PASSPHRASE": "BIP39 passphrase",
