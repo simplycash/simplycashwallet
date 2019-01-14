@@ -133,7 +133,7 @@ export class Wallet {
     await this.delay(0)
     let p: string = this.getPreferredProtection()
     if (p === 'OFF') {
-      return this.getMnemonic()
+      return this.getRecoveryString()
     } else if (p === 'FINGERPRINT') {
       // intended
       if (await this.canUseFingerprint()) {
@@ -250,7 +250,7 @@ export class Wallet {
           handler: data => {
             let m: string
             try {
-              m = this.getMnemonic(data.pin)
+              m = this.getRecoveryString(data.pin)
               pinAlert.dismiss().then(() => {
                 resolve(m)
               })
@@ -312,7 +312,7 @@ export class Wallet {
       localizedFallbackTitle: 'PIN', //Only for iOS
       //localizedReason: 'Please authenticate' //Only for iOS
     }).then(() => {
-      return this.getMnemonic()
+      return this.getRecoveryString()
     }).catch((err: any) => {
       throw new Error('cancelled')
     })
@@ -546,9 +546,9 @@ export class Wallet {
     return this.stored.wallets.map(w => w.name)
   }
 
-  async createWallet(mnemonic?: string, path?: string, passphrase?: string, name?: string) {
-    let m: string = this.makeRecoveryString(mnemonic, path, passphrase)
-    let hdPrivateKey: bitcoincash.HDPrivateKey = this.getHDPrivateKeyFromMnemonic(m)
+  async createWallet(mnemonicOrXprv?: string, path?: string, passphrase?: string, name?: string) {
+    let m: string = this.makeRecoveryString(mnemonicOrXprv, path, passphrase)
+    let hdPrivateKey: bitcoincash.HDPrivateKey = this.getHDPrivateKeyFromRecoveryString(m)
     let hdPublicKey: bitcoincash.HDPublicKey = hdPrivateKey.hdPublicKey
     let xpub: string = hdPublicKey.toString()
     let addresses: any = this.generateAddresses(hdPrivateKey)
@@ -576,9 +576,9 @@ export class Wallet {
     await this.updateStorage()
   }
 
-  async recoverWalletFromMnemonic(mnemonic?: string, path?: string, passphrase?: string, name?: string) {
+  async recoverWalletFromMnemonicOrXprv(mnemonicOrXprv?: string, path?: string, passphrase?: string, name?: string) {
     this.closeWallet()
-    await this.createWallet(mnemonic, path, passphrase, name)
+    await this.createWallet(mnemonicOrXprv, path, passphrase, name)
     await this.startWallet()
   }
 
@@ -1060,7 +1060,7 @@ export class Wallet {
     }
     let hdPublicKey: bitcoincash.HDPublicKey = this.getHDPublicKey()
     let d: bitcoincash.HDPublicKey[] = [hdPublicKey.derive(0), hdPublicKey.derive(1)]
-    // let hdPrivateKey: bitcoincash.HDPrivateKey = this.getHDPrivateKeyFromMnemonic(this.getMnemonic())
+    // let hdPrivateKey: bitcoincash.HDPrivateKey = this.getHDPrivateKeyFromRecoveryString(this.getRecoveryString())
     // let d: bitcoincash.HDPrivateKey[] = [hdPrivateKey.derive(0), hdPrivateKey.derive(1)]
     for (let i = this.currentWallet.addresses.receive.length; i <= pair.receive; i++) {
       await this.delay(0)
@@ -1145,19 +1145,30 @@ export class Wallet {
     return addresses
   }
 
-  getHDPrivateKeyFromMnemonic(m: string) {
+  getHDPrivateKeyFromRecoveryString(m: string) {
     let o: any = this.parseRecoveryString(m)
+    if (o.xprv) {
+      return new bitcoincash.HDPrivateKey(o.xprv)
+    }
     return new bitcoincash.Mnemonic(o.mnemonic).toHDPrivateKey(o.passphrase).derive(o.path)
   }
 
-  makeRecoveryString(mnemonic?: string, path?: string, passphrase?: string) {
-    mnemonic = mnemonic || this.createMnemonic()
+  makeRecoveryString(mnemonicOrXprv?: string, path?: string, passphrase?: string) {
+    if (mnemonicOrXprv && mnemonicOrXprv.match(/^xprv[\d\w]+$/g)) {
+      return mnemonicOrXprv
+    }
+    mnemonicOrXprv = mnemonicOrXprv || this.createMnemonic()
     path = path || "m/44'/145'/0'"
     passphrase = passphrase || ''
-    return mnemonic + ':' + path + ':' + passphrase
+    return mnemonicOrXprv + ':' + path + ':' + passphrase
   }
 
   parseRecoveryString(m: string) {
+    if (m.match(/^xprv[\d\w]+$/g)) {
+      return {
+        xprv: m
+      }
+    }
     let a: string[] = m.split(':')
     return {
       mnemonic: a[0],
@@ -1166,7 +1177,15 @@ export class Wallet {
     }
   }
 
-  validateMnemonic(m: string) {
+  validateMnemonicOrXprv(m: string) {
+    if (m.match(/^xprv[\d\w]+$/g)) {
+      try {
+        new bitcoincash.HDPrivateKey(m)
+        return true
+      } catch (err) {
+        return false
+      }
+    }
     try {
       return bitcoincash.Mnemonic.isValid(m)
     } catch (err) {
@@ -1267,9 +1286,11 @@ export class Wallet {
     return this.currentWallet.keys.xpub
   }
 
-  getMnemonic(password?: string) {
+  getRecoveryString(password?: string) {
     let decrypted: string = this._decryptText(this.currentWallet.keys.encMnemonic, password || this.DUMMY_KEY)
-    if (decrypted && this.validateMnemonic(this.parseRecoveryString(decrypted).mnemonic)) {
+    let o: any = this.parseRecoveryString(decrypted)
+    let text: string = o.mnemonic || o.xprv
+    if (decrypted && this.validateMnemonicOrXprv(text)) {
       return decrypted
     } else {
       throw new Error('invalid password')
@@ -1454,7 +1475,7 @@ export class Wallet {
   }
 
   getPrivateKeys(paths: number[][], m: string): bitcoincash.PrivateKey[] {
-    let hdPrivateKey: bitcoincash.HDPrivateKey = this.getHDPrivateKeyFromMnemonic(m)
+    let hdPrivateKey: bitcoincash.HDPrivateKey = this.getHDPrivateKeyFromRecoveryString(m)
     let d: bitcoincash.HDPrivateKey[] = [hdPrivateKey.derive(0), hdPrivateKey.derive(1)]
     return paths.map(path => d[path[0]].derive(path[1]).privateKey)
   }
@@ -1464,7 +1485,7 @@ export class Wallet {
   }
 
   getXprv(m: string): string {
-    return this.getHDPrivateKeyFromMnemonic(m).toString()
+    return this.getHDPrivateKeyFromRecoveryString(m).toString()
   }
 
   //tx
@@ -1830,6 +1851,147 @@ export class Wallet {
       }]
     })
     updateAlert.present()
+  }
+
+  // recovery dialog
+
+  promptForRecovery(autoFill?: string) {
+    return new Promise((resolve, reject) => {
+      let recoverAlert = this.alertCtrl.create({
+        enableBackdropDismiss: false,
+        title: this.translate.instant('RECOVER_WALLET'),
+        // message: this.translate.instant('RECOVERY_HINT'),
+        inputs: [{
+          name: 'name',
+          placeholder: this.nextWalletName()
+        }, {
+          name: 'mnemonicOrXprv',
+          value: autoFill || '',
+          placeholder: this.translate.instant('RECOVERY_PHRASE') + '/xprv'
+        }, {
+          name: 'path',
+          placeholder: "m/44'/145'/0'"
+        }, {
+          name: 'passphrase',
+          placeholder: this.translate.instant('RECOVERY_PASSPHRASE')
+        }],
+        buttons: [{
+          role: 'cancel',
+          text: this.translate.instant('CANCEL'),
+          handler: data => {
+            recoverAlert.dismiss().then(() => {
+              resolve()
+            })
+            return false
+          }
+        },{
+          text: this.translate.instant('OK'),
+          handler: data => {
+            if (
+              (!data.name || this.r_nameIsValid(data.name)) &&
+              (!data.mnemonicOrXprv || this.r_mnemonicOrXprvIsValid(data.mnemonicOrXprv)) &&
+              (!data.path || this.r_pathIsValid(data.path))
+            ) {
+              recoverAlert.dismiss().then(() => {
+                return this.r_recover(data.mnemonicOrXprv, data.path, data.passphrase, data.name)
+              }).catch((err) => {
+                console.log(err)
+              }).then(() => {
+                resolve()
+              })
+            }
+            return false
+          }
+        }]
+      })
+      recoverAlert.present()
+    }).catch((err) => {
+      console.log(err)
+    })
+  }
+
+  r_nameIsValid(name: string) {
+    if (this.getAllWalletNames().indexOf(name) !== -1) {
+      this.alertCtrl.create({
+        enableBackdropDismiss: false,
+        title: this.translate.instant('ERROR'),
+        message: this.translate.instant('ERR_INVALID_WALLET_NAME'),
+        buttons: [this.translate.instant('OK')]
+      }).present()
+      return false
+    } else {
+      return true
+    }
+  }
+
+  r_mnemonicOrXprvIsValid(m: string) {
+    m = m.trim()
+    if (!this.validateMnemonicOrXprv(m)) {
+      this.alertCtrl.create({
+        enableBackdropDismiss: false,
+        title: this.translate.instant('ERROR'),
+        message: this.translate.instant('ERR_INVALID_RECOVERY_PHRASE'),
+        buttons: [this.translate.instant('OK')]
+      }).present()
+      return false
+    } else {
+      return true
+    }
+  }
+
+  r_pathIsValid(path: string) {
+    path = path.trim().replace(/[‘’]/g,"'")
+    if (!path.match(/^m(\/\d+'?)*$/g)) {
+      this.alertCtrl.create({
+        enableBackdropDismiss: false,
+        title: this.translate.instant('ERROR'),
+        message: this.translate.instant('ERR_INVALID_DERIVATION_PATH'),
+        buttons: [this.translate.instant('OK')]
+      }).present()
+      return false
+    } else {
+      return true
+    }
+  }
+
+  async r_recover(mnemonicOrXprv?: string, path?: string, passphrase?: string, name?: string) {
+    mnemonicOrXprv = mnemonicOrXprv ? mnemonicOrXprv.trim() : undefined
+    path = path ? path.trim().replace(/[‘’]/g,"'") : undefined
+    passphrase = passphrase || undefined
+    name = name || undefined
+    let translations: string[]
+    if (mnemonicOrXprv) {
+      translations = ['RECOVERING', 'RECOVER_SUCCESS', 'RECOVER_FAILED']
+    } else {
+      translations = ['CREATING', 'CREATE_SUCCESS', 'CREATE_FAILED']
+    }
+    let error: any
+    let loader = this.loadingCtrl.create({
+      content: this.translate.instant(translations[0]) + '...'
+    })
+    await loader.present()
+    try {
+      await this.recoverWalletFromMnemonicOrXprv(mnemonicOrXprv, path, passphrase, name)
+    } catch (err) {
+      console.log(err)
+      error = err
+    }
+    await loader.dismiss()
+    if (!error) {
+      await this.alertCtrl.create({
+        enableBackdropDismiss: false,
+        title: this.translate.instant('SUCCESS'),
+        message: this.translate.instant(translations[1]),
+        buttons: [this.translate.instant('OK')]
+      }).present()
+    } else {
+      await this.alertCtrl.create({
+        enableBackdropDismiss: false,
+        title: this.translate.instant('ERROR'),
+        message: this.translate.instant(translations[2]),
+        buttons: [this.translate.instant('OK')]
+      }).present()
+    }
   }
 
   //web socket

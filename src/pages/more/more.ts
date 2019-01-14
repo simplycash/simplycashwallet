@@ -37,12 +37,17 @@ export class MorePage {
     try {
       let m: string = await this.wallet.authorize()
       let o: any = this.wallet.parseRecoveryString(m)
-      let message: string = this.translate.instant('RECOVERY_PHRASE') + ':<br>' + o.mnemonic + '<br><br>'
-      if (o.passphrase) {
-        o.passphrase = o.passphrase.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
-        message += this.translate.instant('RECOVERY_PASSPHRASE') + ':<br>' + o.passphrase + '<br><br>'
+      let message: string
+      if (o.xprv) {
+        message = 'account xprv:<br>' + o.xprv
+      } else {
+        message = this.translate.instant('RECOVERY_PHRASE') + ':<br>' + o.mnemonic + '<br><br>'
+        if (o.passphrase) {
+          o.passphrase = o.passphrase.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+          message += this.translate.instant('RECOVERY_PASSPHRASE') + ':<br>' + o.passphrase + '<br><br>'
+        }
+        message += this.translate.instant('DERIVATION_PATH') + ':<br>' + o.path
       }
-      message += this.translate.instant('DERIVATION_PATH') + ':<br>' + o.path
       await this.alertCtrl.create({
         enableBackdropDismiss: false,
         title: this.translate.instant('BACKUP_WALLET'),
