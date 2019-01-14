@@ -45,6 +45,8 @@ export class HomePage {
 
   public timestamp: number
 
+  public walletName: string
+
   constructor(
     public alertCtrl: AlertController,
     public app: App,
@@ -62,6 +64,7 @@ export class HomePage {
     public translate: TranslateService,
     public wallet: Wallet
   ) {
+    this.walletName = this.wallet.getCurrentWalletName()
     this.updateCallback = () => {
       this.refresh()
     }
@@ -129,6 +132,10 @@ export class HomePage {
 
   refresh() {
     this.address = this.wallet.getCacheReceiveAddress()
+    if (this.walletName !== this.wallet.getCurrentWalletName()) {
+      this.walletName = this.wallet.getCurrentWalletName()
+      this.handleClipboard()
+    }
     // return this.updateQR()
   }
 
