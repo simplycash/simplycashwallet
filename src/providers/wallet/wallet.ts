@@ -882,18 +882,23 @@ export class Wallet {
   }
 
   async syncEverything(fullSync?: boolean) {
+    let currentWallet: any = this.currentWallet
     this.changeState(this.STATE.SYNCING)
 
-    this.syncTaskId++
+    let syncTaskId: number = this.syncTaskId++
     let targetAddresses: string[] = fullSync ? undefined : this.pendingAddresses.slice()
     this.pendingAddresses.length = 0
     let results: any[] = await Promise.all([
-      this.apiWS('finaladdresspair').then(result => this.syncAddresses(result)),
+      this.apiWS('finaladdresspair').then(result => this.syncAddresses(currentWallet, result)),
       this.apiWS('unusedreceiveaddress'),
       this.apiWS('unusedchangeaddress'),
       this.apiWS('utxos', { addresses: targetAddresses }),
       this.apiWS('history', { addresses: targetAddresses })
     ])
+
+    if (currentWallet !== this.currentWallet || syncTaskId !== this.syncTaskId - 1) {
+      return
+    }
 
     if (!this.isMyReceiveAddress(results[1]) || !this.isMyChangeAddress(results[2])) {
       throw new Error('invalid address')
@@ -1040,7 +1045,7 @@ export class Wallet {
       history: newHistory
     }
     await this.updateStorage()
-    if (!this.isSyncing()) {
+    if (!this.isSyncing() || currentWallet !== this.currentWallet || syncTaskId !== this.syncTaskId - 1) {
       return
     }
     if (this.pendingAddresses.length > 0) {
@@ -1049,29 +1054,29 @@ export class Wallet {
     this.changeState(this.STATE.SYNCED)
   }
 
-  async syncAddresses(pair: any) {
+  async syncAddresses(currentWallet: any, pair: any) {
     let newAddresses: any = { receive: [], change: [] }
 
-    this.currentWallet.addresses.receive.length = Math.min(pair.receive + 1, this.currentWallet.addresses.receive.length)
-    this.currentWallet.addresses.change.length = Math.min(pair.change + 1, this.currentWallet.addresses.change.length)
+    currentWallet.addresses.receive.length = Math.min(pair.receive + 1, currentWallet.addresses.receive.length)
+    currentWallet.addresses.change.length = Math.min(pair.change + 1, currentWallet.addresses.change.length)
 
-    if (pair.receive === this.currentWallet.addresses.receive.length - 1 && pair.change === this.currentWallet.addresses.change.length - 1) {
+    if (pair.receive === currentWallet.addresses.receive.length - 1 && pair.change === currentWallet.addresses.change.length - 1) {
         return newAddresses
     }
-    let hdPublicKey: bitcoincash.HDPublicKey = this.getHDPublicKey()
+    let hdPublicKey: bitcoincash.HDPublicKey = this.getHDPublicKey(currentWallet)
     let d: bitcoincash.HDPublicKey[] = [hdPublicKey.derive(0), hdPublicKey.derive(1)]
     // let hdPrivateKey: bitcoincash.HDPrivateKey = this.getHDPrivateKeyFromRecoveryString(this.getRecoveryString())
     // let d: bitcoincash.HDPrivateKey[] = [hdPrivateKey.derive(0), hdPrivateKey.derive(1)]
-    for (let i = this.currentWallet.addresses.receive.length; i <= pair.receive; i++) {
+    for (let i = currentWallet.addresses.receive.length; i <= pair.receive; i++) {
       await this.delay(0)
       newAddresses.receive.push(d[0].derive(i).publicKey.toAddress().toString())
     }
-    for (let i = this.currentWallet.addresses.change.length; i <= pair.change; i++) {
+    for (let i = currentWallet.addresses.change.length; i <= pair.change; i++) {
       await this.delay(0)
       newAddresses.change.push(d[1].derive(i).publicKey.toAddress().toString())
     }
-    Array.prototype.push.apply(this.currentWallet.addresses.receive, newAddresses.receive)
-    Array.prototype.push.apply(this.currentWallet.addresses.change, newAddresses.change)
+    Array.prototype.push.apply(currentWallet.addresses.receive, newAddresses.receive)
+    Array.prototype.push.apply(currentWallet.addresses.change, newAddresses.change)
     return newAddresses
   }
 
@@ -1282,8 +1287,9 @@ export class Wallet {
 
   //getters
 
-  getHDPublicKey() {
-    return new bitcoincash.HDPublicKey(this.currentWallet.keys.xpub)
+  getHDPublicKey(currentWallet?: any) {
+    currentWallet = currentWallet || this.currentWallet
+    return new bitcoincash.HDPublicKey(currentWallet.keys.xpub)
   }
 
   getXpub() {
