@@ -34,7 +34,7 @@ export class Wallet {
 
   public ANNOUNCEMENT_URL: string = 'https://simply.cash/announcement.json'
   public WS_URL: string = 'https://ws.simply.cash:3000'
-  public VERSION: string = '0.0.60'
+  public VERSION: string = '0.0.61'
 
   public supportedAddressFormats: string[] = ['legacy', 'cashaddr', 'bitpay']
 
