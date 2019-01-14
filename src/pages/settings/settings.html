@@ -17,26 +17,26 @@
     </ion-item> -->
     <ion-item>
       <ion-label>{{ 'CRYPTO_UNIT' | translate }}</ion-label>
-      <ion-select [(ngModel)]="cryptoUnit" (ionChange)="setCryptoUnit()">
+      <ion-select [(ngModel)]="cryptoUnit" (ionChange)="setCryptoUnit()" [disabled]="isLeaving">
         <ion-option *ngFor="let su of supportedCryptoUnits" [value]="su">{{ su }}</ion-option>
       </ion-select>
     </ion-item>
     <ion-item>
       <ion-label>{{ 'CURRENCY' | translate }}</ion-label>
-      <ion-select [(ngModel)]="currency" (ionChange)="setCurrency()">
+      <ion-select [(ngModel)]="currency" (ionChange)="setCurrency()" [disabled]="isLeaving">
         <ion-option *ngIf="supportedCurrencies.length === 0" [value]="currency">{{ currency }}</ion-option>
         <ion-option *ngFor="let curr of supportedCurrencies" [value]="curr">{{ curr }}</ion-option>
       </ion-select>
     </ion-item>
     <ion-item>
       <ion-label>{{ 'PROTECTION' | translate }}</ion-label>
-      <ion-select [(ngModel)]="protection" (ionChange)="setProtection()">
+      <ion-select [(ngModel)]="protection" (ionChange)="setProtection()" [disabled]="isLeaving">
         <ion-option *ngFor="let p of supportedProtections" [value]="p">{{ p | translate }}</ion-option>
       </ion-select>
     </ion-item>
     <ion-item>
       <ion-label>{{ 'WALLET' | translate }}</ion-label>
-      <ion-select [(ngModel)]="currentWallet" (ionChange)="setCurrentWallet()">
+      <ion-select [(ngModel)]="currentWallet" (ionChange)="setCurrentWallet()" [disabled]="isLeaving">
         <ion-option *ngFor="let w of allWallets" [value]="w">{{ w }}</ion-option>
       </ion-select>
     </ion-item>

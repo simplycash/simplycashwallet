@@ -22,6 +22,7 @@ export class SettingsPage {
   public supportedProtections: string[]
   public currentWallet: string
   public allWallets: string[]
+  public isLeaving: boolean
   // public useCashAddr: boolean
 
   constructor(
@@ -51,16 +52,28 @@ export class SettingsPage {
   }
 
   pushHistoryPage() {
+    if (this.isLeaving) {
+      return
+    }
+    this.isLeaving = true
     this.viewCtrl.dismiss()
     this.app.getRootNav().push('HistoryPage')
   }
 
   pushSendPage() {
+    if (this.isLeaving) {
+      return
+    }
+    this.isLeaving = true
     this.viewCtrl.dismiss()
     this.app.getRootNav().push('SendPage')
   }
 
   pushMorePage() {
+    if (this.isLeaving) {
+      return
+    }
+    this.isLeaving = true
     this.viewCtrl.dismiss()
     this.app.getRootNav().push('MorePage')
   }
