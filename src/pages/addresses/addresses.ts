@@ -30,7 +30,7 @@ export class AddressesPage {
     })
     await loader.present()
     let ara: string[] = this.wallet.getAllReceiveAddresses()
-    ara.length = ara.lastIndexOf(this.wallet.getCacheReceiveAddress()) + 1
+    ara.length = Math.max(0, ara.length - 20)
     this.receiveAddrs = ara.map((addr: string, i: number, arr: string[]) => {
       return {
         address: addr,
@@ -38,7 +38,7 @@ export class AddressesPage {
       }
     }).reverse()
     let aca: string[] = this.wallet.getAllChangeAddresses()
-    aca.length = aca.lastIndexOf(this.wallet.getCacheChangeAddress()) + 1
+    aca.length = Math.max(0, aca.length - 20)
     this.changeAddrs = aca.map((addr: string, i: number, arr: string[]) => {
       return {
         address: addr,
