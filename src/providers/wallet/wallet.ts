@@ -1877,7 +1877,7 @@ export class Wallet {
         }, {
           name: 'mnemonicOrXprv',
           value: autoFill || '',
-          placeholder: this.translate.instant('RECOVERY_PHRASE') + '/xprv'
+          placeholder: this.translate.instant('RECOVERY_PHRASE_OR_XPRV')
         }, {
           name: 'path',
           placeholder: "m/44'/145'/0'"
