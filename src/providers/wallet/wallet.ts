@@ -1203,6 +1203,10 @@ export class Wallet {
   }
 
   validateWIF(wif: string) {
+    // rule out hex string
+    if (wif.toLowerCase().match(/^[a-f0-9]+$/g)) {
+      return false
+    }
     try {
       new bitcoincash.PrivateKey(wif)
       return true
