@@ -74,6 +74,9 @@ export class MorePage {
       },{
         text: this.translate.instant('OK'),
         handler: data => {
+          if (this.walletName === data.name) {
+            return
+          }
           if (data.name && this.nameIsValid(data.name)) {
             renameAlert.dismiss().then(() => {
               return this.wallet.renameWallet(this.walletName, data.name)
