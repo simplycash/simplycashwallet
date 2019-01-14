@@ -327,6 +327,10 @@ export class HomePage {
       })
       return true
     }
+    if (this.wallet.validateMnemonicOrXprv(text)) {
+      this.wallet.promptForRecovery(text) // no await
+      return true
+    }
     await this.alertCtrl.create({
       enableBackdropDismiss: false,
       title: this.translate.instant('ERR_INVALID_DATA'),
