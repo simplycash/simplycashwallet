@@ -799,14 +799,15 @@ export class Wallet {
   }
 
   tryToConnectAndSync() {
-    this.socket = io(this.WS_URL, {
+    let socket: any = io(this.WS_URL, {
       autoConnect: false,
       reconnection: true,
       reconnectionAttempts: 1,
       timeout: 10000,
       transports:['polling', 'websocket']
     })
-    this.socket.on('connect', async () => {
+    this.socket = socket
+    socket.on('connect', async () => {
       try {
         let challenge: any = await this.apiWS('challengev2', {
           version: this.VERSION
@@ -823,12 +824,18 @@ export class Wallet {
           }
           if (++i % 100 === 0) {
             await this.delay(0)
+            if (socket !== this.socket) {
+              throw new Error('obsolete')
+            }
           }
         }
         await this.apiWS('startwallet', {
           response: response.toString('hex'),
           xpub: this.currentWallet.keys.xpub
         }, true)
+        if (socket !== this.socket) {
+          throw new Error('obsolete')
+        }
         this.changeState(this.STATE.CONNECTED)
         await Promise.all([
           this.apiWS('price.subscribe').then((price) => {this.updatePrice(price)}),
@@ -837,7 +844,10 @@ export class Wallet {
         ])
       } catch (err) {
         console.log(err)
-        this.socket.close()
+        socket.close()
+        if (socket !== this.socket) {
+          return
+        }
         this.changeState(this.STATE.OFFLINE)
         if (err.message === 'update') {
           this.showUpdateAlert()
@@ -845,7 +855,7 @@ export class Wallet {
       }
     })
     let timer: number
-    this.socket.on('notification', (data) => {
+    socket.on('notification', (data) => {
       if (data.method === 'address.subscribe') {
         window.clearTimeout(timer)
         if (this.pendingAddresses.indexOf(data.params[0]) === -1) {
@@ -863,22 +873,31 @@ export class Wallet {
         this.updatePrice(data.params)
       }
     })
-    this.socket.on('disconnect', (reason) => {
+    socket.on('disconnect', (reason) => {
       if (reason === 'io server disconnect' || this.isPaused) {
-        this.socket.close()
+        socket.close()
+        if (socket !== this.socket) {
+          return
+        }
         this.changeState(this.STATE.OFFLINE)
       }
     })
-    this.socket.on('reconnect_attempt', (n: number) => {
+    socket.on('reconnect_attempt', (n: number) => {
+      if (socket !== this.socket) {
+        return
+      }
       this.changeState(this.STATE.CONNECTING)
     })
-    this.socket.on('reconnect_failed', () => {
-      this.socket.close()
+    socket.on('reconnect_failed', () => {
+      socket.close()
+      if (socket !== this.socket) {
+        return
+      }
       this.changeState(this.STATE.OFFLINE)
     })
 
     this.changeState(this.STATE.CONNECTING)
-    this.socket.open()
+    socket.open()
   }
 
   async syncEverything(fullSync?: boolean) {
@@ -2007,6 +2026,7 @@ export class Wallet {
   //web socket
 
   apiWS(method: string, params?: any, force?: boolean, timeout?: number) {
+    let socket: any = this.socket
     if (typeof method === 'undefined') {
       return Promise.reject(new Error('no method'))
     }
@@ -2032,7 +2052,7 @@ export class Wallet {
           return
         }
         window.clearTimeout(timer)
-        this.socket.off('response', cb)
+        socket.off('response', cb)
         if (typeof data.result !== 'undefined') {
           resolve(data.result)
         } else {
@@ -2044,12 +2064,12 @@ export class Wallet {
         }
       }
 
-      this.socket.on('response', cb)
+      socket.on('response', cb)
       timer = window.setTimeout(() => {
-        this.socket.off('response', cb)
+        socket.off('response', cb)
         reject(new Error('timeout'))
       }, timeout)
-      this.socket.emit('request', {id: id, method: method, params: params})
+      socket.emit('request', {id: id, method: method, params: params})
     })
   }
 
