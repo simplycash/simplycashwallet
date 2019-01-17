@@ -34,6 +34,9 @@ export class SendPage {
 
   public showQuickSendHint: boolean = false
 
+  public currentWallet: string
+  public allWallets: string[]
+
   constructor(
     public alertCtrl: AlertController,
     public navCtrl: NavController,
@@ -60,6 +63,9 @@ export class SendPage {
   }
 
   initPage(info: any) {
+    this.currentWallet = this.wallet.getCurrentWalletName()
+    this.allWallets = this.wallet.getAllWalletNames().sort()
+
     this.info = info
     if (typeof this.info === 'undefined') {
       this.info = {}
@@ -124,6 +130,13 @@ export class SendPage {
     } else {
       window.removeEventListener('focus', this.focusEventListener)
     }
+  }
+
+  async setCurrentWallet() {
+    if (this.currentWallet === this.wallet.getCurrentWalletName()) {
+      return
+    }
+    await this.wallet.switchWallet(this.currentWallet)
   }
 
   confirmSend() {
