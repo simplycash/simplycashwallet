@@ -1260,7 +1260,19 @@ export class Wallet {
   }
 
   scriptFromAddress(address: string) {
-    return bitcoincash.Script.buildPublicKeyHashOut(bitcoincash.Address.fromString(address))
+    try {
+      let a: any = bitcoincash.Address.fromString(address)
+      if (a.isPayToPublicKeyHash()) {
+        return bitcoincash.Script.buildPublicKeyHashOut(a)
+      } else if (a.isPayToScriptHash()) {
+        return bitcoincash.Script.buildScriptHashOut(a)
+      } else {
+        throw new Error('invalid address')
+      }
+    } catch (err) {
+      console.log(err)
+      throw new Error('invalid address')
+    }
   }
 
   getAddressTypeAndIndex(address: string, type?: number) {
