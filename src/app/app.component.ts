@@ -101,11 +101,11 @@ export class MyApp {
     }
     browserLang = browserLang.toLowerCase()
     prefix = browserLang.split('-')[0]
-    if (browserLang && ['en', 'ja', 'ko', 'zh'].indexOf(prefix) !== -1) {
-      if (prefix === 'zh') {
-        if (browserLang.match(/-TW|CHT|Hant|HK|yue/i)) {
+    if (browserLang && prefix.match(/^(en|ja|ko|zh|yue)$/gi)) {
+      if (prefix.match(/^(zh|yue)$/gi)) {
+        if (!browserLang.match(/-Hans/i) && browserLang.match(/-TW|-CHT|-Hant|-HK|-yue/i)) {
           lang = 'zh-cmn-Hant'
-        } else /*if (browserLang.match(/-CN|CHS|Hans/i))*/ {
+        } else {
           lang = 'zh-cmn-Hans'
         }
       } else {
