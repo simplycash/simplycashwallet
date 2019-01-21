@@ -117,8 +117,9 @@ export class HistoryPage {
     return [date.getFullYear(), ('0'+(date.getMonth()+1)).slice(-2), ('0'+date.getDate()).slice(-2)].join('-')
   }
 
-  changeUnit() {
-    this.currentUnit = this.wallet.changePreferredUnit()
+  async changeUnit() {
+    await this.wallet.changePreferredUnit()
+    this.currentUnit = this.wallet.getPreferredUnit()
   }
 
   showTx(txid: string) {

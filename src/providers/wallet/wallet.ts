@@ -18,80 +18,154 @@ import * as crypto from 'crypto-browserify'
 import * as jsrsasign from 'jsrsasign'
 import { Buffer } from 'buffer/'
 
+enum EState {
+  CLOSED = 1,
+  OFFLINE,
+  CONNECTING,
+  CONNECTED,
+  SYNCING,
+  SYNCED
+}
+
+interface IUnits {
+  [key: string]: IUnit
+}
+
+interface IUnit {
+  rate: number,
+  dp: number
+}
+
+interface IAddresses {
+  receive: string[],
+  change: string[]
+}
+
+interface IUtxo {
+  txid: string,
+  vout: number,
+  address: string,
+  path: [number, number],
+  scriptPubKey: string,
+  satoshis: number
+}
+
+interface ITxRecord {
+  txid: string,
+  timestamp: number,
+  friendlyTimestamp: number,
+  delta: number,
+  seen: boolean
+}
+
+interface IWallet {
+  name: string,
+  protection: string,
+  keys: {
+    encMnemonic: string,
+    xpub: string
+  },
+  addresses: IAddresses,
+  cache: {
+    receiveAddress: string,
+    changeAddress: string,
+    utxos: IUtxo[],
+    history: ITxRecord[]
+  }
+}
+
+interface IPreference {
+  defaultWallet: string,
+  showBalance: boolean,
+  unitIndex: number,
+  cryptoUnit: string,
+  currency: string,
+  addressFormat: string,
+  lastAnnouncement: string
+}
+
+interface IStorage {
+  version: string
+  wallets: IWallet[],
+  preference: IPreference
+}
+
+interface IRecoveryInfo {
+  mnemonic?: string,
+  path?: string,
+  passphrase?: string,
+  xprv?: string
+}
+
+interface IOutput {
+  script?: bitcoincash.Script,
+  address?: string,
+  satoshis: number
+}
+
+interface IRequest {
+  outputs: IOutput[],
+  url?: string,
+  label?: string,
+  message?: string
+}
+
+interface IWifInfo {
+  address: string,
+  balance: number,
+  utxos: IUtxo[]
+}
+
+interface ISignedTx {
+  satoshis: number,
+  fee: number,
+  hex: string
+}
+
+interface IBIP70Request {
+  outputs: IOutput[],
+  expires: number,
+  memo: string,
+  paymentUrl: string,
+  merchantData: Uint8Array,
+  merchantName: string,
+  r: string,
+  verified: boolean,
+  bip70: boolean
+}
 
 @Injectable()
 export class Wallet {
-  public DUMMY_KEY: string = 'well... at least better than plain text ¯\\_(ツ)_/¯'
-  public STATE: any = Object.freeze({ CLOSED: 1, OFFLINE: 2, CONNECTING: 3, CONNECTED: 4, SYNCING: 5, SYNCED: 6 })
-  public WALLET_KEY: string = '_wallet'
-  public ADDRESS_LIMIT: number = 100
+  public readonly DUMMY_KEY: string = 'well... at least better than plain text ¯\\_(ツ)_/¯'
+  public readonly WALLET_KEY: string = '_wallet'
+  public readonly ADDRESS_LIMIT: number = 100
 
-  public UNITS: { [key: string]: { rate: number, dp: number } } = {
+  public readonly UNITS: IUnits = {
     'BSV': { rate: 1, dp: 8 },
     'BITS': { rate: 1e6, dp: 2 },
     'SATS': { rate: 1e8, dp: 0 }
   }
 
-  public ANNOUNCEMENT_URL: string = 'https://simply.cash/announcement.json'
-  public WS_URL: string = 'https://ws.simply.cash:3000'
-  public VERSION: string = '0.0.63'
+  public readonly ANNOUNCEMENT_URL: string = 'https://simply.cash/announcement.json'
+  public readonly WS_URL: string = 'https://ws.simply.cash:3000'
+  public readonly VERSION: string = '0.0.63'
 
-  public supportedAddressFormats: string[] = ['legacy', 'cashaddr', 'bitpay']
+  public readonly supportedAddressFormats: ReadonlyArray<string> = ['legacy', 'cashaddr', 'bitpay']
+  public readonly supportedProtections: ReadonlyArray<string> = ['OFF', 'PIN', 'FINGERPRINT']
 
   public isPaused: boolean = false
   public socket: any
   public socketRequestId: number = 0
 
-  public state: number = this.STATE.CLOSED
+  public state: EState = EState.CLOSED
   public syncTaskId: number = 0
   public pendingAddresses: string[] = []
   public notificationId: number = 0
 
-  public currentWallet: any
-  public stored: {
-    version: string
-    wallets: {
-      name: string,
-      protection: string,
-      keys: {
-        encMnemonic: string,
-        xpub: string
-      },
-      addresses: {
-        receive: string[],
-        change: string[]
-      },
-      cache: {
-        receiveAddress: string,
-        changeAddress: string,
-        utxos: {
-          txid: string,
-          vout: number,
-          address: string,
-          path: number[],
-          scriptPubKey: string,
-          satoshis: number
-        }[],
-        history: {
-          txid: string,
-          timestamp: number,
-          friendlyTimestamp: number,
-          delta: number,
-          seen: boolean
-        }[]
-      }
-    }[],
-    preference: {
-      defaultWallet: string,
-      showBalance: boolean,
-      unitIndex: number,
-      cryptoUnit: string,
-      currency: string,
-      addressFormat: string,
-      lastAnnouncement: string
-    }
-  }
-  public defaultPreference: any = {
+  public currentWallet: IWallet
+  public stored: IStorage
+  public defaultPreference: Readonly<IPreference> = {
+    defaultWallet: '',
     showBalance: true,
     unitIndex: 0,
     cryptoUnit: 'BSV',
@@ -115,10 +189,10 @@ export class Wallet {
     public toastCtrl: ToastController,
     public translate: TranslateService
   ) {
-    this.platform.pause.subscribe(() =>{
+    this.platform.pause.subscribe(() => {
       this.isPaused = true
     })
-    this.platform.resume.subscribe(() =>{
+    this.platform.resume.subscribe(() => {
       this.isPaused = false
       if (this.isOffline()) {
         this.showAnnouncement()
@@ -144,11 +218,11 @@ export class Wallet {
     }
   }
 
-  getSupportedProtections() {
-    return ['OFF', 'PIN', 'FINGERPRINT']
+  getSupportedProtections(): string[] {
+    return this.supportedProtections.slice()
   }
 
-  getPreferredProtection() {
+  getPreferredProtection(): string {
     if (this.currentWallet.protection === 'password') {
       return 'PIN'
     }
@@ -158,9 +232,9 @@ export class Wallet {
     return 'OFF'
   }
 
-  async setPreferredProtection(p: string, m: string) {
+  async setPreferredProtection(p: string, m: string): Promise<void> {
     if (p === 'PIN') {
-      let pw = await this.newPIN()
+      let pw: string = await this.newPIN()
       let encrypted: string = this._encryptText(m, pw)
       this.currentWallet.keys.encMnemonic = encrypted
       this.currentWallet.protection = 'password'
@@ -177,12 +251,12 @@ export class Wallet {
       this.currentWallet.keys.encMnemonic = encrypted
       this.currentWallet.protection = 'off'
     }
-    return await this.updateStorage()
+    await this.updateStorage()
   }
 
   //pin
 
-  newPIN() {
+  newPIN(): Promise<string> {
     return new Promise<string>((resolve, reject) => {
       let pinAlert = this.alertCtrl.create({
         enableBackdropDismiss: false,
@@ -191,7 +265,7 @@ export class Wallet {
           name: 'pin1',
           type: 'password',
           placeholder: this.translate.instant('ENTER_PIN')
-        },{
+        }, {
           name: 'pin2',
           type: 'password',
           placeholder: this.translate.instant('CONFIRM_PIN')
@@ -204,7 +278,7 @@ export class Wallet {
             })
             return false
           }
-        },{
+        }, {
           text: this.translate.instant('OK'),
           handler: data => {
             if (data.pin1.length > 0 && data.pin1 === data.pin2) {
@@ -228,7 +302,7 @@ export class Wallet {
   }
 
   authorizePIN(): Promise<string> {
-    return new Promise((resolve, reject) => {
+    return new Promise<string>((resolve, reject) => {
       let pinAlert = this.alertCtrl.create({
         enableBackdropDismiss: false,
         title: 'PIN',
@@ -245,7 +319,7 @@ export class Wallet {
             })
             return false
           }
-        },{
+        }, {
           text: this.translate.instant('OK'),
           handler: data => {
             let m: string
@@ -272,9 +346,9 @@ export class Wallet {
 
   //fingerprint
 
-  async canUseFingerprint() {
+  async canUseFingerprint(): Promise<boolean> {
     try {
-      if (this.platform.is('cordova') && -1 !== ['finger', 'face'].indexOf(await this.faio.isAvailable())) {
+      if (this.platform.is('cordova') && (await this.faio.isAvailable()).match(/^(finger|face)$/gi)) {
         return true
       } else {
         return false
@@ -284,8 +358,8 @@ export class Wallet {
     }
   }
 
-  fingerprintNAPrompt() {
-    return new Promise((resolve, reject) => {
+  fingerprintNAPrompt(): Promise<void> {
+    return new Promise<void>((resolve, reject) => {
       let naAlert = this.alertCtrl.create({
         enableBackdropDismiss: false,
         title: this.translate.instant('ERROR'),
@@ -319,81 +393,74 @@ export class Wallet {
   }
 
   //show balance
-  getShowBalance() {
+  getShowBalance(): boolean {
     return this.stored.preference.showBalance
   }
 
-  setShowBalance(s: boolean) {
+  async setShowBalance(s: boolean): Promise<void> {
     this.stored.preference.showBalance = s
-    return this.updateStorage()
+    await this.updateStorage()
   }
 
   //unit
 
-  getSupportedCryptoUnits() {
+  getSupportedCryptoUnits(): string[] {
     return Object.keys(this.UNITS).slice(0, 3)
   }
 
-  getSupportedCurrencies() {
+  getSupportedCurrencies(): string[] {
     return Object.keys(this.UNITS).slice(3)
   }
 
-  getPreferredCryptoUnit() {
+  getPreferredCryptoUnit(): string {
     return this.stored.preference.cryptoUnit
   }
 
-  setPreferredCryptoUnit(sym: string) {
+  async setPreferredCryptoUnit(sym: string): Promise<void> {
     this.stored.preference.cryptoUnit = sym
-    setImmediate(() => {
-      this.events.publish('wallet:preferredcryptounit', sym)
-      this.events.publish('wallet:preferredunit', this.getPreferredUnit())
-    })
-    return this.updateStorage()
+    this.events.publish('wallet:preferredcryptounit', sym)
+    this.events.publish('wallet:preferredunit', this.getPreferredUnit())
+    await this.updateStorage()
   }
 
-  getPreferredCurrency() {
+  getPreferredCurrency(): string {
     return this.stored.preference.currency
   }
 
-  setPreferredCurrency(sym: string) {
+  async setPreferredCurrency(sym: string): Promise<void> {
     this.stored.preference.currency = sym
-    setImmediate(() => {
-      this.events.publish('wallet:preferredcurrency', sym)
-      this.events.publish('wallet:preferredunit', this.getPreferredUnit())
-    })
-    return this.updateStorage()
+    this.events.publish('wallet:preferredcurrency', sym)
+    this.events.publish('wallet:preferredunit', this.getPreferredUnit())
+    await this.updateStorage()
   }
 
-  getPreferredUnit() {
+  getPreferredUnit(): string {
     return this.getUnits()[this.stored.preference.unitIndex]
   }
 
-  changePreferredUnit() {
-    let units = this.getUnits()
+  async changePreferredUnit(): Promise<void> {
+    let units: string[] = this.getUnits()
     this.stored.preference.unitIndex = (this.stored.preference.unitIndex + 1) % units.length
-    let punit = units[this.stored.preference.unitIndex]
-    setImmediate(() => {
-      this.events.publish('wallet:preferredunit', punit)
-      this.updateStorage()
-    })
-    return punit
+    let punit: string = units[this.stored.preference.unitIndex]
+    this.events.publish('wallet:preferredunit', punit)
+    await this.updateStorage()
   }
 
-  getUnits() {
+  getUnits(): string[] {
     return [
       this.stored.preference.cryptoUnit,
       this.stored.preference.currency
     ]
   }
 
-  convertUnit(from: string, to: string, amountStr: string) {
+  convertUnit(from: string, to: string, amountStr: string): string {
     let amount: number = parseFloat(amountStr)
     if (isNaN(amount)) {
       return undefined
     }
     // even if from === to
-    let fromUnit = this.UNITS[from]
-    let toUnit = this.UNITS[to]
+    let fromUnit: IUnit = this.UNITS[from]
+    let toUnit: IUnit = this.UNITS[to]
     if (fromUnit && toUnit && fromUnit.rate && toUnit.rate) {
       return (amount / fromUnit.rate * toUnit.rate).toFixed(toUnit.dp) // string
     } else {
@@ -403,22 +470,20 @@ export class Wallet {
 
   // address format
 
-  getPreferredAddressFormat() {
+  getPreferredAddressFormat(): string {
     return this.stored.preference.addressFormat
   }
 
-  setPreferredAddressFormat(af: string) {
+  async setPreferredAddressFormat(af: string): Promise<void> {
     if (af !== 'cashaddr' && af !== 'legacy') {
       return Promise.resolve()
     }
     this.stored.preference.addressFormat = af
-    setImmediate(() => {
-      this.events.publish('wallet:preferredaddressformat', af)
-    })
-    return this.updateStorage()
+    this.events.publish('wallet:preferredaddressformat', af)
+    await this.updateStorage()
   }
 
-  getAddressFormat(address: string) {
+  getAddressFormat(address: string): string {
     if (this.validateAddress(address, 'legacy')) {
       return 'legacy'
     }
@@ -431,7 +496,7 @@ export class Wallet {
     return undefined
   }
 
-  convertAddress(from: string, to: string, address: string) {
+  convertAddress(from: string, to: string, address: string): string {
     from = from || this.getAddressFormat(address)
     if (!address || this.supportedAddressFormats.indexOf(from) === -1 || this.supportedAddressFormats.indexOf(to) === -1) {
       return undefined
@@ -451,79 +516,78 @@ export class Wallet {
 
   //storage
 
-  updateStorage(obj?: any) {
-    let value: any = obj || this.stored
-    return this.storage.set(this.WALLET_KEY, value).then(() => {
-      return value
-    })
+  async updateStorage(obj?: IStorage): Promise<IStorage> {
+    let value: IStorage = obj || this.stored
+    await this.storage.set(this.WALLET_KEY, value)
+    return value
   }
 
   //wallet states
 
-  changeState(s: number) {
-    console.log('state: '+s)
+  changeState(s: EState): void {
+    console.log('state: ' + s)
     this.state = s
-    if (s === this.STATE.CLOSED) {
+    if (s === EState.CLOSED) {
       this.events.publish('wallet:closed')
-    } else if (s === this.STATE.OFFLINE) {
+    } else if (s === EState.OFFLINE) {
       this.events.publish('wallet:offline')
       this.events.publish('wallet:update')
-    } else if (s === this.STATE.SYNCED) {
+    } else if (s === EState.SYNCED) {
       this.events.publish('wallet:synced')
       this.events.publish('wallet:update')
     }
   }
 
-  isClosed() {
-    return this.state === this.STATE.CLOSED
+  isClosed(): boolean {
+    return this.state === EState.CLOSED
   }
 
-  isOffline() {
-    return this.state === this.STATE.OFFLINE
+  isOffline(): boolean {
+    return this.state === EState.OFFLINE
   }
 
-  isConnecting() {
-    return this.state === this.STATE.CONNECTING
+  isConnecting(): boolean {
+    return this.state === EState.CONNECTING
   }
 
-  isOnline() {
-    return this.state >= this.STATE.CONNECTED
+  isOnline(): boolean {
+    return this.state >= EState.CONNECTED
   }
 
-  isConnected() {
-    return this.state === this.STATE.CONNECTED
+  isConnected(): boolean {
+    return this.state === EState.CONNECTED
   }
 
-  isSyncing() {
-    return this.state === this.STATE.SYNCING
+  isSyncing(): boolean {
+    return this.state === EState.SYNCING
   }
 
-  isSynced() {
-    return this.state === this.STATE.SYNCED
+  isSynced(): boolean {
+    return this.state === EState.SYNCED
   }
 
   //wallet control
 
-  closeWallet() {
+  closeWallet(): void {
     if (!this.isOffline() && !this.isClosed()) {
       this.socket.off('disconnect')
       this.socket.close()
-      this.changeState(this.STATE.CLOSED)
+      this.changeState(EState.CLOSED)
     }
   }
 
-  async createStorage() {
-    let obj: any = {
+  async createStorage(): Promise<IStorage> {
+    let obj: IStorage = {
       version: this.VERSION,
       wallets: [],
       preference: Object.assign({}, this.defaultPreference)
     }
-    let value: any = await this.updateStorage(obj)
+    let value: IStorage = await this.updateStorage(obj)
     console.log('successfully created new storage')
     return value
   }
 
-  nextWalletName() {
+  nextWalletName(): string {
     let prefix: string = this.translate.instant('WALLET') + ' '
     let i: number
     if (this.stored && this.stored.wallets) {
@@ -538,24 +602,24 @@ export class Wallet {
     return prefix + i
   }
 
-  getCurrentWalletName() {
+  getCurrentWalletName(): string {
     return this.currentWallet.name
   }
 
-  getAllWalletNames() {
+  getAllWalletNames(): string[] {
     return this.stored.wallets.map(w => w.name)
   }
 
-  async createWallet(mnemonicOrXprv?: string, path?: string, passphrase?: string, name?: string) {
+  async createWallet(mnemonicOrXprv?: string, path?: string, passphrase?: string, name?: string): Promise<void> {
     let m: string = this.makeRecoveryString(mnemonicOrXprv, path, passphrase)
     let hdPrivateKey: bitcoincash.HDPrivateKey = this.getHDPrivateKeyFromRecoveryString(m)
     let hdPublicKey: bitcoincash.HDPublicKey = hdPrivateKey.hdPublicKey
     let xpub: string = hdPublicKey.toString()
-    let addresses: any = this.generateAddresses(hdPrivateKey)
+    let addresses: IAddresses = this.generateAddresses(hdPrivateKey)
 
     let encrypted: string = this._encryptText(m, this.DUMMY_KEY)
 
-    let wallet: any = {
+    let wallet: IWallet = {
       name: name || this.nextWalletName(),
       protection: 'off',
       keys: {
@@ -576,13 +640,13 @@ export class Wallet {
     await this.updateStorage()
   }
 
-  async recoverWalletFromMnemonicOrXprv(mnemonicOrXprv?: string, path?: string, passphrase?: string, name?: string) {
+  async recoverWalletFromMnemonicOrXprv(mnemonicOrXprv?: string, path?: string, passphrase?: string, name?: string): Promise<void> {
     this.closeWallet()
     await this.createWallet(mnemonicOrXprv, path, passphrase, name)
     await this.startWallet()
   }
 
-  async switchWallet(name: string) {
+  async switchWallet(name: string): Promise<void> {
     if (!this.stored.wallets.find(w => w.name === name)) {
       throw new Error('no such wallet')
     }
@@ -592,8 +656,8 @@ export class Wallet {
     await this.startWallet()
   }
 
-  async renameWallet(oldName: string, newName: string) {
-    let w: any = this.stored.wallets.find(w => w.name === oldName)
+  async renameWallet(oldName: string, newName: string): Promise<void> {
+    let w: IWallet = this.stored.wallets.find(w => w.name === oldName)
     if (!w) {
       throw new Error('no such wallet')
     }
@@ -604,14 +668,14 @@ export class Wallet {
     await this.updateStorage()
   }
 
-  async deleteWallet(name: string) {
+  async deleteWallet(name: string): Promise<void> {
     let i: number = this.stored.wallets.findIndex(w => w.name === name)
     if (i === -1) {
       throw new Error('no such wallet')
     }
     this.closeWallet()
     let names: string[] = this.getAllWalletNames().sort()
-    let deleted: any = this.stored.wallets.splice(i, 1)[0]
+    let deleted: IWallet = this.stored.wallets.splice(i, 1)[0]
     let j: number = names.indexOf(deleted.name)
     let next: string = names[j + 1] || names[j - 1]
     if (next) {
@@ -622,15 +686,13 @@ export class Wallet {
     }
   }
 
-  startWallet() {
-    return this.loadWalletFromStorage().then(() => {
-      this.showAnnouncement()
-      this.tryToConnectAndSync() // hopefully will not throw error
-      return // will not wait for connection
-    })
+  async startWallet(): Promise<void> {
+    await this.loadWalletFromStorage()
+    this.showAnnouncement()
+    this.tryToConnectAndSync()
   }
 
-  async loadWalletFromStorage() {
+  async loadWalletFromStorage(): Promise<void> {
     let value: any = await this.storage.get(this.WALLET_KEY)
     if (!value) {
       console.log('no stored object, will create a new one')
@@ -765,15 +827,15 @@ export class Wallet {
       this.stored.preference.defaultWallet = this.currentWallet.name
       await this.updateStorage()
     }
-    this.changeState(this.STATE.OFFLINE)
+    this.changeState(EState.OFFLINE)
     console.log('default wallet loaded')
   }
 
-  async showAnnouncement() {
+  async showAnnouncement(): Promise<void> {
     let ann: string
     try {
-      let o = await this.http.get(this.ANNOUNCEMENT_URL).toPromise()
-      let v = o[this.VERSION] || o['default']
+      let o: any = await this.http.get(this.ANNOUNCEMENT_URL).toPromise()
+      let v: any = o[this.VERSION] || o['default']
       ann = v[(window as any).translationLanguage] || v['en']
     } catch (err) {
       console.log(err)
@@ -781,7 +843,7 @@ export class Wallet {
     if (!ann || this.stored.preference.lastAnnouncement === ann) {
       return
     }
-    let annAlert = this.alertCtrl.create({
+    let annAlert: any = this.alertCtrl.create({
       enableBackdropDismiss: false,
       title: this.translate.instant('ANNOUNCEMENT'),
       message: ann,
@@ -791,20 +853,20 @@ export class Wallet {
           this.stored.preference.lastAnnouncement = ann
           this.updateStorage()
         }
-      },{
+      }, {
         text: this.translate.instant('OK')
       }]
     })
     await annAlert.present()
   }
 
-  tryToConnectAndSync() {
+  tryToConnectAndSync(): void {
     let socket: any = io(this.WS_URL, {
       autoConnect: false,
       reconnection: true,
       reconnectionAttempts: 1,
       timeout: 10000,
-      transports:['polling', 'websocket']
+      transports: ['polling', 'websocket']
     })
     this.socket = socket
     socket.on('connect', async () => {
@@ -812,8 +874,8 @@ export class Wallet {
         let challenge: any = await this.apiWS('challengev2', {
           version: this.VERSION
         }, true)
-        let challengeBuffer: any = Buffer.from(challenge.nonce, 'hex')
-        let response: any = Buffer.alloc(4)
+        let challengeBuffer: Buffer = Buffer.from(challenge.nonce, 'hex')
+        let response: Buffer = Buffer.alloc(4)
         let x: string = ''
         let i: number = 0
         while (i < 4294967296) {
@@ -836,9 +898,9 @@ export class Wallet {
         if (socket !== this.socket) {
           throw new Error('obsolete')
         }
-        this.changeState(this.STATE.CONNECTED)
+        this.changeState(EState.CONNECTED)
         await Promise.all([
-          this.apiWS('price.subscribe').then((price) => {this.updatePrice(price)}),
+          this.apiWS('price.subscribe').then((price) => { this.updatePrice(price) }),
           this.apiWS('address.subscribe'),
           this.syncEverything(true)
         ])
@@ -848,7 +910,7 @@ export class Wallet {
         if (socket !== this.socket) {
           return
         }
-        this.changeState(this.STATE.OFFLINE)
+        this.changeState(EState.OFFLINE)
         if (err.message === 'update') {
           this.showUpdateAlert()
         }
@@ -879,30 +941,30 @@ export class Wallet {
         if (socket !== this.socket) {
           return
         }
-        this.changeState(this.STATE.OFFLINE)
+        this.changeState(EState.OFFLINE)
       }
     })
     socket.on('reconnect_attempt', (n: number) => {
       if (socket !== this.socket) {
         return
       }
-      this.changeState(this.STATE.CONNECTING)
+      this.changeState(EState.CONNECTING)
     })
     socket.on('reconnect_failed', () => {
       socket.close()
       if (socket !== this.socket) {
         return
       }
-      this.changeState(this.STATE.OFFLINE)
+      this.changeState(EState.OFFLINE)
     })
 
-    this.changeState(this.STATE.CONNECTING)
+    this.changeState(EState.CONNECTING)
     socket.open()
   }
 
-  async syncEverything(fullSync?: boolean) {
-    let currentWallet: any = this.currentWallet
-    this.changeState(this.STATE.SYNCING)
+  async syncEverything(fullSync?: boolean): Promise<void> {
+    let currentWallet: IWallet = this.currentWallet
+    this.changeState(EState.SYNCING)
 
     let syncTaskId: number = this.syncTaskId++
     let targetAddresses: string[] = fullSync ? undefined : this.pendingAddresses.slice()
@@ -925,9 +987,9 @@ export class Wallet {
 
     // identify new txs
     let allTxids: string[] = this.getAllTxids()
-    let newTxs: any[]  = results[4].filter(tx => allTxids.indexOf(tx.txid) === -1)
-    let oldTxs: any[]  = results[4].filter(tx => allTxids.indexOf(tx.txid) !== -1)
-    let lastConfirmed: any = this.currentWallet.cache.history.find(tx => typeof tx.timestamp !== 'undefined')
+    let newTxs: ITxRecord[] = results[4].filter(tx => allTxids.indexOf(tx.txid) === -1)
+    let oldTxs: ITxRecord[] = results[4].filter(tx => allTxids.indexOf(tx.txid) !== -1)
+    let lastConfirmed: ITxRecord = this.currentWallet.cache.history.find(tx => typeof tx.timestamp !== 'undefined')
     if (typeof lastConfirmed !== 'undefined') {
       newTxs = newTxs.filter(tx => typeof tx.timestamp === 'undefined' || tx.timestamp >= lastConfirmed.timestamp)
     }
@@ -941,7 +1003,7 @@ export class Wallet {
         if (tx.delta <= 0) {
           return
         }
-        let msg: string = `${this.translate.instant('RECEIVED')} ${(this.convertUnit('SATS', unit, tx.delta.toString()) || '').replace(/\.?0+$/,'')} ${unit}`
+        let msg: string = `${this.translate.instant('RECEIVED')} ${(this.convertUnit('SATS', unit, tx.delta.toString()) || '').replace(/\.?0+$/, '')} ${unit}`
         if (isCordova) {
           this.localNotifications.schedule({
             id: this.notificationId++,
@@ -961,18 +1023,18 @@ export class Wallet {
 
     // new history
     let currentTimestamp: number = Math.floor(new Date().getTime() / 1000)
-    let newHistory: any[]
+    let newHistory: ITxRecord[]
     if (fullSync) {
-      let oldUnconfirmed: any[] = this.currentWallet.cache.history.filter(tx => typeof tx.timestamp === 'undefined')
-      let newUnconfirmed: any[] = results[4].filter(tx => typeof tx.timestamp === 'undefined')
-      let stillUnconfirmed: any[] = oldUnconfirmed.filter(otx => typeof newUnconfirmed.find(ntx => ntx.txid === otx.txid) !== 'undefined')
-      let freshUnconfirmed: any[] = newUnconfirmed.filter(ntx => typeof stillUnconfirmed.find(stx => ntx.txid === stx.txid) === 'undefined')
+      let oldUnconfirmed: ITxRecord[] = this.currentWallet.cache.history.filter(tx => typeof tx.timestamp === 'undefined')
+      let newUnconfirmed: ITxRecord[] = results[4].filter(tx => typeof tx.timestamp === 'undefined')
+      let stillUnconfirmed: ITxRecord[] = oldUnconfirmed.filter(otx => typeof newUnconfirmed.find(ntx => ntx.txid === otx.txid) !== 'undefined')
+      let freshUnconfirmed: ITxRecord[] = newUnconfirmed.filter(ntx => typeof stillUnconfirmed.find(stx => ntx.txid === stx.txid) === 'undefined')
 
-      let oldConfirmed: any[] = this.currentWallet.cache.history.filter(tx => typeof tx.timestamp !== 'undefined')
-      let newConfirmed: any[] = results[4].filter(tx => typeof tx.timestamp !== 'undefined')
+      let oldConfirmed: ITxRecord[] = this.currentWallet.cache.history.filter(tx => typeof tx.timestamp !== 'undefined')
+      let newConfirmed: ITxRecord[] = results[4].filter(tx => typeof tx.timestamp !== 'undefined')
       newConfirmed = newConfirmed.map(n => oldUnconfirmed.find(o => o.txid === n.txid) || n)
-      let stillConfirmed: any[] = oldConfirmed.filter(otx => typeof newConfirmed.find(ntx => ntx.txid === otx.txid) !== 'undefined')
-      let freshConfirmed: any[] = newConfirmed.filter(ntx => typeof stillConfirmed.find(stx => ntx.txid === stx.txid) === 'undefined')
+      let stillConfirmed: ITxRecord[] = oldConfirmed.filter(otx => typeof newConfirmed.find(ntx => ntx.txid === otx.txid) !== 'undefined')
+      let freshConfirmed: ITxRecord[] = newConfirmed.filter(ntx => typeof stillConfirmed.find(stx => ntx.txid === stx.txid) === 'undefined')
 
       let unseenTxids: string[] = this.getUnseenTxids().concat(newTxids)
       newHistory = freshUnconfirmed.concat(stillUnconfirmed).concat(freshConfirmed).concat(stillConfirmed).map((tx) => {
@@ -985,7 +1047,7 @@ export class Wallet {
         }
       })
     } else {
-      let h1: any[] = newTxs.map((tx) => {
+      let h1: ITxRecord[] = newTxs.map((tx) => {
         return {
           txid: tx.txid,
           timestamp: tx.timestamp,
@@ -994,8 +1056,8 @@ export class Wallet {
           seen: false
         }
       })
-      let h2: any[] = this.currentWallet.cache.history.map((h) => {
-        let match: any = oldTxs.find(tx => tx.txid === h.txid)
+      let h2: ITxRecord[] = this.currentWallet.cache.history.map((h) => {
+        let match: ITxRecord = oldTxs.find(tx => tx.txid === h.txid)
         if (typeof match === 'undefined') {
           return h
         }
@@ -1010,7 +1072,7 @@ export class Wallet {
       newHistory = h1.concat(h2).slice(0, 30)
     }
     newHistory.forEach((h, i) => {
-      h.tempIndex = i
+      (h as any).tempIndex = i
     })
     newHistory.sort((a, b) => {
       // descending friendlyTimestamp
@@ -1019,16 +1081,16 @@ export class Wallet {
         return v
       }
       // ascending tempIndex
-      return a.tempIndex - b.tempIndex
+      return (a as any).tempIndex - (b as any).tempIndex
     })
     newHistory.forEach((h) => {
-      delete h.tempIndex
+      delete (h as any).tempIndex
     })
 
     // new utxos
-    let newUtxos: any[]
+    let newUtxos: IUtxo[]
     if (fullSync) {
-      newUtxos = results[3].map((obj: any) => {
+      newUtxos = results[3].map((obj: IUtxo) => {
         return {
           txid: obj.txid,
           vout: obj.vout,
@@ -1040,7 +1102,7 @@ export class Wallet {
         }
       }).filter(utxo => typeof utxo.path !== 'undefined')
     } else {
-      let futxos: any[] = results[3].filter((nutxo) => {
+      let futxos: IUtxo[] = results[3].filter((nutxo) => {
         return this.currentWallet.cache.utxos.findIndex(outxo => outxo.txid === nutxo.txid && outxo.vout === nutxo.vout) === -1
       }).map((utxo) => {
         return {
@@ -1052,7 +1114,7 @@ export class Wallet {
           satoshis: utxo.satoshis
         }
       }).filter(utxo => typeof utxo.path !== 'undefined')
-      let rutxos: any[] = this.currentWallet.cache.utxos.filter(outxo => targetAddresses.indexOf(outxo.address) === -1 || results[3].findIndex(nutxo => outxo.txid === nutxo.txid && outxo.vout === nutxo.vout) !== -1)
+      let rutxos: IUtxo[] = this.currentWallet.cache.utxos.filter(outxo => targetAddresses.indexOf(outxo.address) === -1 || results[3].findIndex(nutxo => outxo.txid === nutxo.txid && outxo.vout === nutxo.vout) !== -1)
       newUtxos = rutxos.concat(futxos)
     }
 
@@ -1070,27 +1132,27 @@ export class Wallet {
     if (this.pendingAddresses.length > 0) {
       return await this.syncEverything()
     }
-    this.changeState(this.STATE.SYNCED)
+    this.changeState(EState.SYNCED)
   }
 
-  async syncAddresses(currentWallet: any, pair: any) {
-    let newAddresses: any = { receive: [], change: [] }
+  async syncAddresses(currentWallet: IWallet, pair: { receive: number, change: number }): Promise<IAddresses> {
+    let newAddresses: IAddresses = { receive: [], change: [] }
 
     currentWallet.addresses.receive.length = Math.min(pair.receive + 1, currentWallet.addresses.receive.length)
     currentWallet.addresses.change.length = Math.min(pair.change + 1, currentWallet.addresses.change.length)
 
     if (pair.receive === currentWallet.addresses.receive.length - 1 && pair.change === currentWallet.addresses.change.length - 1) {
-        return newAddresses
+      return newAddresses
     }
     let hdPublicKey: bitcoincash.HDPublicKey = this.getHDPublicKey(currentWallet)
     let d: bitcoincash.HDPublicKey[] = [hdPublicKey.derive(0), hdPublicKey.derive(1)]
     // let hdPrivateKey: bitcoincash.HDPrivateKey = this.getHDPrivateKeyFromRecoveryString(this.getRecoveryString())
     // let d: bitcoincash.HDPrivateKey[] = [hdPrivateKey.derive(0), hdPrivateKey.derive(1)]
-    for (let i = currentWallet.addresses.receive.length; i <= pair.receive; i++) {
+    for (let i: number = currentWallet.addresses.receive.length; i <= pair.receive; i++) {
       await this.delay(0)
       newAddresses.receive.push(d[0].derive(i).publicKey.toAddress().toString())
     }
-    for (let i = currentWallet.addresses.change.length; i <= pair.change; i++) {
+    for (let i: number = currentWallet.addresses.change.length; i <= pair.change; i++) {
       await this.delay(0)
       newAddresses.change.push(d[1].derive(i).publicKey.toAddress().toString())
     }
@@ -1099,12 +1161,12 @@ export class Wallet {
     return newAddresses
   }
 
-  updatePrice(price: any) {
+  updatePrice(price: { [key: string]: number }): void {
     for (let k in price) {
       if (this.UNITS[k]) {
         this.UNITS[k].rate = price[k]
       } else {
-        this.UNITS[k] = {rate: price[k], dp: 2}
+        this.UNITS[k] = { rate: price[k], dp: 2 }
       }
     }
     this.events.publish('wallet:price')
@@ -1112,56 +1174,56 @@ export class Wallet {
 
   //event subscription
 
-  subscribeUpdate(callback: Function) {
-    if (this.state >= this.STATE.OFFLINE) {
+  subscribeUpdate(callback: Function): void {
+    if (this.state >= EState.OFFLINE) {
       callback()
     }
     this.events.subscribe('wallet:update', callback)
     console.log('subscribeUpdate')
   }
 
-  unsubscribeUpdate(callback: Function) {
-    let result = this.events.unsubscribe('wallet:update', callback)
-    console.log('unsubscribeUpdate: '+result)
+  unsubscribeUpdate(callback: Function): void {
+    this.events.unsubscribe('wallet:update', callback)
+    console.log('unsubscribeUpdate')
   }
 
-  subscribePrice(callback: Function) {
+  subscribePrice(callback: Function): void {
     this.events.subscribe('wallet:price', callback)
     console.log('subscribePrice')
   }
 
-  unsubscribePrice(callback: Function) {
-    let result = this.events.unsubscribe('wallet:price', callback)
-    console.log('unsubscribePrice: '+result)
+  unsubscribePrice(callback: Function): void {
+    this.events.unsubscribe('wallet:price', callback)
+    console.log('unsubscribePrice')
   }
 
-  subscribePreferredUnit(callback: Function) {
+  subscribePreferredUnit(callback: Function): void {
     this.events.subscribe('wallet:preferredunit', callback)
     console.log('subscribePreferredUnit')
   }
 
-  unsubscribePreferredUnit(callback: Function) {
-    let result = this.events.unsubscribe('wallet:preferredunit', callback)
-    console.log('unsubscribePreferredUnit: '+result)
+  unsubscribePreferredUnit(callback: Function): void {
+    this.events.unsubscribe('wallet:preferredunit', callback)
+    console.log('unsubscribePreferredUnit')
   }
 
   //helper
 
-  delay(ms: number) {
-    return new Promise((resolve, reject) => {
+  delay(ms: number): Promise<void> {
+    return new Promise<void>((resolve, reject) => {
       window.setTimeout(() => {
         resolve()
       }, ms)
     })
   }
 
-  createMnemonic() {
+  createMnemonic(): string {
     return new bitcoincash.Mnemonic().phrase
   }
 
-  generateAddresses(hdPrivateKey: bitcoincash.HDPrivateKey) {
+  generateAddresses(hdPrivateKey: bitcoincash.HDPrivateKey): IAddresses {
     let d: bitcoincash.HDPrivateKey[] = [hdPrivateKey.derive(0), hdPrivateKey.derive(1)]
-    let addresses: any = { receive: [], change: [] }
+    let addresses: IAddresses = { receive: [], change: [] }
     for (let i: number = 0; i < 20; i++) {
       addresses.receive[i] = d[0].derive(i).privateKey.toAddress().toString()
       addresses.change[i] = d[1].derive(i).privateKey.toAddress().toString()
@@ -1169,15 +1231,15 @@ export class Wallet {
     return addresses
   }
 
-  getHDPrivateKeyFromRecoveryString(m: string) {
-    let o: any = this.parseRecoveryString(m)
+  getHDPrivateKeyFromRecoveryString(m: string): bitcoincash.HDPrivateKey {
+    let o: IRecoveryInfo = this.parseRecoveryString(m)
     if (o.xprv) {
       return new bitcoincash.HDPrivateKey(o.xprv)
     }
     return new bitcoincash.Mnemonic(o.mnemonic).toHDPrivateKey(o.passphrase).derive(o.path)
   }
 
-  makeRecoveryString(mnemonicOrXprv?: string, path?: string, passphrase?: string) {
+  makeRecoveryString(mnemonicOrXprv?: string, path?: string, passphrase?: string): string {
     if (mnemonicOrXprv && mnemonicOrXprv.match(/^xprv[\d\w]+$/g)) {
       return mnemonicOrXprv
     }
@@ -1187,7 +1249,7 @@ export class Wallet {
     return mnemonicOrXprv + ':' + path + ':' + passphrase
   }
 
-  parseRecoveryString(m: string) {
+  parseRecoveryString(m: string): IRecoveryInfo {
     if (m.match(/^xprv[\d\w]+$/g)) {
       return {
         xprv: m
@@ -1201,7 +1263,7 @@ export class Wallet {
     }
   }
 
-  validateMnemonicOrXprv(m: string) {
+  validateMnemonicOrXprv(m: string): boolean {
     if (m.match(/^xprv[\d\w]+$/g)) {
       try {
         new bitcoincash.HDPrivateKey(m)
@@ -1217,7 +1279,7 @@ export class Wallet {
     }
   }
 
-  validateXpub(xpub: string) {
+  validateXpub(xpub: string): boolean {
     try {
       new bitcoincash.HDPublicKey(xpub)
       return true
@@ -1226,7 +1288,7 @@ export class Wallet {
     }
   }
 
-  validateWIF(wif: string) {
+  validateWIF(wif: string): boolean {
     // rule out hex string
     if (wif.toLowerCase().match(/^[a-f0-9]+$/g)) {
       return false
@@ -1239,7 +1301,7 @@ export class Wallet {
     }
   }
 
-  validateAddress(address: string, format?: string) {
+  validateAddress(address: string, format?: string): boolean {
     try {
       if (format === 'cashaddr' && address.indexOf('bitcoincash:') !== 0) {
         address = 'bitcoincash:' + address
@@ -1251,17 +1313,17 @@ export class Wallet {
     }
   }
 
-  isMyReceiveAddress(address: string) {
+  isMyReceiveAddress(address: string): boolean {
     return typeof this.getAddressTypeAndIndex(address, 0) !== 'undefined'
   }
 
-  isMyChangeAddress(address: string) {
+  isMyChangeAddress(address: string): boolean {
     return typeof this.getAddressTypeAndIndex(address, 1) !== 'undefined'
   }
 
-  scriptFromAddress(address: string) {
+  scriptFromAddress(address: string): bitcoincash.Script {
     try {
-      let a: any = bitcoincash.Address.fromString(address)
+      let a: bitcoincash.Address = bitcoincash.Address.fromString(address)
       if (a.isPayToPublicKeyHash()) {
         return bitcoincash.Script.buildPublicKeyHashOut(a)
       } else if (a.isPayToScriptHash()) {
@@ -1275,7 +1337,7 @@ export class Wallet {
     }
   }
 
-  getAddressTypeAndIndex(address: string, type?: number) {
+  getAddressTypeAndIndex(address: string, type?: number): [number, number] {
     if (typeof type === 'undefined' || type === 0) {
       let ra: string[] = this.currentWallet.addresses.receive
       let ras: number = Math.max(0, ra.length - this.ADDRESS_LIMIT)
@@ -1295,41 +1357,41 @@ export class Wallet {
     return undefined
   }
 
-  getAllTxids() {
+  getAllTxids(): string[] {
     return this.currentWallet.cache.history.map(obj => obj.txid)
   }
 
-  getUnseenTxids() {
+  getUnseenTxids(): string[] {
     return this.currentWallet.cache.history.filter(obj => !obj.seen).map(obj => obj.txid)
   }
 
-  seeTheUnseen() {
+  async seeTheUnseen(): Promise<void> {
     let touch: boolean = false
-    this.currentWallet.cache.history.forEach((obj: any) => {
+    this.currentWallet.cache.history.forEach((obj) => {
       if (!touch && !obj.seen) {
         touch = true
       }
       obj.seen = true
     })
     if (touch) {
-      return this.updateStorage()
+      await this.updateStorage()
     }
   }
 
   //getters
 
-  getHDPublicKey(currentWallet?: any) {
+  getHDPublicKey(currentWallet?: IWallet): bitcoincash.HDPublicKey {
     currentWallet = currentWallet || this.currentWallet
     return new bitcoincash.HDPublicKey(currentWallet.keys.xpub)
   }
 
-  getXpub() {
+  getXpub(): string {
     return this.currentWallet.keys.xpub
   }
 
-  getRecoveryString(password?: string) {
+  getRecoveryString(password?: string): string {
     let decrypted: string = this._decryptText(this.currentWallet.keys.encMnemonic, password || this.DUMMY_KEY)
-    let o: any = this.parseRecoveryString(decrypted)
+    let o: IRecoveryInfo = this.parseRecoveryString(decrypted)
     let text: string = o.mnemonic || o.xprv
     if (decrypted && this.validateMnemonicOrXprv(text)) {
       return decrypted
@@ -1338,37 +1400,37 @@ export class Wallet {
     }
   }
 
-  _encryptText(text: string, password: string) {
-    let cipher = crypto.createCipher('aes192', password)
+  _encryptText(text: string, password: string): string {
+    let cipher: any = crypto.createCipher('aes192', password)
     let encrypted: string = cipher.update(text, 'utf8', 'hex')
     encrypted += cipher.final('hex')
     return encrypted
   }
 
-  _decryptText(cipherText: string, password: string) {
-    let decipher = crypto.createDecipher('aes192', password)
+  _decryptText(cipherText: string, password: string): string {
+    let decipher: any = crypto.createDecipher('aes192', password)
     let decrypted: string = decipher.update(cipherText, 'hex', 'utf8')
     decrypted += decipher.final('utf8')
     return decrypted
   }
 
-  getPaymentRequestURL(address: string, sat?: number) {
+  getPaymentRequestURL(address: string, sat?: number): string {
     let af: string = this.getAddressFormat(address)
     if (!af) {
       throw new Error('invalid address')
     }
     if (sat > 0) {
-      return 'bitcoin:' + address + '?sv&amount=' + this.convertUnit('SATS', 'BSV', sat.toString()).replace(/\.?0+$/,'')
+      return 'bitcoin:' + address + '?sv&amount=' + this.convertUnit('SATS', 'BSV', sat.toString()).replace(/\.?0+$/, '')
     } else {
       return address
     }
   }
 
-  getQR(text: string) {
+  getQR(text: string): Promise<string> {
     return QRCode.toDataURL(text, { margin: 1, errorCorrectionLevel: 'L' })
   }
 
-  getRequestFromURL(text: string) {
+  getRequestFromURL(text: string): IRequest {
     let params: any = {}
     let address: string
     let satoshis: number
@@ -1408,7 +1470,7 @@ export class Wallet {
       return
     }
 
-    let kvs: string[] = text.slice(i+1).split('&')
+    let kvs: string[] = text.slice(i + 1).split('&')
     let j: number = kvs.findIndex((kv: string) => {
       return kv.match(/^req-.*$/gi) && !kv.match(/^req-sv(=.*)?$/gi)
     })
@@ -1449,79 +1511,73 @@ export class Wallet {
     }
   }
 
-  getInfoFromWIF(wif: string) {
+  async getInfoFromWIF(wif: string): Promise<IWifInfo> {
     let sk: bitcoincash.PrivateKey = bitcoincash.PrivateKey(wif)
     let address: string = sk.toAddress().toString()
-    return this.apiWS('utxos', {address: address}).then((result: any[]) => {
-      let utxos: any[] = result.map((obj: any) => {
-        return {
-          txid: obj.txid,
-          vout: obj.vout,
-          address: obj.address,
-          scriptPubKey: obj.scriptPubKey,
-          satoshis: obj.satoshis
-        }
-      })
+    let result: any = await this.apiWS('utxos', { address: address })
+    let utxos: IUtxo[] = result.map((obj: IUtxo) => {
       return {
-        address: address,
-        balance: utxos.length > 0 ? utxos.map((curr) => curr.satoshis).reduce((acc, curr) => acc + curr) : 0,
-        utxos: utxos
+        txid: obj.txid,
+        vout: obj.vout,
+        address: obj.address,
+        scriptPubKey: obj.scriptPubKey,
+        satoshis: obj.satoshis
       }
     })
+    return {
+      address: address,
+      balance: utxos.length > 0 ? utxos.map((curr) => curr.satoshis).reduce((acc, curr) => acc + curr) : 0,
+      utxos: utxos
+    }
   }
 
-  getFinalReceiveAddressIndex() {
+  getFinalReceiveAddressIndex(): number {
     return this.currentWallet.addresses.receive.length - 1
   }
 
-  getFinalChangeAddressIndex() {
+  getFinalChangeAddressIndex(): number {
     return this.currentWallet.addresses.change.length - 1
   }
 
-  getAllReceiveAddresses() {
+  getAllReceiveAddresses(): string[] {
     return this.currentWallet.addresses.receive.slice()
   }
 
-  getAllChangeAddresses() {
+  getAllChangeAddresses(): string[] {
     return this.currentWallet.addresses.change.slice()
   }
 
-  getCacheReceiveAddress() {
+  getCacheReceiveAddress(): string {
     return this.currentWallet.cache.receiveAddress
   }
 
-  getCacheChangeAddress() {
+  getCacheChangeAddress(): string {
     return this.currentWallet.cache.changeAddress
   }
 
-  getCacheBalance() {
+  getCacheBalance(): number {
     let balance: number = 0
-    this.currentWallet.cache.utxos.forEach((utxo: any) => {
+    this.currentWallet.cache.utxos.forEach((utxo: IUtxo) => {
       balance += utxo.satoshis
     })
     return balance
   }
 
-  getCacheHistory() {
+  getCacheHistory(): ITxRecord[] {
     return this.currentWallet.cache.history.slice()
   }
 
-  getCacheUtxos() {
+  getCacheUtxos(): IUtxo[] {
     return this.currentWallet.cache.utxos.slice()
   }
 
-  getTxFee(serialized: any) {
-    let tx: bitcoincash.Transaction = new bitcoincash.Transaction(serialized)
-    return  tx.inputAmount - tx.outputAmount
-  }
-
-  getPrivateKeys(paths: number[][], m: string): bitcoincash.PrivateKey[] {
+  getPrivateKeys(paths: [number, number][], m: string): bitcoincash.PrivateKey[] {
     let hdPrivateKey: bitcoincash.HDPrivateKey = this.getHDPrivateKeyFromRecoveryString(m)
     let d: bitcoincash.HDPrivateKey[] = [hdPrivateKey.derive(0), hdPrivateKey.derive(1)]
     return paths.map(path => d[path[0]].derive(path[1]).privateKey)
   }
 
-  getWIF(path: number[], m: string): string {
+  getWIF(path: [number, number], m: string): string {
     return this.getPrivateKeys([path], m)[0].toWIF()
   }
 
@@ -1531,13 +1587,13 @@ export class Wallet {
 
   //tx
 
-  async makeSignedTx(outputs: { script: bitcoincash.Script, satoshis: number }[], drain: boolean, m: string) {
-    let au: any[] = this.getCacheUtxos()
+  async makeSignedTx(outputs: IOutput[], drain: boolean, m: string): Promise<ISignedTx> {
+    let au: IUtxo[] = this.getCacheUtxos()
     let ak: bitcoincash.PrivateKey[] = this.getPrivateKeys(au.map(u => u.path), m)
     return this._makeSignedTx(outputs, drain, au, ak)
   }
 
-  async _makeSignedTx(outputs: { script: bitcoincash.Script, satoshis: number }[], drain: boolean, availableUtxos: any[], availableKeys: bitcoincash.PrivateKey[]) {
+  async _makeSignedTx(outputs: IOutput[], drain: boolean, availableUtxos: IUtxo[], availableKeys: bitcoincash.PrivateKey[]): Promise<ISignedTx> {
     let satoshis: number = drain ? undefined : outputs.map(output => output.satoshis).reduce((acc, curr) => acc + curr)
     if (availableUtxos.length === 0) {
       throw new Error('not enough fund')
@@ -1545,8 +1601,8 @@ export class Wallet {
     let availableAmount: number = drain ? availableUtxos.map((curr) => curr.satoshis).reduce((acc, curr) => acc + curr) : 0
 
     let agedAmount: number = 0
-    let agedUtxos: any[] = []
-    let recentUtxos: any[] = []
+    let agedUtxos: IUtxo[] = []
+    let recentUtxos: IUtxo[] = []
     if (!drain) {
       let limits: number[] = [
         Math.max(0, this.getFinalReceiveAddressIndex() - 39),
@@ -1563,7 +1619,7 @@ export class Wallet {
     }
 
     let acc: number
-    let utxos: any[]
+    let utxos: IUtxo[]
     let toAmount: number
     let changeAmount: number
     let hex_tentative: string
@@ -1587,7 +1643,7 @@ export class Wallet {
           if (excess >= 0 && excess <= 34 || excess >= 546 || i >= recentUtxos.length) {
             break
           }
-          let utxo: any = recentUtxos[i]
+          let utxo: IUtxo = recentUtxos[i]
           acc += utxo.satoshis
           utxos.push(utxo)
           i++
@@ -1634,34 +1690,34 @@ export class Wallet {
     }
   }
 
-  async makeSweepTx(wif: string, info?: { address: string, balance: number, utxos: any[] }) {
+  async makeSweepTx(wif: string, info?: IWifInfo): Promise<ISignedTx> {
     let keys: bitcoincash.PrivateKey[] = [bitcoincash.PrivateKey(wif)]
     if (!info) {
       info = await this.getInfoFromWIF(wif)
     }
-    let output: any = {
+    let output: IOutput = {
       script: this.scriptFromAddress(this.currentWallet.cache.receiveAddress),
       satoshis: 0
     }
     return await this._makeSignedTx([output], true, info.utxos, keys)
   }
 
-  signTx(ustx: bitcoincash.Transaction, keys: bitcoincash.PrivateKey[]) {
+  signTx(ustx: bitcoincash.Transaction, keys: bitcoincash.PrivateKey[]): string {
     return ustx.sign(keys).serialize({
       disableDustOutputs: true,
       disableSmallFees: true
     })
   }
 
-  async broadcastTx(signedTx: string) {
-    let txid: any = await this.apiWS('broadcast', {tx: signedTx})
+  async broadcastTx(signedTx: string): Promise<string> {
+    let txid: any = await this.apiWS('broadcast', { tx: signedTx })
     return txid
   }
 
   // BIP70
 
-  getCommonNameFromCert(cert: Uint8Array) {
-    let certificate = new jsrsasign.X509()
+  getCommonNameFromCert(cert: Uint8Array): string {
+    let certificate: jsrsasign.X509 = new jsrsasign.X509()
     certificate.readCertHex(Buffer.from(cert).toString('hex'))
     let cn = certificate.getSubjectString().split(/\s*[^\\]?\/\s*/).find(s => {
       return s.match(/^CN=/gi)
@@ -1671,13 +1727,13 @@ export class Wallet {
     }
   }
 
-  verifySignature(dataHash: Uint8Array, cert: Uint8Array, signature: Uint8Array) {
+  verifySignature(dataHash: Uint8Array, cert: Uint8Array, signature: Uint8Array): boolean {
     return jsrsasign.X509.getPublicKeyFromCertHex(Buffer.from(cert).toString('hex')).verifyWithMessageHash(Buffer.from(dataHash).toString('hex'), Buffer.from(signature).toString('hex'))
   }
 
-  async verifyCertificateChain(chainData: Uint8Array[]) {
+  async verifyCertificateChain(chainData: Uint8Array[]): Promise<boolean> {
     // trusted
-    let trustedCertificates: any[] = (await this.http.get('assets/cacerts.txt', {
+    let trustedCertificates: string[] = (await this.http.get('assets/cacerts.txt', {
       responseType: 'text'
     }).toPromise() as string).trim().split(/\r?\n/g).map((s: string) => {
       return Buffer.from(s, 'base64').toString('hex')
@@ -1689,24 +1745,24 @@ export class Wallet {
     // chain validation
     for (let i = 0; i < certificates.length; i++) {
       // cert
-      let certificateHex = certificates[i]
-      let certificate = new jsrsasign.X509()
+      let certificateHex: string = certificates[i]
+      let certificate: jsrsasign.X509 = new jsrsasign.X509()
       certificate.readCertHex(certificateHex)
       // check time
-      let now = new Date().getTime()
-      let notBefore = convertToTime(certificate.getNotBefore())
-      let notAfter = convertToTime(certificate.getNotAfter())
+      let now: number = new Date().getTime()
+      let notBefore: number = convertToTime(certificate.getNotBefore())
+      let notAfter: number = convertToTime(certificate.getNotAfter())
       if (now < notBefore || now > notAfter) {
         return false
       }
       // ca
-      let caCertificateHex
-      if(i + 1 < certificates.length) {
+      let caCertificateHex: string
+      if (i + 1 < certificates.length) {
         caCertificateHex = certificates[i + 1]
       } else {
-        let issuerHex = certificate.getIssuerHex()
+        let issuerHex: string = certificate.getIssuerHex()
         caCertificateHex = trustedCertificates.find(hex => {
-          let tc = new jsrsasign.X509()
+          let tc: jsrsasign.X509 = new jsrsasign.X509()
           tc.readCertHex(hex)
           return tc.getSubjectHex() === issuerHex
         })
@@ -1718,7 +1774,7 @@ export class Wallet {
       let certStruct = jsrsasign.ASN1HEX.getTLVbyList(certificate.hex, 0, [0])
       let algorithm = certificate.getSignatureAlgorithmField()
       let signatureHex = certificate.getSignatureValueHex()
-      let signature = new jsrsasign.crypto.Signature({alg: algorithm})
+      let signature = new jsrsasign.crypto.Signature({ alg: algorithm })
       signature.init('-----BEGIN CERTIFICATE-----\r\n' + Buffer.from(caCertificateHex, 'hex').toString('base64').match(/.{1,64}/g).join('\r\n') + '\r\n-----END CERTIFICATE-----')
       signature.updateHex(certStruct)
       if (!signature.verify(signatureHex)) {
@@ -1727,7 +1783,7 @@ export class Wallet {
     }
     return true
 
-    function convertToTime(s: string) {
+    function convertToTime(s: string): number {
       if (s.length === 13) {
         let yy = parseInt(s.slice(0, 2))
         if (yy >= 50) {
@@ -1755,7 +1811,7 @@ export class Wallet {
     }
   }
 
-  async getRequestFromMerchant(url: string) {
+  async getRequestFromMerchant(url: string): Promise<IBIP70Request> {
     if (1 + 1 === 2) {
       throw new Error('suspended')
     }
@@ -1806,7 +1862,7 @@ export class Wallet {
     }
 
     // return data
-    let outputs: any = paymentDetails.outputs.map((output) => {
+    let outputs: IOutput[] = paymentDetails.outputs.map((output) => {
       return {
         satoshis: output.amount,
         script: new bitcoincash.Script(Buffer.from(output.script).toString('hex'))
@@ -1831,11 +1887,11 @@ export class Wallet {
     }
   }
 
-  async sendPaymentToMerchant(url: string, tx: string, refundAddress: string, merchantData?: Uint8Array) {
+  async sendPaymentToMerchant(url: string, tx: string, refundAddress: string, merchantData?: Uint8Array): Promise<string> {
     let root: protobuf.Root = await protobuf.load('assets/paymentrequest.proto')
     let Output: any = root.lookupType("payments.Output")
     let Payment: any = root.lookupType("payments.Payment")
-    let output: any = Output.create({
+    let output: IOutput = Output.create({
       amount: 0,
       script: bitcoincash.Script.buildPublicKeyHashOut(bitcoincash.Address.fromString(refundAddress)).toBuffer()
     })
@@ -1869,16 +1925,16 @@ export class Wallet {
 
   //update alert
 
-  showUpdateAlert() {
+  showUpdateAlert(): void {
     if (!this.platform.is('cordova')) {
       return
     }
-    let updateAlert = this.alertCtrl.create({
+    let updateAlert: any = this.alertCtrl.create({
       enableBackdropDismiss: false,
       title: this.translate.instant('PLEASE_UPDATE'),
       buttons: [{
         text: this.translate.instant('CANCEL')
-      },{
+      }, {
         text: this.translate.instant('UPDATE'),
         handler: () => {
           let url: string
@@ -1896,8 +1952,8 @@ export class Wallet {
 
   // recovery dialog
 
-  promptForRecovery(autoFill?: string) {
-    return new Promise((resolve, reject) => {
+  promptForRecovery(autoFill?: string): Promise<void> {
+    return new Promise<void>((resolve, reject) => {
       let recoverAlert = this.alertCtrl.create({
         enableBackdropDismiss: false,
         title: this.translate.instant('RECOVER_WALLET'),
@@ -1925,7 +1981,7 @@ export class Wallet {
             })
             return false
           }
-        },{
+        }, {
           text: this.translate.instant('OK'),
           handler: data => {
             if (
@@ -1951,7 +2007,7 @@ export class Wallet {
     })
   }
 
-  r_nameIsValid(name: string) {
+  r_nameIsValid(name: string): boolean {
     if (this.getAllWalletNames().indexOf(name) !== -1) {
       this.alertCtrl.create({
         enableBackdropDismiss: false,
@@ -1965,7 +2021,7 @@ export class Wallet {
     }
   }
 
-  r_mnemonicOrXprvIsValid(m: string) {
+  r_mnemonicOrXprvIsValid(m: string): boolean {
     m = m.trim()
     if (!this.validateMnemonicOrXprv(m)) {
       this.alertCtrl.create({
@@ -1980,8 +2036,8 @@ export class Wallet {
     }
   }
 
-  r_pathIsValid(path: string) {
-    path = path.trim().replace(/[‘’]/g,"'")
+  r_pathIsValid(path: string): boolean {
+    path = path.trim().replace(/[‘’]/g, "'")
     if (!path.match(/^m(\/\d+'?)*$/g)) {
       this.alertCtrl.create({
         enableBackdropDismiss: false,
@@ -1995,9 +2051,9 @@ export class Wallet {
     }
   }
 
-  async r_recover(mnemonicOrXprv?: string, path?: string, passphrase?: string, name?: string) {
+  async r_recover(mnemonicOrXprv?: string, path?: string, passphrase?: string, name?: string): Promise<void> {
     mnemonicOrXprv = mnemonicOrXprv ? mnemonicOrXprv.trim() : undefined
-    path = path ? path.trim().replace(/[‘’]/g,"'") : undefined
+    path = path ? path.trim().replace(/[‘’]/g, "'") : undefined
     passphrase = passphrase || undefined
     name = name || undefined
     let translations: string[]
@@ -2006,7 +2062,7 @@ export class Wallet {
     } else {
       translations = ['CREATING', 'CREATE_SUCCESS', 'CREATE_FAILED']
     }
-    let error: any
+    let error: Error
     let loader = this.loadingCtrl.create({
       content: this.translate.instant(translations[0]) + '...'
     })
@@ -2037,7 +2093,7 @@ export class Wallet {
 
   //web socket
 
-  apiWS(method: string, params?: any, force?: boolean, timeout?: number) {
+  apiWS(method: string, params?: any, force?: boolean, timeout?: number): Promise<any> {
     let socket: any = this.socket
     if (typeof method === 'undefined') {
       return Promise.reject(new Error('no method'))
@@ -2054,7 +2110,7 @@ export class Wallet {
     if (!force && !this.isOnline()) {
       return Promise.reject(new Error('not connected'))
     }
-    return new Promise((resolve, reject) => {
+    return new Promise<any>((resolve, reject) => {
       let id: number = this.socketRequestId++
       let cb: Function
       let timer: number
@@ -2081,7 +2137,7 @@ export class Wallet {
         socket.off('response', cb)
         reject(new Error('timeout'))
       }, timeout)
-      socket.emit('request', {id: id, method: method, params: params})
+      socket.emit('request', { id: id, method: method, params: params })
     })
   }
 

@@ -14,7 +14,7 @@ import { Wallet } from '../../providers/providers'
 })
 export class AddressPage {
   public address: string
-  public path: number[]
+  public path: [number, number]
   public qrCodeURL: string
   public copyToast: any
   public copyToastTimer: number
