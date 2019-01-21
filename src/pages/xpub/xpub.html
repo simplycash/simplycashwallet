@@ -9,7 +9,7 @@
   <ion-navbar color="primary">
     <ion-title>xpub</ion-title>
     <ion-buttons end>
-      <button ion-button icon-only (click)="pushXprvPage()">
+      <button ion-button icon-only (click)="pushXprvPage()" *ngIf="!wallet.isWatchOnly()">
         <ion-icon name="key"></ion-icon>
       </button>
     </ion-buttons>

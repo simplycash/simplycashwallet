@@ -28,7 +28,7 @@
         <ion-option *ngFor="let curr of supportedCurrencies" [value]="curr">{{ curr }}</ion-option>
       </ion-select>
     </ion-item>
-    <ion-item>
+    <ion-item *ngIf="!wallet.isWatchOnly()">
       <ion-label>{{ 'PROTECTION' | translate }}</ion-label>
       <ion-select [(ngModel)]="protection" (ionChange)="setProtection()" [disabled]="isLeaving">
         <ion-option *ngFor="let p of supportedProtections" [value]="p">{{ p | translate }}</ion-option>

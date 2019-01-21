@@ -73,11 +73,11 @@
   </ion-list>
 
   <div text-center>
-    <button ion-button clear icon-left *ngIf="!canLeave || !wallet.isOnline()" disabled>
+    <button ion-button clear icon-left *ngIf="!canLeave || !wallet.isOnline() || wallet.isWatchOnly()" disabled>
       <ion-icon name="paper-plane"></ion-icon>
       {{ 'SEND' | translate }}
     </button>
-    <button ion-button clear icon-left (click)="send()" *ngIf="canLeave && wallet.isOnline()">
+    <button ion-button clear icon-left (click)="send()" *ngIf="canLeave && wallet.isOnline() && !wallet.isWatchOnly()">
       <ion-icon name="paper-plane"></ion-icon>
       {{ 'SEND' | translate }}
     </button>

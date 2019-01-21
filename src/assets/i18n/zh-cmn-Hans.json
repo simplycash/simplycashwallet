@@ -1,5 +1,5 @@
 {
-  "RECOVERY_PHRASE_OR_XPRV": "复原短语 或 xprv",
+  "RECOVERY_PHRASE_OR_XPRV": "复原短语，xprv 或 xpub",
   "XPUB_COPIED": "已复制 xpub",
   "XPRV_COPIED": "已复制 xprv",
   "RENAME_WALLET": "钱包名称",

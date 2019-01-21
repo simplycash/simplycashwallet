@@ -566,6 +566,10 @@ export class Wallet {
     return this.state === EState.SYNCED
   }
 
+  isWatchOnly(): boolean {
+    return typeof this.currentWallet.keys.encMnemonic === 'undefined'
+  }
+
   //wallet control
 
   closeWallet(): void {
@@ -611,13 +615,21 @@ export class Wallet {
   }
 
   async createWallet(mnemonicOrXprv?: string, path?: string, passphrase?: string, name?: string): Promise<void> {
-    let m: string = this.makeRecoveryString(mnemonicOrXprv, path, passphrase)
-    let hdPrivateKey: bitcoincash.HDPrivateKey = this.getHDPrivateKeyFromRecoveryString(m)
-    let hdPublicKey: bitcoincash.HDPublicKey = hdPrivateKey.hdPublicKey
-    let xpub: string = hdPublicKey.toString()
-    let addresses: IAddresses = this.generateAddresses(hdPrivateKey)
-
-    let encrypted: string = this._encryptText(m, this.DUMMY_KEY)
+    let encrypted: string
+    let xpub: string
+    let addresses: IAddresses
+    if (mnemonicOrXprv && mnemonicOrXprv.match(/^xpub/g)) {
+      encrypted = undefined
+      xpub = mnemonicOrXprv
+      addresses = this.generateAddressesFromPublicKey(new bitcoincash.HDPublicKey(xpub))
+    } else {
+      let m: string = this.makeRecoveryString(mnemonicOrXprv, path, passphrase)
+      let hdPrivateKey: bitcoincash.HDPrivateKey = this.getHDPrivateKeyFromRecoveryString(m)
+      let hdPublicKey: bitcoincash.HDPublicKey = hdPrivateKey.hdPublicKey
+      encrypted = this._encryptText(m, this.DUMMY_KEY)
+      xpub = hdPublicKey.toString()
+      addresses = this.generateAddressesFromPrivateKey(hdPrivateKey)
+    }
 
     let wallet: IWallet = {
       name: name || this.nextWalletName(),
@@ -1221,12 +1233,22 @@ export class Wallet {
     return new bitcoincash.Mnemonic().phrase
   }
 
-  generateAddresses(hdPrivateKey: bitcoincash.HDPrivateKey): IAddresses {
+  generateAddressesFromPrivateKey(hdPrivateKey: bitcoincash.HDPrivateKey): IAddresses {
     let d: bitcoincash.HDPrivateKey[] = [hdPrivateKey.derive(0), hdPrivateKey.derive(1)]
     let addresses: IAddresses = { receive: [], change: [] }
     for (let i: number = 0; i < 20; i++) {
       addresses.receive[i] = d[0].derive(i).privateKey.toAddress().toString()
       addresses.change[i] = d[1].derive(i).privateKey.toAddress().toString()
+    }
+    return addresses
+  }
+
+  generateAddressesFromPublicKey(hdPublicKey: bitcoincash.HDPublicKey): IAddresses {
+    let d: bitcoincash.HDPublicKey[] = [hdPublicKey.derive(0), hdPublicKey.derive(1)]
+    let addresses: IAddresses = { receive: [], change: [] }
+    for (let i: number = 0; i < 20; i++) {
+      addresses.receive[i] = d[0].derive(i).publicKey.toAddress().toString()
+      addresses.change[i] = d[1].derive(i).publicKey.toAddress().toString()
     }
     return addresses
   }
@@ -2023,7 +2045,7 @@ export class Wallet {
 
   r_mnemonicOrXprvIsValid(m: string): boolean {
     m = m.trim()
-    if (!this.validateMnemonicOrXprv(m)) {
+    if (!this.validateMnemonicOrXprv(m) && !this.validateXpub(m)) {
       this.alertCtrl.create({
         enableBackdropDismiss: false,
         title: this.translate.instant('ERROR'),

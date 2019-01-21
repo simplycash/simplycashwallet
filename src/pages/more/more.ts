@@ -12,6 +12,7 @@ import { Wallet } from '../../providers/providers'
 })
 export class MorePage {
   public walletName: string
+  public isWatchOnly: boolean
 
   constructor(
     public alertCtrl: AlertController,
@@ -24,6 +25,7 @@ export class MorePage {
     public wallet: Wallet
   ) {
     this.walletName = this.wallet.getCurrentWalletName()
+    this.isWatchOnly = this.wallet.isWatchOnly()
   }
   pushAddressesPage() {
     this.navCtrl.push('AddressesPage')

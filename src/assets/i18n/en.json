@@ -1,5 +1,5 @@
 {
-  "RECOVERY_PHRASE_OR_XPRV": "recovery phrase or xprv",
+  "RECOVERY_PHRASE_OR_XPRV": "recovery phrase, xprv or xpub",
   "XPUB_COPIED": "xpub copied",
   "XPRV_COPIED": "xprv copied",
   "RENAME_WALLET": "wallet name",

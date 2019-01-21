@@ -9,7 +9,7 @@
   <ion-navbar color="primary">
     <ion-title>{{ 'ADDRESS' | translate }}</ion-title>
     <ion-buttons end>
-      <button ion-button icon-only (click)="pushWifPage()">
+      <button ion-button icon-only (click)="pushWifPage()" *ngIf="!wallet.isWatchOnly()">
         <ion-icon name="key"></ion-icon>
       </button>
     </ion-buttons>

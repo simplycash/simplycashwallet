@@ -334,7 +334,7 @@ export class HomePage {
       })
       return true
     }
-    if (this.wallet.validateMnemonicOrXprv(text)) {
+    if (this.wallet.validateMnemonicOrXprv(text) || this.wallet.validateXpub(text)) {
       this.wallet.promptForRecovery(text) // no await
       return true
     }

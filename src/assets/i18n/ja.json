@@ -1,5 +1,5 @@
 {
-  "RECOVERY_PHRASE_OR_XPRV": "復元フレーズまたはxprv",
+  "RECOVERY_PHRASE_OR_XPRV": "復元フレーズ、xprvまたはxpub",
   "XPUB_COPIED": "xpubをコピーしました",
   "XPRV_COPIED": "xprvをコピーしました",
   "RENAME_WALLET": "ウォレット名",

@@ -1,5 +1,5 @@
 {
-  "RECOVERY_PHRASE_OR_XPRV": "복구 구문 또는 xprv",
+  "RECOVERY_PHRASE_OR_XPRV": "복구 구문, xprv 또는 xpub",
   "XPUB_COPIED": "xpub가 복사되었다",
   "XPRV_COPIED": "xprv가 복사되었다",
   "RENAME_WALLET": "지갑 이름",
