@@ -47,7 +47,7 @@ export class SettingsPage {
     this.protection = this.wallet.getPreferredProtection()
     this.supportedProtections = this.wallet.getSupportedProtections()
     this.currentWallet = this.wallet.getCurrentWalletName()
-    this.allWallets = this.wallet.getAllWalletNames().sort().concat([this.translate.instant('RECOVER_WALLET')])
+    this.allWallets = [this.translate.instant('RECOVER_WALLET')].concat(this.wallet.getAllWalletNames().sort())
     // this.useCashAddr = this.wallet.getPreferredAddressFormat() === 'cashaddr'
   }
 
@@ -105,7 +105,7 @@ export class SettingsPage {
     if (this.currentWallet === this.wallet.getCurrentWalletName()) {
       return
     }
-    if (this.currentWallet === this.allWallets[this.allWallets.length - 1]) {
+    if (this.currentWallet === this.allWallets[0]) {
       await this.wallet.promptForRecovery()
     } else {
       await this.wallet.switchWallet(this.currentWallet)
