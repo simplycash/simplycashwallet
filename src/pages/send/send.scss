@@ -8,4 +8,11 @@ page-send {
   .warn-bip70-unverified {
     color: color($colors, danger);
   }
+  .qrcode {
+    width: 100%;
+    max-width: 200px;
+  }
+  div.qrdiv:last-child {
+    margin-bottom: 50px;
+  }
 }

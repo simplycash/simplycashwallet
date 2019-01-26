@@ -73,11 +73,11 @@
   </ion-list>
 
   <div text-center>
-    <button ion-button clear icon-left *ngIf="!canLeave || !wallet.isOnline() || wallet.isWatchOnly()" disabled>
+    <button ion-button clear icon-left *ngIf="!canLeave || !wallet.isOnline()" disabled>
       <ion-icon name="paper-plane"></ion-icon>
       {{ 'SEND' | translate }}
     </button>
-    <button ion-button clear icon-left (click)="send()" *ngIf="canLeave && wallet.isOnline() && !wallet.isWatchOnly()">
+    <button ion-button clear icon-left (click)="send()" *ngIf="canLeave && wallet.isOnline()">
       <ion-icon name="paper-plane"></ion-icon>
       {{ 'SEND' | translate }}
     </button>
@@ -89,6 +89,11 @@
 
   <div *ngIf="showQuickSendHint" class="quick-send-hint" padding>
     {{ 'QUICK_SEND_HINT' | translate }}
+  </div>
+
+  <div class="qrdiv" *ngFor="let qrCodeURL of qrCodeURLs; let i = index" text-center>
+    <p *ngIf="qrCodeURLs.length > 1" >{{ i + 1 }}/{{ qrCodeURLs.length }}:</p>
+    <img class="qrcode" [src]="qrCodeURL"/>
   </div>
 
 </ion-content>

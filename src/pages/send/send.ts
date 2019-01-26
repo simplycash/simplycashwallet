@@ -37,6 +37,8 @@ export class SendPage {
   public currentWallet: string
   public allWallets: string[]
 
+  public qrCodeURLs: string[]
+
   constructor(
     public alertCtrl: AlertController,
     public navCtrl: NavController,
@@ -63,6 +65,7 @@ export class SendPage {
   }
 
   initPage(info: any) {
+    this.qrCodeURLs = []
     this.currentWallet = this.wallet.getCurrentWalletName()
     this.allWallets = this.wallet.getAllWalletNames().sort()
 
@@ -136,6 +139,7 @@ export class SendPage {
     if (this.currentWallet === this.wallet.getCurrentWalletName()) {
       return
     }
+    this.qrCodeURLs = []
     await this.wallet.switchWallet(this.currentWallet)
   }
 
@@ -186,14 +190,21 @@ export class SendPage {
   }
 
   async send() {
+    this.qrCodeURLs = []
+    let outputs: any[] = this.validateSendDetails()
+    if (!outputs) {
+      return
+    }
     this.canLeave = false
-    await this.signAndBroadcast()
+    if (this.wallet.isWatchOnly()) {
+      await this.makeUnsignedTx(outputs)
+    } else {
+      await this.signAndBroadcast(outputs)
+    }
     this.canLeave = true
   }
 
-  async signAndBroadcast() {
-    let drain: boolean = false
-    // validate
+  validateSendDetails(): any[] {
     try {
       let satoshis: number = this.myAmountEl.getSatoshis() //undefined -> drain
       if (!(this.outputSum > 0) && satoshis <= 0) { //if manual input amount <= 0
@@ -202,23 +213,22 @@ export class SendPage {
       if (satoshis > this.wallet.getCacheBalance()) {
         throw new Error('not enough fund')
       }
+      let outputs: any[]
       if (this.outputSum > 0) { //if amount is predefined
-        this.info.outputs = this.info.outputs.filter(o => o.satoshis > 0)
+        outputs = this.info.outputs.map(o => Object.assign({}, o))
+        outputs = outputs.filter(o => o.satoshis > 0)
       } else { //if manual input amount
         if (this.predefinedRecipient) { //if addr / script is predefined
-          this.info.outputs = this.info.outputs.slice(0, 1)
-          this.info.outputs[0].satoshis = satoshis
+          outputs = [Object.assign({}, this.info.outputs[0])]
+          outputs[0].satoshis = satoshis
         } else {
-          this.info.outputs = [{
+          outputs = [{
             address: this.addressEl.value,
             satoshis: satoshis
           }]
         }
-        if (typeof satoshis === 'undefined') {
-          drain = true
-        }
       }
-      this.info.outputs.forEach((output) => {
+      outputs.forEach((output) => {
         if (typeof output.address !== 'undefined') {
           let af: string = this.wallet.getAddressFormat(output.address)
           if (typeof af === 'undefined') {
@@ -226,10 +236,12 @@ export class SendPage {
           }
           let legacyAddr: string = this.wallet.convertAddress(af, 'legacy', output.address)
           output.script = this.wallet.scriptFromAddress(legacyAddr)
+          delete output.address
         } else if (typeof output.script === 'undefined') {
           throw new Error('invalid output')
         }
       })
+      return outputs
     } catch (err) {
       console.log(err)
       let errMessage = err.message
@@ -248,8 +260,40 @@ export class SendPage {
         message: errMessage,
         buttons: ['ok']
       }).present()
+    }
+  }
+
+  async makeUnsignedTx(outputs: any[]) {
+    let drain: boolean = typeof this.myAmountEl.getSatoshis() === 'undefined'
+    if (drain && !(await this.confirmDrain())) {
       return
     }
+    try {
+      let unsignedTx: any = await this.wallet.makeUnsignedTx(outputs.map(o => {
+        return {
+          script: o.script,
+          satoshis: o.satoshis
+        }
+      }), drain)
+      this.qrCodeURLs = await this.wallet.getQRs(JSON.stringify(unsignedTx), 'unsigned')
+    } catch (err) {
+      console.log(err)
+      this.qrCodeURLs = []
+      let errMessage = err.message
+      if (err.message === 'not enough fund') {
+        errMessage = this.translate.instant('ERR_NOT_ENOUGH_FUND')
+      }
+      await this.alertCtrl.create({
+        enableBackdropDismiss: false,
+        title: this.translate.instant('ERROR'),
+        message: errMessage,
+        buttons: ['ok']
+      }).present()
+    }
+  }
+
+  async signAndBroadcast(outputs: any[]) {
+    let drain: boolean = typeof this.myAmountEl.getSatoshis() === 'undefined'
 
     if (drain && !(await this.confirmDrain())) {
       return
@@ -276,9 +320,15 @@ export class SendPage {
     await loader.present()
 
     //sign
+    let hex: string
     try {
-      let signedTx: { satoshis: number, hex: string, fee: number } = await this.wallet.makeSignedTx(this.info.outputs, drain, m)
-      Object.assign(this.info, signedTx)
+      let signedTx: any = await this.wallet.makeSignedTx(outputs.map(o => {
+        return {
+          script: o.script,
+          satoshis: o.satoshis
+        }
+      }), drain, m)
+      hex = signedTx.hex
     } catch (err) {
       console.log(err)
       let errMessage = err.message
@@ -297,20 +347,21 @@ export class SendPage {
 
     let txComplete: boolean = false
     if (this.info.bip70) {
-      txComplete = await this.sendBIP70(loader)
+      txComplete = await this.sendBIP70(hex, loader)
     } else {
-      txComplete = await this.broadcast(loader)
+      txComplete = await this.wallet.broadcastTx(hex, loader)
     }
 
     if (txComplete) {
       await this.clipboard.copy('').catch((err: any) => {
 
       })
+      this.navCtrl.popToRoot()// BUG: this.canLeave is still false
     }
 
   }
 
-  async sendBIP70(loader: any) {
+  async sendBIP70(hex: string, loader: any) {
     try {
       if (this.info.expires > 0 && new Date().getTime() > this.info.expires * 1000) {
         throw new Error('expired')
@@ -318,7 +369,7 @@ export class SendPage {
       loader.setContent(this.translate.instant('SENDING')+'...')
       let memo: string = await this.wallet.sendPaymentToMerchant(
         this.info.paymentUrl,
-        this.info.hex,
+        hex,
         this.wallet.getCacheChangeAddress(),
         this.info.merchantData
       )
@@ -327,15 +378,7 @@ export class SendPage {
         enableBackdropDismiss: false,
         title: this.translate.instant('TX_COMPLETE'),
         message: memo,
-        buttons: [{
-          text: this.translate.instant('OK'),
-          handler: () => {
-            successAlert.dismiss().then(() => {
-              this.navCtrl.popToRoot()
-            })
-            return false
-          }
-        }]
+        buttons: [this.translate.instant('OK')]
       })
       await successAlert.present()
       return true
@@ -356,52 +399,8 @@ export class SendPage {
         message: message,
         buttons: ['ok']
       }).present()
+      return false
     }
-  }
-
-  async broadcast(loader: any) {
-    try {
-      loader.setContent(this.translate.instant('BROADCASTING')+'...')
-      await this.wallet.broadcastTx(this.info.hex)
-      await loader.dismiss()
-      let successAlert = this.alertCtrl.create({
-        enableBackdropDismiss: false,
-        title: this.translate.instant('TX_COMPLETE'),
-        buttons: [{
-          text: this.translate.instant('OK'),
-          handler: () => {
-            successAlert.dismiss().then(() => {
-              this.navCtrl.popToRoot()
-            })
-            return false
-          }
-        }]
-      })
-      await successAlert.present()
-      return true
-    } catch (err) {
-      await loader.dismiss()
-      console.log(err)
-      let message: string
-      if (err.message == 'not connected') {
-        message = this.translate.instant('ERR_NOT_CONNECTED')
-      } else if (err.message == 'timeout') {
-        message = this.translate.instant('ERR_TIMEOUT')
-      } else {
-        message = this.translate.instant('ERR_INVALID_TX')
-      }
-      await this.alertCtrl.create({
-        enableBackdropDismiss: false,
-        title: this.translate.instant('ERROR'),
-        message: message,
-        buttons: ['ok']
-      }).present()
-    }
-  }
-
-  resetForm() {
-    this.addressEl.value = ''
-    this.myAmountEl.clear()
   }
 
   sp_handlePaste(ev: any) {
@@ -424,7 +423,8 @@ export class SendPage {
         return
       }
       this.lastRawClipboardContent = content
-      if (!content || typeof this.wallet.getRequestFromURL(content) === 'undefined') {
+      let af: string = this.wallet.getAddressFormat(content)
+      if (!content || !af && !this.wallet.getRequestFromURL(content)) {
         this.currentClipboardContent = ''
         return
       }
@@ -437,7 +437,15 @@ export class SendPage {
         this.activeClipboardContent = this.currentClipboardContent
         this.initPage(undefined)
         this.ionViewDidLoad()
-        return this.sp_handleURL(this.activeClipboardContent)
+        let url: string
+        if (af === 'legacy') {
+          url = 'bitcoin:' + this.activeClipboardContent + '?sv'
+        } else if (af === 'cashaddr' && !this.activeClipboardContent.match(/^bitcoincash:/gi)) {
+          url = 'bitcoincash:' + this.activeClipboardContent
+        } else {
+          url = this.activeClipboardContent
+        }
+        return this.sp_handleURL(url)
       }
     }).catch((err: any) => {
 
@@ -452,14 +460,11 @@ export class SendPage {
       return false
     }
     if (typeof info.url !== 'undefined') {
-      await this.sp_handleBIP70(info)
-      return true
-    } else {
-      return await this.sp_handleRequest(info)
+      info = await this.sp_handleBIP70(info.url)
+      if (typeof info === 'undefined') {
+        return false
+      }
     }
-  }
-
-  async sp_handleRequest(info: any) {
     if (info.outputs.length === 0) {
       return false
     }
@@ -469,7 +474,7 @@ export class SendPage {
     return true
   }
 
-  async sp_handleBIP70(info: any) {
+  async sp_handleBIP70(url: string) {
     let loader = this.loadingCtrl.create({
       content: this.translate.instant('LOADING')+'...'
     })
@@ -477,7 +482,7 @@ export class SendPage {
     let request: any
     let errMessage: string
     try {
-      request = await this.wallet.getRequestFromMerchant(info.url)
+      request = await this.wallet.getRequestFromMerchant(url)
     } catch (err) {
       console.log(err)
       if (err.message === 'unsupported network') {
@@ -490,7 +495,7 @@ export class SendPage {
     }
     await loader.dismiss()
     if (typeof errMessage === 'undefined') {
-      return await this.sp_handleRequest(request)
+      return request
     } else {
       this.alertCtrl.create({
         enableBackdropDismiss: false,
@@ -498,8 +503,6 @@ export class SendPage {
         message: errMessage,
         buttons: ['ok']
       }).present()
-      // fallback
-      // this.sp_handleRequest(info)
     }
   }
 

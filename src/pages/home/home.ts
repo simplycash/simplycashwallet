@@ -33,6 +33,9 @@ export class HomePage {
   public scanBeginTime: number
   public scanEndTime: number
 
+  public qrCache: any = {}
+  public qrCacheToast: any
+
   public hint: any
   public hintTimer: number
   public copyToast: any
@@ -325,7 +328,10 @@ export class HomePage {
   }
 
   async handleQRText(text: string) {
-    if (await this.handleURL(text)) {
+    if (await this.handleURL(text)) { // bitcoincash:... is handled here
+      return true
+    }
+    if (this.wallet.getAddressFormat(text) && await this.handleURL('bitcoin:' + text + '?sv')) { // possibly bitcoin:cashaddr?sv
       return true
     }
     if (this.wallet.validateWIF(text)) {
@@ -336,6 +342,12 @@ export class HomePage {
     }
     if (this.wallet.validateMnemonicOrXprv(text) || this.wallet.validateXpub(text)) {
       this.wallet.promptForRecovery(text) // no await
+      return true
+    }
+    if (this.handleUnsignedTx(text)) {
+      return true
+    }
+    if (this.handleSignedTx(text)) {
       return true
     }
     await this.alertCtrl.create({
@@ -353,14 +365,11 @@ export class HomePage {
       return false
     }
     if (typeof info.url !== 'undefined') {
-      await this.handleBIP70(info)
-      return true
-    } else {
-      return await this.handleRequest(info)
+      info = await this.handleBIP70(info.url)
+      if (typeof info === 'undefined') {
+        return false
+      }
     }
-  }
-
-  async handleRequest(info: any) {
     if (info.outputs.length === 0) {
       return false
     }
@@ -370,7 +379,7 @@ export class HomePage {
     return true
   }
 
-  async handleBIP70(info: any) {
+  async handleBIP70(url: string) {
     let loader = this.loadingCtrl.create({
       content: this.translate.instant('LOADING')+'...'
     })
@@ -378,7 +387,7 @@ export class HomePage {
     let request: any
     let errMessage: string
     try {
-      request = await this.wallet.getRequestFromMerchant(info.url)
+      request = await this.wallet.getRequestFromMerchant(url)
     } catch (err) {
       console.log(err)
       if (err.message === 'unsupported network') {
@@ -391,7 +400,7 @@ export class HomePage {
     }
     await loader.dismiss()
     if (typeof errMessage === 'undefined') {
-      return await this.handleRequest(request)
+      return request
     } else {
       this.alertCtrl.create({
         enableBackdropDismiss: false,
@@ -399,9 +408,83 @@ export class HomePage {
         message: errMessage,
         buttons: ['ok']
       }).present()
-      // fallback
-      // this.handleRequest(info)
     }
+  }
+
+  handleUnsignedTx(text: string): boolean {
+    return this.handleSplitQR(text, 'unsigned', (data) => {
+      try {
+        let unsignedTx: any = JSON.parse(data)
+        this.wallet.validatePreparedTx(unsignedTx)
+        this.navCtrl.push('SignPage', {
+          unsignedTx: unsignedTx
+        })
+      } catch (err) {
+        this.alertCtrl.create({
+          enableBackdropDismiss: false,
+          title: this.translate.instant('ERROR'),
+          message: this.translate.instant('ERR_UNABLE_TO_SIGN'),
+          buttons: [this.translate.instant('OK')]
+        }).present()
+      }
+    })
+  }
+
+  handleSignedTx(text: string): boolean {
+    return this.handleSplitQR(text, 'signed', (hex) => {
+      this.wallet.broadcastTx(hex)
+    })
+  }
+
+  handleSplitQR(text: string, prefix: string, success: Function): boolean {
+    let regex: RegExp = new RegExp('^' + prefix + ' \\d+ \\d+ ', 'gi')
+    let matches: string[] = text.match(regex)
+    if (!matches || this.qrCache.prefix && this.qrCache.prefix !== prefix) {
+      return false
+    }
+    let m: string[] = matches[0].split(' ')
+    let current: number = parseInt(m[1])
+    let final: number = parseInt(m[2])
+    if (current === 0) {
+      this.qrCache.prefix = prefix
+      this.qrCache.data = []
+    } else if (!this.qrCache.prefix || current !== this.qrCache.data.length) {
+      return false
+    }
+    this.qrCache.data.push(text.slice(matches[0].length))
+    if (current === final) {
+      let data: string = this.qrCache.data.join('')
+      if (this.qrCacheToast) {
+        this.qrCacheToast.dismiss()
+      } else {
+        delete this.qrCache.prefix
+        delete this.qrCache.data
+      }
+      success(data)
+    } else {
+      let toast: any = this.toastCtrl.create({
+        message: [current + 1, final + 1].join('/'),
+        position: 'bottom',
+        showCloseButton: true,
+        closeButtonText: this.translate.instant('CANCEL'),
+        dismissOnPageChange: true
+      })
+      toast.onWillDismiss(() => {
+        if (toast !== this.qrCacheToast) {
+          return
+        }
+        delete this.qrCache.prefix
+        delete this.qrCache.data
+        this.qrCacheToast = undefined
+      })
+      toast.present()
+      let oldToast: any = this.qrCacheToast
+      this.qrCacheToast = toast
+      if (oldToast) {
+        oldToast.dismiss()
+      }
+    }
+    return true
   }
 
   handleDeepLinks() {
@@ -445,14 +528,12 @@ export class HomePage {
 
   handleClipboard() {
     this.clipboard.paste().then((content: string) => {
-      if (!content || typeof this.wallet.getRequestFromURL(content) === 'undefined') {
-        this.clipboardContent = ''
+      this.clipboardContent = ''
+      if (!content) {
         return
       }
       let af: string = this.wallet.getAddressFormat(content)
-      if (typeof af !== 'undefined' && this.wallet.isMyReceiveAddress(this.wallet.convertAddress(af, 'legacy', content))) {
-        this.clipboardContent = ''
-      } else {
+      if (this.wallet.getRequestFromURL(content) || af && !this.wallet.isMyReceiveAddress(this.wallet.convertAddress(af, 'legacy', content))) {
         this.clipboardContent = content
       }
     }).catch((err: any) => {
@@ -461,7 +542,7 @@ export class HomePage {
   }
 
   quickSend() {
-    this.handleURL(this.clipboardContent)
+    this.handleQRText(this.clipboardContent)
   }
 
   clearClipboard() {

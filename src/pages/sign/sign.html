@@ -1,0 +1,34 @@
+<!--
+  Generated template for the SignPage page.
+
+  See http://ionicframework.com/docs/components/#navigation for more info on
+  Ionic pages and navigation.
+-->
+<ion-header no-border>
+
+  <ion-navbar color="primary">
+    <ion-title>{{ 'SIGN' | translate }}</ion-title>
+  </ion-navbar>
+
+</ion-header>
+
+
+<ion-content no-bounce>
+  <ion-list>
+    <ion-item *ngFor="let recipient of recipients">
+      <ion-label stacked color="primary">{{ 'BITCOIN_CASH_ADDRESS' | translate }}</ion-label>
+      <ion-input
+        [value]="recipient"
+        type="text"
+        readonly></ion-input>
+    </ion-item>
+    <my-amount #myAmount></my-amount>
+  </ion-list>
+  <div text-center>
+    <button ion-button clear icon-left (click)="signPreparedTx()" [disabled]="finished">{{ 'SIGN' | translate }}</button>
+  </div>
+  <div class="qrdiv" *ngFor="let qrCodeURL of qrCodeURLs; let i = index" text-center>
+    <p *ngIf="qrCodeURLs.length > 1" >{{ i + 1 }}/{{ qrCodeURLs.length }}:</p>
+    <img class="qrcode" [src]="qrCodeURL"/>
+  </div>
+</ion-content>

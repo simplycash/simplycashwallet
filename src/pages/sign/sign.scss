@@ -1,0 +1,9 @@
+page-sign {
+  .qrcode {
+    width: 100%;
+    max-width: 200px;
+  }
+  div.qrdiv:last-child {
+    margin-bottom: 50px;
+  }
+}

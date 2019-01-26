@@ -111,45 +111,8 @@ export class SweepPage {
       }).present()
       return
     }
-    await this.broadcast(hex, loader)
-  }
-
-  async broadcast(hex: string, loader: any) {
-    try {
-      loader.setContent(this.translate.instant('BROADCASTING')+'...')
-      await this.wallet.broadcastTx(hex)
-      await loader.dismiss()
-      let successAlert = this.alertCtrl.create({
-        enableBackdropDismiss: false,
-        title: this.translate.instant('TX_COMPLETE'),
-        buttons: [{
-          text: this.translate.instant('OK'),
-          handler: () => {
-            successAlert.dismiss().then(() => {
-              this.navCtrl.popToRoot()
-            })
-            return false
-          }
-        }]
-      })
-      await successAlert.present()
-    } catch (err) {
-      await loader.dismiss()
-      console.log(err)
-      let message: string
-      if (err.message == 'not connected') {
-        message = this.translate.instant('ERR_NOT_CONNECTED')
-      } else if (err.message == 'timeout') {
-        message = this.translate.instant('ERR_TIMEOUT')
-      } else {
-        message = this.translate.instant('ERR_INVALID_TX')
-      }
-      await this.alertCtrl.create({
-        enableBackdropDismiss: false,
-        title: this.translate.instant('ERROR'),
-        message: message,
-        buttons: ['ok']
-      }).present()
+    if (await this.wallet.broadcastTx(hex, loader)) {
+      this.navCtrl.popToRoot()
     }
   }
 

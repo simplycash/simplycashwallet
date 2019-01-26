@@ -97,14 +97,28 @@ interface IRecoveryInfo {
   xprv?: string
 }
 
+interface IInput {
+  txid: string,
+  vout: number,
+  path?: [number, number],
+  script: string,
+  satoshis: number
+
+}
+
 interface IOutput {
-  script?: bitcoincash.Script,
-  address?: string,
+  path?: [number, number],
+  script: string,
+  satoshis: number
+}
+
+interface IAddressOutput {
+  address: string,
   satoshis: number
 }
 
 interface IRequest {
-  outputs: IOutput[],
+  outputs: IAddressOutput[],
   url?: string,
   label?: string,
   message?: string
@@ -116,10 +130,12 @@ interface IWifInfo {
   utxos: IUtxo[]
 }
 
-interface ISignedTx {
+interface ITransaction {
   satoshis: number,
   fee: number,
-  hex: string
+  hex: string,
+  inputs: IInput[],
+  outputs: IOutput[]
 }
 
 interface IBIP70Request {
@@ -138,7 +154,7 @@ interface IBIP70Request {
 export class Wallet {
   public readonly DUMMY_KEY: string = 'well... at least better than plain text ¯\\_(ツ)_/¯'
   public readonly WALLET_KEY: string = '_wallet'
-  public readonly ADDRESS_LIMIT: number = 100
+  public readonly ADDRESS_LIMIT: number = 1000
 
   public readonly UNITS: IUnits = {
     'BSV': { rate: 1, dp: 8 },
@@ -148,9 +164,9 @@ export class Wallet {
 
   public readonly ANNOUNCEMENT_URL: string = 'https://simply.cash/announcement.json'
   public readonly WS_URL: string = 'https://ws.simply.cash:3000'
-  public readonly VERSION: string = '0.0.63'
+  public readonly VERSION: string = '0.0.65'
 
-  public readonly supportedAddressFormats: ReadonlyArray<string> = ['legacy', 'cashaddr', 'bitpay']
+  public readonly supportedAddressFormats: ReadonlyArray<string> = ['legacy', 'cashaddr']
   public readonly supportedProtections: ReadonlyArray<string> = ['OFF', 'PIN', 'FINGERPRINT']
 
   public isPaused: boolean = false
@@ -489,9 +505,6 @@ export class Wallet {
     }
     if (this.validateAddress(address, 'cashaddr')) {
       return 'cashaddr'
-    }
-    if (this.validateAddress(address, 'bitpay')) {
-      return 'bitpay'
     }
     return undefined
   }
@@ -1343,13 +1356,13 @@ export class Wallet {
     return typeof this.getAddressTypeAndIndex(address, 1) !== 'undefined'
   }
 
-  scriptFromAddress(address: string): bitcoincash.Script {
+  scriptFromAddress(address: string): string {
     try {
       let a: bitcoincash.Address = bitcoincash.Address.fromString(address)
       if (a.isPayToPublicKeyHash()) {
-        return bitcoincash.Script.buildPublicKeyHashOut(a)
+        return bitcoincash.Script.buildPublicKeyHashOut(a).toBuffer().toString('hex')
       } else if (a.isPayToScriptHash()) {
-        return bitcoincash.Script.buildScriptHashOut(a)
+        return bitcoincash.Script.buildScriptHashOut(a).toBuffer().toString('hex')
       } else {
         throw new Error('invalid address')
       }
@@ -1452,6 +1465,15 @@ export class Wallet {
     return QRCode.toDataURL(text, { margin: 1, errorCorrectionLevel: 'L' })
   }
 
+  getQRs(text: string, prefix: string): Promise<string[]> {
+    let segLength: number = Math.ceil(text.length / Math.ceil(text.length / 2500))
+    let regex: RegExp = new RegExp('.{1,' + segLength + '}', 'gi')
+    let segments: string[] = text.match(regex)
+    let last: number = segments.length - 1
+    let qrStrings: string[] = segments.map((s, i) => [prefix, i, last, s].join(' '))
+    return Promise.all(qrStrings.map(q => this.getQR(q)))
+  }
+
   getRequestFromURL(text: string): IRequest {
     let params: any = {}
     let address: string
@@ -1460,7 +1482,6 @@ export class Wallet {
     let label: string
     let message: string
 
-    let missingPrefix: boolean = false
     if (text.match(/^bitcoin:/gi)) {
       text = text.slice(8)
     } else if (text.match(/^bitcoincash:/gi)) {
@@ -1472,18 +1493,15 @@ export class Wallet {
     } else if (text.match(/^bitcoin[-_]sv:/gi)) {
       text = text.slice(11)
     } else {
-      missingPrefix = true
+      return
     }
-    text = 'bitcoincash:' + text
 
     let addr: string
     let i: number = text.indexOf('?')
     if (i === -1) {
-      addr = text.slice(12)
-    } else if (missingPrefix) {
-      return
+      addr = text
     } else {
-      addr = text.slice(12, i)
+      addr = text.slice(0, i)
     }
     if (typeof this.getAddressFormat(addr) !== 'undefined') {
       address = addr
@@ -1501,8 +1519,8 @@ export class Wallet {
     }
 
     kvs.forEach((kv) => {
-      let s: string[] = kv.split('=', 2)
-      params[s[0]] = s[1]
+      let s: string[] = kv.split('=')
+      params[s[0]] = s.slice(1).join('=')
     })
     if (typeof params.amount !== 'undefined') {
       let amount: number = parseFloat(params.amount)
@@ -1609,13 +1627,18 @@ export class Wallet {
 
   //tx
 
-  async makeSignedTx(outputs: IOutput[], drain: boolean, m: string): Promise<ISignedTx> {
+  async makeSignedTx(outputs: IOutput[], drain: boolean, m: string): Promise<ITransaction> {
     let au: IUtxo[] = this.getCacheUtxos()
     let ak: bitcoincash.PrivateKey[] = this.getPrivateKeys(au.map(u => u.path), m)
-    return this._makeSignedTx(outputs, drain, au, ak)
+    return await this._makeTx(outputs, drain, au, ak)
   }
 
-  async _makeSignedTx(outputs: IOutput[], drain: boolean, availableUtxos: IUtxo[], availableKeys: bitcoincash.PrivateKey[]): Promise<ISignedTx> {
+  async makeUnsignedTx(outputs: IOutput[], drain: boolean): Promise<ITransaction> {
+    let au: IUtxo[] = this.getCacheUtxos()
+    return await this._makeTx(outputs, drain, au, [])
+  }
+
+  async _makeTx(outputs: IOutput[], drain: boolean, availableUtxos: IUtxo[], availableKeys: bitcoincash.PrivateKey[]): Promise<ITransaction> {
     let satoshis: number = drain ? undefined : outputs.map(output => output.satoshis).reduce((acc, curr) => acc + curr)
     if (availableUtxos.length === 0) {
       throw new Error('not enough fund')
@@ -1646,6 +1669,7 @@ export class Wallet {
     let changeAmount: number
     let hex_tentative: string
     let fee_tentative: number = 0
+    let fee_required: number
 
     while (true) {
       if (drain) {
@@ -1679,40 +1703,73 @@ export class Wallet {
           changeAmount = 0
         }
       }
-      let ustx: bitcoincash.Transaction = new bitcoincash.Transaction()
-        .from(utxos.map(utxo => new bitcoincash.Transaction.UnspentOutput(utxo)))
-      if (drain) {
-        ustx.addOutput(new bitcoincash.Transaction.Output({
-          script: outputs[0].script,
-          satoshis: toAmount
-        }))
-      } else {
-        outputs.forEach((output) => {
+      if (availableKeys.length > 0) {
+        let ustx: bitcoincash.Transaction = new bitcoincash.Transaction()
+          .from(utxos.map(utxo => new bitcoincash.Transaction.UnspentOutput(utxo)))
+        if (drain) {
           ustx.addOutput(new bitcoincash.Transaction.Output({
-            script: output.script,
-            satoshis: output.satoshis
+            script: outputs[0].script,
+            satoshis: toAmount
           }))
-        })
+        } else {
+          outputs.forEach((output) => {
+            ustx.addOutput(new bitcoincash.Transaction.Output(output))
+          })
+        }
+        if (changeAmount > 0) {
+          ustx.fee(fee_tentative).change(this.currentWallet.cache.changeAddress)
+        }
+        hex_tentative = this.signTx(ustx, availableKeys)
+        fee_required = hex_tentative.length / 2
+      } else {
+        fee_required = 149 * utxos.length + 34 * outputs.length + 10
+        if (changeAmount > 0) {
+          fee_required += 34
+        }
       }
-      if (changeAmount > 0) {
-        ustx.fee(fee_tentative).change(this.currentWallet.cache.changeAddress)
-      }
-      hex_tentative = this.signTx(ustx, availableKeys)
-      let fee_required: number = hex_tentative.length / 2
       if (fee_tentative >= fee_required) {
         break
       } else {
         fee_tentative = fee_required
       }
     }
+
+    let txOutputs: IOutput[]
+    if (drain) {
+      txOutputs = [{
+        script: outputs[0].script,
+        satoshis: toAmount
+      }]
+    } else if (changeAmount > 0) {
+      txOutputs = outputs.concat([{
+        path: this.getAddressTypeAndIndex(this.currentWallet.cache.changeAddress, 1),
+        script: this.scriptFromAddress(this.currentWallet.cache.changeAddress),
+        satoshis: changeAmount
+      }])
+    } else {
+      txOutputs = outputs.slice()
+    }
+
+    let txInputs: IInput[] = utxos.map(u => {
+      return {
+        txid: u.txid,
+        vout: u.vout,
+        path: u.path,
+        script: u.scriptPubKey,
+        satoshis: u.satoshis
+      }
+    })
+
     return {
       satoshis: toAmount,
       fee: acc - toAmount - changeAmount,
-      hex: hex_tentative
+      hex: hex_tentative,
+      inputs: txInputs,
+      outputs: txOutputs
     }
   }
 
-  async makeSweepTx(wif: string, info?: IWifInfo): Promise<ISignedTx> {
+  async makeSweepTx(wif: string, info?: IWifInfo): Promise<ITransaction> {
     let keys: bitcoincash.PrivateKey[] = [bitcoincash.PrivateKey(wif)]
     if (!info) {
       info = await this.getInfoFromWIF(wif)
@@ -1721,7 +1778,7 @@ export class Wallet {
       script: this.scriptFromAddress(this.currentWallet.cache.receiveAddress),
       satoshis: 0
     }
-    return await this._makeSignedTx([output], true, info.utxos, keys)
+    return await this._makeTx([output], true, info.utxos, keys)
   }
 
   signTx(ustx: bitcoincash.Transaction, keys: bitcoincash.PrivateKey[]): string {
@@ -1731,9 +1788,92 @@ export class Wallet {
     })
   }
 
-  async broadcastTx(signedTx: string): Promise<string> {
+  async signPreparedTx(tx: ITransaction, m: string): Promise<ITransaction> {
+    let ustx: bitcoincash.Transaction = new bitcoincash.Transaction()
+      .from(tx.inputs.map(utxo => new bitcoincash.Transaction.UnspentOutput(utxo)))
+    tx.outputs.forEach((output) => {
+      ustx.addOutput(new bitcoincash.Transaction.Output(output))
+    })
+    let ak: bitcoincash.PrivateKey[] = this.getPrivateKeys(tx.inputs.map(u => u.path), m)
+    tx.hex = this.signTx(ustx, ak)
+    return tx
+  }
+
+  validatePreparedTx(tx: ITransaction): void {
+    let toAmount: number = 0
+    let hdPublicKey: bitcoincash.HDPublicKey = this.getHDPublicKey()
+    let d: bitcoincash.HDPublicKey[] = [hdPublicKey.derive(0), hdPublicKey.derive(1)]
+    tx.inputs.forEach(i => {
+      let address: string = d[i.path[0]].derive(i.path[1]).publicKey.toAddress().toString()
+      if (this.scriptFromAddress(address) !== i.script) {
+        throw new Error('invalid')
+      }
+    })
+    tx.outputs.forEach(o => {
+      if (o.path) {
+        let address: string = d[o.path[0]].derive(o.path[1]).publicKey.toAddress().toString()
+        if (this.scriptFromAddress(address) !== o.script) {
+          throw new Error('invalid')
+        }
+      } else {
+        toAmount += o.satoshis
+      }
+    })
+    if (tx.satoshis !== toAmount) {
+      throw new Error('invalid')
+    }
+  }
+
+  getRecipientsFromTx(tx: ITransaction): string[] {
+    return tx.outputs.filter(o => typeof o.path === 'undefined').map(o => {
+      let a: bitcoincash.Address = (new bitcoincash.Script(o.script)).toAddress()
+      return a ? a.toString() : 'unknown'
+    })
+  }
+
+  async _broadcastTx(signedTx: string): Promise<string> {
     let txid: any = await this.apiWS('broadcast', { tx: signedTx })
     return txid
+  }
+
+  async broadcastTx(hex: string, loader?: any): Promise<boolean> {
+    if (!loader) {
+      loader = this.loadingCtrl.create({
+        content: this.translate.instant('BROADCASTING')+'...'
+      })
+      await loader.present()
+    } else {
+      loader.setContent(this.translate.instant('BROADCASTING')+'...')
+    }
+    try {
+      await this._broadcastTx(hex)
+      await loader.dismiss()
+      let successAlert = this.alertCtrl.create({
+        enableBackdropDismiss: false,
+        title: this.translate.instant('TX_COMPLETE'),
+        buttons: [this.translate.instant('OK')]
+      })
+      await successAlert.present()
+      return true
+    } catch (err) {
+      await loader.dismiss()
+      console.log(err)
+      let message: string
+      if (err.message == 'not connected') {
+        message = this.translate.instant('ERR_NOT_CONNECTED')
+      } else if (err.message == 'timeout') {
+        message = this.translate.instant('ERR_TIMEOUT')
+      } else {
+        message = this.translate.instant('ERR_INVALID_TX')
+      }
+      await this.alertCtrl.create({
+        enableBackdropDismiss: false,
+        title: this.translate.instant('ERROR'),
+        message: message,
+        buttons: ['ok']
+      }).present()
+      return false
+    }
   }
 
   // BIP70
@@ -1887,7 +2027,7 @@ export class Wallet {
     let outputs: IOutput[] = paymentDetails.outputs.map((output) => {
       return {
         satoshis: output.amount,
-        script: new bitcoincash.Script(Buffer.from(output.script).toString('hex'))
+        script: Buffer.from(output.script).toString('hex')
       }
     })
     let expires: number = paymentDetails.expires
@@ -1913,7 +2053,7 @@ export class Wallet {
     let root: protobuf.Root = await protobuf.load('assets/paymentrequest.proto')
     let Output: any = root.lookupType("payments.Output")
     let Payment: any = root.lookupType("payments.Payment")
-    let output: IOutput = Output.create({
+    let output: any = Output.create({
       amount: 0,
       script: bitcoincash.Script.buildPublicKeyHashOut(bitcoincash.Address.fromString(refundAddress)).toBuffer()
     })
