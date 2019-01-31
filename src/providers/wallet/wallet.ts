@@ -469,7 +469,7 @@ export class Wallet {
     ]
   }
 
-  convertUnit(from: string, to: string, amountStr: string): string {
+  convertUnit(from: string, to: string, amountStr: string, comma?: boolean): string {
     let amount: number = parseFloat(amountStr)
     if (isNaN(amount)) {
       return undefined
@@ -477,11 +477,16 @@ export class Wallet {
     // even if from === to
     let fromUnit: IUnit = this.UNITS[from]
     let toUnit: IUnit = this.UNITS[to]
-    if (fromUnit && toUnit && fromUnit.rate && toUnit.rate) {
-      return (amount / fromUnit.rate * toUnit.rate).toFixed(toUnit.dp) // string
-    } else {
+    if (!(fromUnit && toUnit && fromUnit.rate && toUnit.rate)) {
       return undefined
     }
+    let result: string = (amount / fromUnit.rate * toUnit.rate).toFixed(toUnit.dp)
+    if (comma) {
+      let p = result.split('.')
+      p[0] = p[0].split('').reverse().join('').match(/\d{1,3}-?/g).join(',').split('').reverse().join('')
+      result =  p.join('.')
+    }
+    return result
   }
 
   // address format

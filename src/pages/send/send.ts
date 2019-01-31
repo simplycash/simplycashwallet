@@ -172,6 +172,7 @@ export class SendPage {
       let drainAlert = this.alertCtrl.create({
         enableBackdropDismiss: true,
         title: this.translate.instant('Q_SEND_MAX_AMOUNT'),
+        message: this.wallet.convertUnit('SATS', this.wallet.getPreferredUnit(), this.wallet.getCacheBalance().toString(), true) + ' ' + this.wallet.getPreferredUnit(),
         buttons: [{
           text: this.translate.instant('CANCEL')
         },
@@ -210,7 +211,8 @@ export class SendPage {
       if (!(this.outputSum > 0) && satoshis <= 0) { //if manual input amount <= 0
           throw new Error('invalid amount')
       }
-      if (satoshis > this.wallet.getCacheBalance()) {
+      let cacheBalance: number = this.wallet.getCacheBalance()
+      if (satoshis > cacheBalance || cacheBalance === 0) {
         throw new Error('not enough fund')
       }
       let outputs: any[]
@@ -243,8 +245,7 @@ export class SendPage {
       })
       return outputs
     } catch (err) {
-      console.log(err)
-      let errMessage = err.message
+      let errMessage: string
       if (err.message === 'invalid amount') {
         errMessage = this.translate.instant('ERR_INVALID_AMOUNT')
       } else if (err.message === 'not enough fund') {
@@ -253,6 +254,9 @@ export class SendPage {
         errMessage = this.translate.instant('ERR_INVALID_ADDR')
       } else if (err.message === 'invalid output') {
         errMessage = this.translate.instant('ERR_INVALID_OUTPUT')
+      } else {
+        console.log(err)
+        errMessage = err.message
       }
       this.alertCtrl.create({
         enableBackdropDismiss: false,

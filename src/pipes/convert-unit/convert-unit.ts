@@ -9,19 +9,15 @@ export class ConvertUnitPipe implements PipeTransform {
 
   }
   transform(amountSAT: string, ...args) {
+    let comma: boolean = args[1] === 'comma'
     let result: string
-    if (args[0] === 'SATS') {
+    if (args[0] === 'SATS' && !comma) {
       result = amountSAT
     } else {
-      result = this.wallet.convertUnit('SATS', args[0], amountSAT)
+      result = this.wallet.convertUnit('SATS', args[0], amountSAT, comma)
     }
     if (typeof result === 'undefined') {
       return ''
-    }
-    if (args[1] === 'comma') {
-      let p = result.split('.')
-      p[0] = p[0].split('').reverse().join('').match(/\d{1,3}-?/g).join(',').split('').reverse().join('')
-      return p.join('.')
     }
     return result
   }
