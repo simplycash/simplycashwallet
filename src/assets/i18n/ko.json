@@ -1,4 +1,7 @@
 {
+  "DISCLAIMER": "면책 조항",
+  "DISCLAIMER_CONTENT": "이 앱을 사용함으로써 발생하는 재정적 손실에 대해 우리는 아무런 책임을지지 않습니다. 자신의 책임하에 사용하십시오.",
+  "NO_ANNOUNCEMENT": "공지 없음",
   "ERR_UNABLE_TO_SIGN": "거래에 서명하지 못했습니다",
   "RECOVERY_PHRASE_OR_XPRV": "복구 구문, xprv 또는 xpub",
   "XPUB_COPIED": "xpub가 복사되었다",
@@ -14,7 +17,7 @@
   "CREATE_SUCCESS": "지갑이 생성됨",
   "CREATE_FAILED": "지갑 생성 실패",
   "WARN_BIP70_UNVERIFIED": "수취인을 확인할 수 없음",
-  "ANNOUNCEMENT": "공고",
+  "ANNOUNCEMENT": "공지",
   "OK": "ok",
   "DO_NOT_SHOW_AGAIN": "다시 표시 안 함",
   "PLEASE_UPDATE": "최신 버전으로 업데이트하십시오",

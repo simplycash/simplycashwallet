@@ -13,6 +13,7 @@ import { Wallet } from '../../providers/providers'
 export class MorePage {
   public walletName: string
   public isWatchOnly: boolean
+  public isShowingAnnouncement: boolean = false
 
   constructor(
     public alertCtrl: AlertController,
@@ -147,6 +148,24 @@ export class MorePage {
       })
       confirmDeleteAlert.present()
     })
+  }
+
+  async showAnnouncement() {
+    if (this.isShowingAnnouncement) {
+      return
+    }
+    this.isShowingAnnouncement = true
+    await this.wallet.showAnnouncement(true)
+    this.isShowingAnnouncement = false
+  }
+
+  async showDisclaimer() {
+    await this.alertCtrl.create({
+      enableBackdropDismiss: false,
+      title: this.translate.instant('DISCLAIMER'),
+      message: this.translate.instant('DISCLAIMER_CONTENT'),
+      buttons: [this.translate.instant('OK')]
+    }).present()
   }
 
   launchTwitter() {

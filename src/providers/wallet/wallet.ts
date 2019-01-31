@@ -856,7 +856,7 @@ export class Wallet {
     console.log('default wallet loaded')
   }
 
-  async showAnnouncement(): Promise<void> {
+  async showAnnouncement(isInitiatedByUser?: boolean): Promise<void> {
     let ann: string
     try {
       let o: any = await this.http.get(this.ANNOUNCEMENT_URL).toPromise()
@@ -864,25 +864,46 @@ export class Wallet {
       ann = v[(window as any).translationLanguage] || v['en']
     } catch (err) {
       console.log(err)
+      if (isInitiatedByUser) {
+        await this.alertCtrl.create({
+          enableBackdropDismiss: false,
+          title: this.translate.instant('ERROR'),
+          buttons: [this.translate.instant('OK')]
+        }).present()
+      }
     }
     if (!ann || this.stored.preference.lastAnnouncement === ann) {
+      if (isInitiatedByUser) {
+        await this.alertCtrl.create({
+          enableBackdropDismiss: false,
+          title: this.translate.instant('NO_ANNOUNCEMENT'),
+          buttons: [this.translate.instant('OK')]
+        }).present()
+      }
       return
     }
-    let annAlert: any = this.alertCtrl.create({
-      enableBackdropDismiss: false,
-      title: this.translate.instant('ANNOUNCEMENT'),
-      message: ann,
-      buttons: [{
+    let buttons: any[] = []
+    if (isInitiatedByUser) {
+      buttons.push({
         text: this.translate.instant('DO_NOT_SHOW_AGAIN'),
         handler: () => {
           this.stored.preference.lastAnnouncement = ann
           this.updateStorage()
         }
-      }, {
-        text: this.translate.instant('OK')
-      }]
+      })
+    }
+    buttons.push({
+      text: this.translate.instant('OK')
     })
-    await annAlert.present()
+    let annAlert: any = this.alertCtrl.create({
+      enableBackdropDismiss: false,
+      title: this.translate.instant('ANNOUNCEMENT'),
+      message: ann,
+      buttons: buttons
+    })
+    if (!this.app._appRoot._overlayPortal.getActive()) {
+      await annAlert.present()
+    }
   }
 
   tryToConnectAndSync(): void {

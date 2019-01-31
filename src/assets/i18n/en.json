@@ -1,4 +1,7 @@
 {
+  "DISCLAIMER": "disclaimer",
+  "DISCLAIMER_CONTENT": "Please be reminded that we accept no responsibility for any financial losses occurred to users as a result of using this app. Use at your own risk.",
+  "NO_ANNOUNCEMENT": "no announcement",
   "ERR_UNABLE_TO_SIGN": "unable to sign transaction",
   "RECOVERY_PHRASE_OR_XPRV": "recovery phrase, xprv or xpub",
   "XPUB_COPIED": "xpub copied",

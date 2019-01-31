@@ -1,4 +1,7 @@
 {
+  "DISCLAIMER": "免责声明",
+  "DISCLAIMER_CONTENT": "请注意，对于因使用此应用程序而对用户造成的任何财务损失，我们不承担任何责任。使用风险请自行承担。",
+  "NO_ANNOUNCEMENT": "没有公告",
   "ERR_UNABLE_TO_SIGN": "无法签署交易",
   "RECOVERY_PHRASE_OR_XPRV": "复原短语，xprv 或 xpub",
   "XPUB_COPIED": "已复制 xpub",
