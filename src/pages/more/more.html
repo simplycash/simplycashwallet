@@ -26,6 +26,7 @@
     <ion-item (click)="showWRP()" *ngIf="!isWatchOnly">{{ 'BACKUP_WALLET' | translate }}</ion-item>
     <ion-item (click)="pushAddressesPage()">{{ 'ADDRESSES' | translate }}</ion-item>
     <ion-item (click)="pushXpubPage()">xpub</ion-item>
+    <ion-item (click)="promptForWIF()">{{ 'SWEEP' | translate }}</ion-item>
     <ion-item (click)="launchTwitter()">
       <ion-icon name="logo-twitter"></ion-icon>
       @simplycashapp

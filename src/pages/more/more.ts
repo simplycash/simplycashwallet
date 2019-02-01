@@ -36,6 +36,50 @@ export class MorePage {
     this.navCtrl.push('XpubPage')
   }
 
+  async promptForWIF(): Promise<void> {
+    let wifAlert: any = this.alertCtrl.create({
+      enableBackdropDismiss: false,
+      title: 'WIF',
+      inputs: [{
+        name: 'wif'
+      }],
+      buttons: [{
+        text: this.translate.instant('CANCEL')
+      }, {
+        text: this.translate.instant('OK'),
+        handler: (data) => {
+          let wif: string = data.wif
+          let encrypted: boolean = false
+          let isValid: boolean = false
+          if (!wif) {
+
+          } else if (this.wallet.validateWIF(wif)) {
+            isValid = true
+          } else if (this.wallet.validateEncryptedWIF(wif)) {
+            isValid = true
+            encrypted = true
+          }
+          if (isValid) {
+            wifAlert.dismiss().then(() => {
+              this.navCtrl.push('SweepPage', {
+                encrypted: encrypted,
+                wif: wif
+              })
+            })
+          } else {
+            this.alertCtrl.create({
+              enableBackdropDismiss: false,
+              title: this.translate.instant('ERROR'),
+              buttons: [this.translate.instant('OK')]
+            }).present()
+          }
+          return false
+        }
+      }]
+    })
+    await wifAlert.present()
+  }
+
   async showWRP() {
     try {
       let m: string = await this.wallet.authorize()
