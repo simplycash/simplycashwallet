@@ -11,6 +11,9 @@
     "ionic:build": "ionic-app-scripts build",
     "ionic:serve": "ionic-app-scripts serve"
   },
+  "config": {
+    "ionic_webpack": "webpack.config.js"
+  },
   "dependencies": {
     "@angular/common": "5.0.3",
     "@angular/compiler": "5.0.3",
@@ -37,11 +40,10 @@
     "@ngx-translate/core": "8.0.0",
     "@ngx-translate/http-loader": "^2.0.0",
     "big-integer": "^1.6.26",
+    "bip38": "^2.0.2",
     "bitcoincashjs": "^0.1.10",
-    "bn.js": "^2.0.4",
-    "bs58": "^2.0.0",
+    "bs58check": "^2.1.2",
     "buffer": "^5.1.0",
-    "buffer-compare": "^1.0.0",
     "clipboard-polyfill": "^2.7.0",
     "cordova-android": "6.4.0",
     "cordova-clipboard": "^1.2.1",
@@ -65,10 +67,8 @@
     "cordova-plugin-x-socialsharing": "^5.4.0",
     "crypto-browserify": "^3.12.0",
     "device": "0.3.9",
-    "elliptic": "^3.0.3",
     "es6-promise-plugin": "^4.2.2",
     "grunt": "^0.4.5",
-    "inherits": "^2.0.3",
     "ionic-angular": "3.9.2",
     "ionic-plugin-deeplinks": "^1.0.15",
     "ionicons": "3.0.0",
@@ -78,6 +78,7 @@
     "rxjs": "^5.5.11",
     "socket.io-client": "^2.0.4",
     "sw-toolbox": "3.6.0",
+    "wif": "^2.0.6",
     "zone.js": "0.8.18"
   },
   "devDependencies": {

@@ -2,6 +2,8 @@ import { Component, ViewChild } from '@angular/core';
 import { AlertController, IonicPage, LoadingController, NavController, NavParams } from 'ionic-angular';
 import { TranslateService } from '@ngx-translate/core';
 import { Wallet } from '../../providers/providers'
+import * as bip38 from 'bip38'
+import * as wif from 'wif'
 
 /**
  * Generated class for the SweepPage page.
@@ -38,12 +40,24 @@ export class SweepPage {
   }
 
   async ionViewDidEnter() {
+    this.wif = this.navParams.get('wif')
+    let encrypted: boolean = this.navParams.get('encrypted')
+    if (encrypted) {
+      try {
+        this.wif = await this.decryptWIF(this.wif)
+      } catch (err) {
+        if (err.message !== 'cancelled') {
+          console.log(err)
+        }
+        await this.navCtrl.pop()
+        return
+      }
+    }
     let loader = this.loadingCtrl.create({
       content: this.translate.instant('LOADING_BALANCE')+'...'
     })
     await loader.present()
     try {
-      this.wif = this.navParams.get('wif')
       let info: any = await this.wallet.getInfoFromWIF(this.wif)
       this.wifInfo = info
       this.address = info.address
@@ -74,6 +88,62 @@ export class SweepPage {
       })
       await loader.dismiss()
       await errorAlert.present()
+    }
+  }
+
+  decryptWIF(encrypted: string): Promise<string> {
+    return new Promise<string>((resolve, reject) => {
+      let decryptAlert = this.alertCtrl.create({
+        enableBackdropDismiss: false,
+        title: this.translate.instant('BIP38_PASSPHRASE'),
+        inputs: [{
+          name: 'passphrase',
+          type: 'password'
+        }],
+        buttons: [{
+          role: 'cancel',
+          text: this.translate.instant('CANCEL'),
+          handler: data => {
+            decryptAlert.dismiss().then(() => {
+              reject(new Error('cancelled'))
+            })
+            return false
+          }
+        }, {
+          text: this.translate.instant('OK'),
+          handler: data => {
+            this._decrypt(encrypted, data.passphrase).then((result: string) => {
+              decryptAlert.dismiss().then(() => {
+                resolve(result)
+              })
+            }).catch(() => {})
+            return false
+          }
+        }]
+      })
+      decryptAlert.present()
+    })
+  }
+
+  async _decrypt(encrypted: string, passphrase: string): Promise<string> {
+    let loader = this.loadingCtrl.create({
+      content: this.translate.instant('DECRYPTING') + '...'
+    })
+    await loader.present()
+    try {
+      let decrypted = bip38.decrypt(encrypted, passphrase)
+      let result = wif.encode(0x80, decrypted.privateKey, decrypted.compressed)
+      await loader.dismiss()
+      return result
+    } catch (err) {
+      await loader.dismiss()
+      await this.alertCtrl.create({
+        enableBackdropDismiss: false,
+        title: this.translate.instant('ERROR'),
+        message: this.translate.instant('ERR_INVALID_BIP38_PASSPHRASE'),
+        buttons: [this.translate.instant('OK')]
+      }).present()
+      throw new Error('incorrect')
     }
   }
 

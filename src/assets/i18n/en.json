@@ -1,4 +1,7 @@
 {
+  "BIP38_PASSPHRASE": "BIP38 passphrase",
+  "DECRYPTING": "decrypting",
+  "ERR_INVALID_BIP38_PASSPHRASE": "incorrect passphrase",
   "DISCLAIMER": "disclaimer",
   "DISCLAIMER_CONTENT": "Please be reminded that we accept no responsibility for any financial losses occurred to users as a result of using this app. Use at your own risk.",
   "NO_ANNOUNCEMENT": "no announcement",

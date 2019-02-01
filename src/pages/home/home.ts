@@ -340,6 +340,13 @@ export class HomePage {
       })
       return true
     }
+    if (this.wallet.validateEncryptedWIF(text)) {
+      await this.navCtrl.push('SweepPage', {
+        encrypted: true,
+        wif: text
+      })
+      return true
+    }
     if (this.wallet.validateMnemonicOrXprv(text) || this.wallet.validateXpub(text)) {
       this.wallet.promptForRecovery(text) // no await
       return true

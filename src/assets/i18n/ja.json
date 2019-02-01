@@ -1,4 +1,7 @@
 {
+  "BIP38_PASSPHRASE": "BIP38パスフレーズ",
+  "DECRYPTING": "復号化しています",
+  "ERR_INVALID_BIP38_PASSPHRASE": "間違ったパスフレーズ",
   "DISCLAIMER": "免責事項",
   "DISCLAIMER_CONTENT": "このアプリを使用した結果としてユーザーに生じたいかなる金銭的損失についても、当社は一切責任を負いません。自己責任。",
   "NO_ANNOUNCEMENT": "通告なし",

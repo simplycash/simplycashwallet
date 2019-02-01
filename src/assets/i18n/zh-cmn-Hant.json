@@ -1,4 +1,7 @@
 {
+  "BIP38_PASSPHRASE": "BIP38 密碼",
+  "DECRYPTING": "正在解密",
+  "ERR_INVALID_BIP38_PASSPHRASE": "密碼不正確",
   "DISCLAIMER": "免責聲明",
   "DISCLAIMER_CONTENT": "請注意，對於因使用此應用程序而對用戶造成的任何財務損失，我們不承擔任何責任。使用風險請自行承擔。",
   "NO_ANNOUNCEMENT": "沒有公告",
