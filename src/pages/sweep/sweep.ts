@@ -177,7 +177,7 @@ export class SweepPage {
         enableBackdropDismiss: false,
         title: this.translate.instant('ERROR'),
         message: message,
-        buttons: ['ok']
+        buttons: [this.translate.instant('OK')]
       }).present()
       return
     }

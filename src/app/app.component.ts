@@ -83,7 +83,7 @@ export class MyApp {
           enableBackdropDismiss: false,
           title: this.translate.instant('ERROR'),
           message: this.translate.instant('ERR_START_WALLET_FAILED'),
-          buttons: ['ok']
+          buttons: [this.translate.instant('OK')]
         }).present()
       }
     })

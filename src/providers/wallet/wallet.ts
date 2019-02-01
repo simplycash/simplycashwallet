@@ -307,7 +307,7 @@ export class Wallet {
                 enableBackdropDismiss: false,
                 title: this.translate.instant('ERROR'),
                 message: this.translate.instant('ERR_INCORRECT_PIN'),
-                buttons: ['ok']
+                buttons: [this.translate.instant('OK')]
               }).present()
             }
             return false
@@ -350,7 +350,7 @@ export class Wallet {
                 enableBackdropDismiss: false,
                 title: this.translate.instant('ERROR'),
                 message: this.translate.instant('ERR_INCORRECT_PIN'),
-                buttons: ['ok']
+                buttons: [this.translate.instant('OK')]
               }).present()
             }
             return false
@@ -782,7 +782,7 @@ export class Wallet {
                         enableBackdropDismiss: false,
                         title: this.translate.instant('ERROR'),
                         message: this.translate.instant('ERR_INCORRECT_PIN'),
-                        buttons: ['ok']
+                        buttons: [this.translate.instant('OK')]
                       }).present()
                     }
                     return false
@@ -1909,7 +1909,7 @@ export class Wallet {
         enableBackdropDismiss: false,
         title: this.translate.instant('ERROR'),
         message: message,
-        buttons: ['ok']
+        buttons: [this.translate.instant('OK')]
       }).present()
       return false
     }

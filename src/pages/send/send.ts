@@ -262,7 +262,7 @@ export class SendPage {
         enableBackdropDismiss: false,
         title: this.translate.instant('ERROR'),
         message: errMessage,
-        buttons: ['ok']
+        buttons: [this.translate.instant('OK')]
       }).present()
     }
   }
@@ -291,7 +291,7 @@ export class SendPage {
         enableBackdropDismiss: false,
         title: this.translate.instant('ERROR'),
         message: errMessage,
-        buttons: ['ok']
+        buttons: [this.translate.instant('OK')]
       }).present()
     }
   }
@@ -344,7 +344,7 @@ export class SendPage {
         enableBackdropDismiss: false,
         title: this.translate.instant('ERROR'),
         message: errMessage,
-        buttons: ['ok']
+        buttons: [this.translate.instant('OK')]
       }).present()
       return
     }
@@ -401,7 +401,7 @@ export class SendPage {
         enableBackdropDismiss: false,
         title: this.translate.instant('ERROR'),
         message: message,
-        buttons: ['ok']
+        buttons: [this.translate.instant('OK')]
       }).present()
       return false
     }
@@ -505,7 +505,7 @@ export class SendPage {
         enableBackdropDismiss: false,
         title: this.translate.instant('ERROR'),
         message: errMessage,
-        buttons: ['ok']
+        buttons: [this.translate.instant('OK')]
       }).present()
     }
   }

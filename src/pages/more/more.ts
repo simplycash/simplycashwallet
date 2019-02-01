@@ -99,7 +99,7 @@ export class MorePage {
         enableBackdropDismiss: false,
         title: this.translate.instant('BACKUP_WALLET'),
         message: message,
-        buttons: ['ok']
+        buttons: [this.translate.instant('OK')]
       }).present()
     } catch (err) {
       if (err.message !== 'cancelled') {

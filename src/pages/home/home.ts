@@ -237,7 +237,7 @@ export class HomePage {
           enableBackdropDismiss: false,
           title: this.translate.instant('ERROR'),
           message: this.translate.instant('ERR_CAMERA_PERMISSION_DENIED'),
-          buttons: ['ok']
+          buttons: [this.translate.instant('OK')]
         }).present()
       }
     }
@@ -361,7 +361,7 @@ export class HomePage {
       enableBackdropDismiss: false,
       title: this.translate.instant('ERR_INVALID_DATA'),
       message: text,
-      buttons: ['ok']
+      buttons: [this.translate.instant('OK')]
     }).present()
     return false
   }
@@ -413,7 +413,7 @@ export class HomePage {
         enableBackdropDismiss: false,
         title: this.translate.instant('ERROR'),
         message: errMessage,
-        buttons: ['ok']
+        buttons: [this.translate.instant('OK')]
       }).present()
     }
   }
@@ -518,7 +518,7 @@ export class HomePage {
             enableBackdropDismiss: false,
             title: this.translate.instant('ERR_INVALID_DATA'),
             message: url,
-            buttons: ['ok']
+            buttons: [this.translate.instant('OK')]
           }).present()
         })
       }, 0)
