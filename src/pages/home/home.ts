@@ -347,7 +347,7 @@ export class HomePage {
       })
       return true
     }
-    if (this.wallet.validateMnemonicOrXprv(text) || this.wallet.validateXpub(text)) {
+    if (this.wallet.validateMnemonic(text) || this.wallet.validateXprv(text) || this.wallet.validateXpub(text)) {
       this.wallet.promptForRecovery(text) // no await
       return true
     }

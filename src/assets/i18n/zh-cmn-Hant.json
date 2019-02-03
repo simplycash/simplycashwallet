@@ -1,4 +1,7 @@
 {
+  "ERR_INVALID_XPUB": "xpub 無效",
+  "ERR_INVALID_XPRV": "xprv 無效",
+  "ERR_NOT_ENOUGH_ENTROPY": "熵不足",
   "BIP38_PASSPHRASE": "BIP38 密碼",
   "DECRYPTING": "正在解密",
   "ERR_INVALID_BIP38_PASSPHRASE": "密碼不正確",
@@ -6,7 +9,7 @@
   "DISCLAIMER_CONTENT": "請注意，對於因使用此應用程序而對用戶造成的任何財務損失，我們不承擔任何責任。使用風險請自行承擔。",
   "NO_ANNOUNCEMENT": "沒有公告",
   "ERR_UNABLE_TO_SIGN": "無法簽署交易",
-  "RECOVERY_PHRASE_OR_XPRV": "復原短語，xprv 或 xpub",
+  "RECOVERY_PHRASE_OR_XPRV": "復原短語/xprv/xpub/骰子[1-6]",
   "XPUB_COPIED": "已複製 xpub",
   "XPRV_COPIED": "已複製 xprv",
   "RENAME_WALLET": "錢包名稱",

@@ -18,6 +18,7 @@ import * as protobuf from 'protobufjs'
 import * as crypto from 'crypto-browserify'
 import * as jsrsasign from 'jsrsasign'
 import { Buffer } from 'buffer/'
+import * as BN from 'bn.js'
 
 enum EState {
   CLOSED = 1,
@@ -633,16 +634,16 @@ export class Wallet {
     return this.stored.wallets.map(w => w.name)
   }
 
-  async createWallet(mnemonicOrXprv?: string, path?: string, passphrase?: string, name?: string): Promise<void> {
+  async createWallet(mnemonicOrXprvOrXpub?: string, path?: string, passphrase?: string, name?: string): Promise<void> {
     let encrypted: string
     let xpub: string
     let addresses: IAddresses
-    if (mnemonicOrXprv && mnemonicOrXprv.match(/^xpub/g)) {
+    if (mnemonicOrXprvOrXpub && mnemonicOrXprvOrXpub.match(/^xpub/g)) {
       encrypted = undefined
-      xpub = mnemonicOrXprv
+      xpub = mnemonicOrXprvOrXpub
       addresses = this.generateAddressesFromPublicKey(new bitcoincash.HDPublicKey(xpub))
     } else {
-      let m: string = this.makeRecoveryString(mnemonicOrXprv, path, passphrase)
+      let m: string = this.makeRecoveryString(mnemonicOrXprvOrXpub, path, passphrase)
       let hdPrivateKey: bitcoincash.HDPrivateKey = this.getHDPrivateKeyFromRecoveryString(m)
       let hdPublicKey: bitcoincash.HDPublicKey = hdPrivateKey.hdPublicKey
       encrypted = this._encryptText(m, this.DUMMY_KEY)
@@ -671,9 +672,9 @@ export class Wallet {
     await this.updateStorage()
   }
 
-  async recoverWalletFromMnemonicOrXprv(mnemonicOrXprv?: string, path?: string, passphrase?: string, name?: string): Promise<void> {
+  async recoverWalletFromMnemonicOrXprvOrXpub(mnemonicOrXprvOrXpub?: string, path?: string, passphrase?: string, name?: string): Promise<void> {
     this.closeWallet()
-    await this.createWallet(mnemonicOrXprv, path, passphrase, name)
+    await this.createWallet(mnemonicOrXprvOrXpub, path, passphrase, name)
     await this.startWallet()
   }
 
@@ -1325,17 +1326,18 @@ export class Wallet {
     }
   }
 
-  validateMnemonicOrXprv(m: string): boolean {
-    if (m.match(/^xprv[\d\w]+$/g)) {
-      try {
-        new bitcoincash.HDPrivateKey(m)
-        return true
-      } catch (err) {
-        return false
-      }
-    }
+  validateMnemonic(m: string): boolean {
     try {
       return bitcoincash.Mnemonic.isValid(m)
+    } catch (err) {
+      return false
+    }
+  }
+
+  validateXprv(xprv: string): boolean {
+    try {
+      new bitcoincash.HDPrivateKey(xprv)
+      return true
     } catch (err) {
       return false
     }
@@ -1466,8 +1468,7 @@ export class Wallet {
   getRecoveryString(password?: string): string {
     let decrypted: string = this._decryptText(this.currentWallet.keys.encMnemonic, password || this.DUMMY_KEY)
     let o: IRecoveryInfo = this.parseRecoveryString(decrypted)
-    let text: string = o.mnemonic || o.xprv
-    if (decrypted && this.validateMnemonicOrXprv(text)) {
+    if (o.mnemonic && this.validateMnemonic(o.mnemonic) || o.xprv && this.validateXprv(o.xprv)) {
       return decrypted
     } else {
       throw new Error('invalid password')
@@ -2163,7 +2164,7 @@ export class Wallet {
           name: 'name',
           placeholder: this.nextWalletName()
         }, {
-          name: 'mnemonicOrXprv',
+          name: 'mnemonicOrXprvOrXpub',
           value: autoFill || '',
           placeholder: this.translate.instant('RECOVERY_PHRASE_OR_XPRV')
         }, {
@@ -2185,19 +2186,23 @@ export class Wallet {
         }, {
           text: this.translate.instant('OK'),
           handler: data => {
-            if (
-              (!data.name || this.r_nameIsValid(data.name)) &&
-              (!data.mnemonicOrXprv || this.r_mnemonicOrXprvIsValid(data.mnemonicOrXprv)) &&
-              (!data.path || this.r_pathIsValid(data.path))
-            ) {
-              recoverAlert.dismiss().then(() => {
-                return this.r_recover(data.mnemonicOrXprv, data.path, data.passphrase, data.name)
-              }).catch((err) => {
-                console.log(err)
-              }).then(() => {
-                resolve()
-              })
+            if (data.name && !this.r_nameIsValid(data.name) || data.path && !this.r_pathIsValid(data.path)) {
+              return false
             }
+            if (data.mnemonicOrXprvOrXpub) {
+              let validated: string = this.r_validatedMnemonicOrXprvOrXpub(data.mnemonicOrXprvOrXpub)
+              if (!validated) {
+                return false
+              }
+              data.mnemonicOrXprvOrXpub = validated
+            }
+            recoverAlert.dismiss().then(() => {
+              return this.r_recover(data.mnemonicOrXprvOrXpub, data.path, data.passphrase, data.name)
+            }).catch((err) => {
+              console.log(err)
+            }).then(() => {
+              resolve()
+            })
             return false
           }
         }]
@@ -2222,19 +2227,53 @@ export class Wallet {
     }
   }
 
-  r_mnemonicOrXprvIsValid(m: string): boolean {
+  r_validatedMnemonicOrXprvOrXpub(m: string): string {
     m = m.trim()
-    if (!this.validateMnemonicOrXprv(m) && !this.validateXpub(m)) {
+    let errMessage: string
+    if (m.match(/^xpub.+$/gi) && !this.validateXpub(m)) {
+      errMessage = this.translate.instant('ERR_INVALID_XPUB')
+    } else if (m.match(/^xprv.+$/gi) && !this.validateXprv(m)) {
+      errMessage = this.translate.instant('ERR_INVALID_XPRV')
+    } else if (m.match(/^[0-1]+$/g)) {
+      if (m.length < 128) {
+        errMessage = this.translate.instant('ERR_NOT_ENOUGH_ENTROPY') + ' ' + m.length + '/128'
+      } else {
+        m = this.r_entropyToMnemonic(m, 2)
+      }
+    } else if (m.match(/^[1-6]+$/g)) {
+      if (m.length < 50) {
+        errMessage = this.translate.instant('ERR_NOT_ENOUGH_ENTROPY') + ' ' + m.length + '/50'
+      } else {
+        m = m.split('').map(s => s === '6' ? '0' : s).join('')
+        m = this.r_entropyToMnemonic(m, 6)
+      }
+    // } else if (m.match(/^[0-9a-f]+$/gi)) {
+    //   if (m.length < 32) {
+    //     errMessage = this.translate.instant('ERR_NOT_ENOUGH_ENTROPY') + ' ' + m.length + '/32'
+    //   } else {
+    //     m = m.toLowerCase()
+    //     m = this.r_entropyToMnemonic(m, 16)
+    //   }
+    } else if (!this.validateMnemonic(m)) {
+      errMessage = this.translate.instant('ERR_INVALID_RECOVERY_PHRASE')
+    }
+    if (errMessage) {
       this.alertCtrl.create({
         enableBackdropDismiss: false,
         title: this.translate.instant('ERROR'),
-        message: this.translate.instant('ERR_INVALID_RECOVERY_PHRASE'),
+        message: errMessage,
         buttons: [this.translate.instant('OK')]
       }).present()
-      return false
     } else {
-      return true
+      return m
     }
+  }
+
+  r_entropyToMnemonic(entropy: string, base: number): string {
+    let length: number = Math.floor(entropy.length * Math.log2(base))
+    length = (length - length % 32) / 8
+    let buf: Buffer = new BN(entropy, base).toArrayLike(Buffer, 'be', length + 4).slice(-length)
+    return new bitcoincash.Mnemonic(buf).phrase
   }
 
   r_pathIsValid(path: string): boolean {
@@ -2252,13 +2291,12 @@ export class Wallet {
     }
   }
 
-  async r_recover(mnemonicOrXprv?: string, path?: string, passphrase?: string, name?: string): Promise<void> {
-    mnemonicOrXprv = mnemonicOrXprv ? mnemonicOrXprv.trim() : undefined
+  async r_recover(mnemonicOrXprvOrXpub?: string, path?: string, passphrase?: string, name?: string): Promise<void> {
     path = path ? path.trim().replace(/[‘’]/g, "'") : undefined
     passphrase = passphrase || undefined
     name = name || undefined
     let translations: string[]
-    if (mnemonicOrXprv) {
+    if (mnemonicOrXprvOrXpub) {
       translations = ['RECOVERING', 'RECOVER_SUCCESS', 'RECOVER_FAILED']
     } else {
       translations = ['CREATING', 'CREATE_SUCCESS', 'CREATE_FAILED']
@@ -2269,7 +2307,7 @@ export class Wallet {
     })
     await loader.present()
     try {
-      await this.recoverWalletFromMnemonicOrXprv(mnemonicOrXprv, path, passphrase, name)
+      await this.recoverWalletFromMnemonicOrXprvOrXpub(mnemonicOrXprvOrXpub, path, passphrase, name)
     } catch (err) {
       console.log(err)
       error = err

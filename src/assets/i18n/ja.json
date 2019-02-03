@@ -1,4 +1,7 @@
 {
+  "ERR_INVALID_XPUB": "無効なxpub",
+  "ERR_INVALID_XPRV": "無効なxprv",
+  "ERR_NOT_ENOUGH_ENTROPY": "エントロピーが足りない",
   "BIP38_PASSPHRASE": "BIP38パスフレーズ",
   "DECRYPTING": "復号化しています",
   "ERR_INVALID_BIP38_PASSPHRASE": "間違ったパスフレーズ",
@@ -6,7 +9,7 @@
   "DISCLAIMER_CONTENT": "このアプリを使用した結果としてユーザーに生じたいかなる金銭的損失についても、当社は一切責任を負いません。自己責任。",
   "NO_ANNOUNCEMENT": "通告なし",
   "ERR_UNABLE_TO_SIGN": "取引に署名できません",
-  "RECOVERY_PHRASE_OR_XPRV": "復元フレーズ、xprvまたはxpub",
+  "RECOVERY_PHRASE_OR_XPRV": "復元フレーズ/xprv/xpub/さいころ[1-6]",
   "XPUB_COPIED": "xpubをコピーしました",
   "XPRV_COPIED": "xprvをコピーしました",
   "RENAME_WALLET": "ウォレット名",
