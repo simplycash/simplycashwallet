@@ -156,7 +156,6 @@ interface IBIP70Request {
 export class Wallet {
   public readonly DUMMY_KEY: string = 'well... at least better than plain text ¯\\_(ツ)_/¯'
   public readonly WALLET_KEY: string = '_wallet'
-  public readonly ADDRESS_LIMIT: number = 1000
 
   public readonly UNITS: IUnits = {
     'BSV': { rate: 1, dp: 8 },
@@ -1415,23 +1414,33 @@ export class Wallet {
   }
 
   getAddressTypeAndIndex(address: string, type?: number): [number, number] {
-    if (typeof type === 'undefined' || type === 0) {
-      let ra: string[] = this.currentWallet.addresses.receive
-      let ras: number = Math.max(0, ra.length - this.ADDRESS_LIMIT)
-      let i = ra.indexOf(address, ras)
-      if (i !== -1) {
-        return [0, i]
+    let ra: string[] = this.currentWallet.addresses.receive
+    let ca: string[] = this.currentWallet.addresses.change
+    let lenr: number = typeof type === 'undefined' || type === 0 ? ra.length : 0
+    let lenc: number = typeof type === 'undefined' || type === 1 ? ca.length : 0
+    let len: number = Math.min(lenr, lenc)
+    for (let i: number = 1; i <= len; i++) {
+      if (address === ra[lenr - i]) {
+        return [0, lenr - i]
+      } else if (address === ca[lenc - i]) {
+        return [1, lenc - i]
       }
     }
-    if (typeof type === 'undefined' || type === 1) {
-      let ca: string[] = this.currentWallet.addresses.change
-      let cas: number = Math.max(0, ca.length - this.ADDRESS_LIMIT)
-      let j = ca.indexOf(address, cas)
-      if (j !== -1) {
-        return [1, j]
+    if (lenr > len) {
+      for (let i: number = lenr - len - 1; i >= 0; i--) {
+        if (address === ra[i]) {
+          return [0, i]
+        }
       }
+    } else if (lenc > len) {
+      for (let i: number = lenc - len - 1; i >= 0; i--) {
+        if (address === ca[i]) {
+          return [1, i]
+        }
+      }
+    } else {
+      return undefined
     }
-    return undefined
   }
 
   getAllTxids(): string[] {
