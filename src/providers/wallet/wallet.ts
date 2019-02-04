@@ -877,6 +877,7 @@ export class Wallet {
           title: this.translate.instant('ERROR'),
           buttons: [this.translate.instant('OK')]
         }).present()
+        return
       }
     }
     if (!ann || this.stored.preference.lastAnnouncement === ann) {
