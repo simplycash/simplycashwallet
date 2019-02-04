@@ -130,13 +130,26 @@ export class SweepPage {
       content: this.translate.instant('DECRYPTING') + '...'
     })
     await loader.present()
+    this.wallet.closeWallet()
+    let result: string
     try {
-      let decrypted = bip38.decrypt(encrypted, passphrase)
-      let result = wif.encode(0x80, decrypted.privateKey, decrypted.compressed)
-      await loader.dismiss()
-      return result
+      let decrypted: any = bip38.decrypt(encrypted, passphrase)
+      result = wif.encode(0x80, decrypted.privateKey, decrypted.compressed)
     } catch (err) {
-      await loader.dismiss()
+
+    }
+    try {
+      await this.wallet.startWallet()
+      while (!this.wallet.isOffline() && !this.wallet.isOnline()) {
+        await this.wallet.delay(500)
+      }
+    } catch (err) {
+
+    }
+    await loader.dismiss()
+    if (result) {
+      return result
+    } else {
       await this.alertCtrl.create({
         enableBackdropDismiss: false,
         title: this.translate.instant('ERROR'),
