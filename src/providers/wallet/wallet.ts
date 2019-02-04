@@ -2240,10 +2240,14 @@ export class Wallet {
   r_validatedMnemonicOrXprvOrXpub(m: string): string {
     m = m.trim()
     let errMessage: string
-    if (m.match(/^xpub.+$/gi) && !this.validateXpub(m)) {
-      errMessage = this.translate.instant('ERR_INVALID_XPUB')
-    } else if (m.match(/^xprv.+$/gi) && !this.validateXprv(m)) {
-      errMessage = this.translate.instant('ERR_INVALID_XPRV')
+    if (m.match(/^xpub.+$/gi)) {
+      if (!this.validateXpub(m)) {
+        errMessage = this.translate.instant('ERR_INVALID_XPUB')
+      }
+    } else if (m.match(/^xprv.+$/gi)) {
+      if (!this.validateXprv(m)) {
+        errMessage = this.translate.instant('ERR_INVALID_XPRV')
+      }
     } else if (m.match(/^[0-1]+$/g)) {
       if (m.length < 128) {
         errMessage = this.translate.instant('ERR_NOT_ENOUGH_ENTROPY') + ' ' + m.length + '/128'
