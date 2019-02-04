@@ -1271,7 +1271,7 @@ export class Wallet {
   }
 
   createMnemonic(): string {
-    return new bitcoincash.Mnemonic().phrase
+    return new bitcoincash.Mnemonic(crypto.randomBytes(16)).phrase
   }
 
   generateAddressesFromPrivateKey(hdPrivateKey: bitcoincash.HDPrivateKey): IAddresses {
