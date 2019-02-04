@@ -2,6 +2,14 @@
 
   <ion-navbar color="primary">
     <ion-title>{{ 'ADDRESSES' | translate }}</ion-title>
+    <ion-buttons end>
+      <button ion-button icon-only (click)="isShowingGap = true" *ngIf="!isShowingGap">
+        <ion-icon name="eye-off"></ion-icon>
+      </button>
+      <button ion-button icon-only (click)="isShowingGap = false" *ngIf="isShowingGap">
+        <ion-icon name="eye"></ion-icon>
+      </button>
+    </ion-buttons>
   </ion-navbar>
 
 </ion-header>
@@ -25,20 +33,23 @@
   <div [ngSwitch]="type">
 
     <ion-list *ngSwitchCase="'receive'" no-lines>
-      <ion-item *ngFor="let addr of receiveAddrs" (click)="pushAddressPage(addr)">
-        {{ addr.path[1] }}&nbsp;{{ addr.address }}
+      <ion-item *ngFor="let addr of receiveAddrs; let i = index" (click)="pushAddressPage(addr)" [class.gap-addr]="i < 20" [attr.hidden]="i < 20 && !isShowingGap ? '' : null">
+        <span>{{ addr.path[1] }}</span>
+        <span>{{ addr.address }}</span>
       </ion-item>
     </ion-list>
 
     <ion-list *ngSwitchCase="'change'" no-lines>
-      <ion-item *ngFor="let addr of changeAddrs" (click)="pushAddressPage(addr)">
-        {{ addr.path[1] }}&nbsp;{{ addr.address }}
+      <ion-item *ngFor="let addr of changeAddrs; let i = index" (click)="pushAddressPage(addr)" [class.gap-addr]="i < 20" [attr.hidden]="i < 20 && !isShowingGap ? '' : null">
+        <span>{{ addr.path[1] }}</span>
+        <span>{{ addr.address }}</span>
       </ion-item>
     </ion-list>
 
     <ion-list *ngSwitchCase="'unspent'" no-lines>
       <ion-item *ngFor="let addr of unspentAddrs" (click)="pushAddressPage(addr)">
-        {{ addr.address }}<span item-end>{{ addr.balance }}</span>
+        <span>{{ addr.address }}</span>
+        <span item-end>{{ addr.balance }}</span>
       </ion-item>
     </ion-list>
 
