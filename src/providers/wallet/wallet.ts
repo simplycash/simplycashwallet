@@ -908,7 +908,7 @@ export class Wallet {
       message: ann,
       buttons: buttons
     })
-    if (!this.app._appRoot._overlayPortal.getActive()) {
+    if (this.app.getRootNav().getActive().component.pageName === 'HomePage' && !this.app._appRoot._overlayPortal.getActive()) {
       await annAlert.present()
     }
   }

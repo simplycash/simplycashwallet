@@ -14,7 +14,7 @@ import { Wallet } from '../../providers/providers'
   templateUrl: 'home.html'
 })
 export class HomePage {
-
+  public static readonly pageName = 'HomePage'
   public address: string
   public displayedAddress: string
   public amount: number
