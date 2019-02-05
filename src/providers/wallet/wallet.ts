@@ -876,21 +876,23 @@ export class Wallet {
           title: this.translate.instant('ERROR'),
           buttons: [this.translate.instant('OK')]
         }).present()
-        return
       }
+      return
     }
-    if (!ann || this.stored.preference.lastAnnouncement === ann) {
-      if (isInitiatedByUser) {
+    if (isInitiatedByUser) {
+      if (!ann) {
         await this.alertCtrl.create({
           enableBackdropDismiss: false,
           title: this.translate.instant('NO_ANNOUNCEMENT'),
           buttons: [this.translate.instant('OK')]
         }).present()
+        return
       }
+    } else if (!ann || this.stored.preference.lastAnnouncement === ann) {
       return
     }
     let buttons: any[] = []
-    if (isInitiatedByUser) {
+    if (!isInitiatedByUser) {
       buttons.push({
         text: this.translate.instant('DO_NOT_SHOW_AGAIN'),
         handler: () => {
@@ -908,7 +910,7 @@ export class Wallet {
       message: ann,
       buttons: buttons
     })
-    if (this.app.getRootNav().getActive().component.pageName === 'HomePage' && !this.app._appRoot._overlayPortal.getActive()) {
+    if (isInitiatedByUser || this.app.getRootNav().getActive().component.pageName === 'HomePage' && !this.app._appRoot._overlayPortal.getActive()) {
       await annAlert.present()
     }
   }
