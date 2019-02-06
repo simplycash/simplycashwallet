@@ -12,7 +12,7 @@ import { SplashScreen } from '@ionic-native/splash-screen'
 import 'rxjs/add/operator/timeout'
 import QRCode from 'qrcode'
 import * as bitcoincash from 'bitcoincashjs'
-import * as bs58check from 'bs58check'
+// import * as bs58check from 'bs58check'
 import io from 'socket.io-client'
 import * as protobuf from 'protobufjs'
 import * as crypto from 'crypto-browserify'
@@ -1368,15 +1368,16 @@ export class Wallet {
   }
 
   validateEncryptedWIF(wif: string): boolean {
-    if (!wif.match(/^6P[1-9A-NP-Za-km-z]{56}$/g)) {
-      return false
-    }
-    try {
-      bs58check.decode(wif)
-      return true
-    } catch (err) {
-      return false
-    }
+    return false
+    // if (!wif.match(/^6P[1-9A-NP-Za-km-z]{56}$/g)) {
+    //   return false
+    // }
+    // try {
+    //   bs58check.decode(wif)
+    //   return true
+    // } catch (err) {
+    //   return false
+    // }
   }
 
   validateAddress(address: string, format?: string): boolean {
