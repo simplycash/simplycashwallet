@@ -2161,6 +2161,7 @@ export class Wallet {
     return new Promise<void>((resolve, reject) => {
       let recoverAlert = this.alertCtrl.create({
         enableBackdropDismiss: false,
+        cssClass: 'promptForRecoveryCSSClass',
         title: this.translate.instant('RECOVER_WALLET'),
         // message: this.translate.instant('RECOVERY_HINT'),
         inputs: [{
@@ -2210,7 +2211,12 @@ export class Wallet {
           }
         }]
       })
-      recoverAlert.present()
+      recoverAlert.present().then(() => {
+        (window.document.querySelectorAll('.promptForRecoveryCSSClass input') as any).forEach((el: any) => {
+          el.setAttribute('autocomplete', 'off')
+          el.setAttribute('autocorrect', 'off')
+        })
+      })
     }).catch((err) => {
       console.log(err)
     })
