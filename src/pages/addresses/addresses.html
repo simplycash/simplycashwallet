@@ -17,6 +17,7 @@
 
 <ion-content no-bounce>
   <ion-toolbar color="primary">
+    <ion-searchbar id="addresses-page-search-bar" placeholder="" (ionInput)="updateFilter($event)"></ion-searchbar>
     <ion-segment [(ngModel)]="type" color="light">
       <ion-segment-button value="receive">
         {{ 'RECEIVE' | translate }}
@@ -33,21 +34,22 @@
   <div [ngSwitch]="type">
 
     <ion-list *ngSwitchCase="'receive'" no-lines>
-      <ion-item *ngFor="let addr of receiveAddrs; let i = index" (click)="pushAddressPage(addr)" [class.gap-addr]="i < 20" [attr.hidden]="i < 20 && !isShowingGap ? '' : null">
-        <span>{{ addr.path[1] }}</span>
+      <ion-item *ngFor="let addr of receiveAddrs" (click)="pushAddressPage(addr)" [class.gap-addr]="addr.isGap" [attr.hidden]="addr.isGap && !isShowingGap ? '' : null">
+        <span>{{ '/' + addr.path[0] + '/' + addr.path[1] }}</span>
         <span>{{ addr.address }}</span>
       </ion-item>
     </ion-list>
 
     <ion-list *ngSwitchCase="'change'" no-lines>
-      <ion-item *ngFor="let addr of changeAddrs; let i = index" (click)="pushAddressPage(addr)" [class.gap-addr]="i < 20" [attr.hidden]="i < 20 && !isShowingGap ? '' : null">
-        <span>{{ addr.path[1] }}</span>
+      <ion-item *ngFor="let addr of changeAddrs" (click)="pushAddressPage(addr)" [class.gap-addr]="addr.isGap" [attr.hidden]="addr.isGap && !isShowingGap ? '' : null">
+        <span>{{ '/' + addr.path[0] + '/' + addr.path[1] }}</span>
         <span>{{ addr.address }}</span>
       </ion-item>
     </ion-list>
 
     <ion-list *ngSwitchCase="'unspent'" no-lines>
       <ion-item *ngFor="let addr of unspentAddrs" (click)="pushAddressPage(addr)">
+        <span>{{ '/' + addr.path[0] + '/' + addr.path[1] }}</span>
         <span>{{ addr.address }}</span>
         <span item-end>{{ addr.balance }}</span>
       </ion-item>

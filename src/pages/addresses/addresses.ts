@@ -10,8 +10,11 @@ import { Wallet } from '../../providers/providers'
 })
 export class AddressesPage {
 
-  public receiveAddrs: { address: string, path: number[] }[]
-  public changeAddrs: { address: string, path: number[] }[]
+  public _receiveAddrs: { address: string, path: number[], isGap: boolean }[]
+  public _changeAddrs: { address: string, path: number[], isGap: boolean }[]
+  public _unspentAddrs: { address: string, balance: string, path: number[] }[]
+  public receiveAddrs: { address: string, path: number[], isGap: boolean }[]
+  public changeAddrs: { address: string, path: number[], isGap: boolean }[]
   public unspentAddrs: { address: string, balance: string, path: number[] }[]
   public type: string = 'receive'
   public isShowingGap: boolean = false
@@ -31,27 +34,43 @@ export class AddressesPage {
     })
     await loader.present()
     let ara: string[] = this.wallet.getAllReceiveAddresses()
-    this.receiveAddrs = ara.map((addr: string, i: number, arr: string[]) => {
+    this._receiveAddrs = ara.map((addr: string, i: number, arr: string[]) => {
       return {
         address: addr,
-        path: [0, i]
+        path: [0, i],
+        isGap: i >= ara.length - 20
       }
     }).reverse()
+    this.receiveAddrs = this._receiveAddrs
     let aca: string[] = this.wallet.getAllChangeAddresses()
-    this.changeAddrs = aca.map((addr: string, i: number, arr: string[]) => {
+    this._changeAddrs = aca.map((addr: string, i: number, arr: string[]) => {
       return {
         address: addr,
-        path: [1, i]
+        path: [1, i],
+        isGap: i >= aca.length - 20
       }
     }).reverse()
-    this.unspentAddrs = this.wallet.getCacheUtxos().map((utxo: any) => {
+    this.changeAddrs = this._changeAddrs
+    this._unspentAddrs = this.wallet.getCacheUtxos().map((utxo: any) => {
       return {
         address: utxo.address,
         balance: this.wallet.convertUnit('SATS', 'BSV', utxo.satoshis.toString()),
         path: utxo.path
       }
     })
+    this.unspentAddrs = this._unspentAddrs
     await loader.dismiss()
+  }
+
+  updateFilter(ev: any) {
+    if (typeof ev.target.value === 'undefined') {
+      let el: any = document.querySelector('#addresses-page-search-bar input')
+      el.blur()
+    }
+    let v: string = ev.target.value || ''
+    this.receiveAddrs = this._receiveAddrs.filter(o => o.address.indexOf(v) !== -1)
+    this.changeAddrs = this._changeAddrs.filter(o => o.address.indexOf(v) !== -1)
+    this.unspentAddrs = this._unspentAddrs.filter(o => o.address.indexOf(v) !== -1)
   }
 
   pushAddressPage(addr: any) {
