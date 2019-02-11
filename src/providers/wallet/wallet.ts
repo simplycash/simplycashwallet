@@ -1720,6 +1720,9 @@ export class Wallet {
     let utxos: IUtxo[]
     let toAmount: number
     let changeAmount: number
+    let changeOutputScript: string = this.scriptFromAddress(this.currentWallet.cache.changeAddress)
+    let changeOutputIndex: number = Math.floor(Math.random() * (outputs.length + 1))
+    let _outputs: IOutput[]
     let hex_tentative: string
     let fee_tentative: number = 0
     let fee_required: number
@@ -1729,10 +1732,14 @@ export class Wallet {
         acc = availableAmount
         utxos = availableUtxos
         toAmount = acc - fee_tentative
-        changeAmount = 0
         if (toAmount < 546) {
           throw new Error('not enough fund')
         }
+        changeAmount = 0
+        _outputs = [{
+          script: outputs[0].script,
+          satoshis: toAmount
+        }]
       } else {
         let i: number = 0
         acc = agedAmount
@@ -1752,33 +1759,26 @@ export class Wallet {
           throw new Error('not enough fund')
         }
         changeAmount = acc - toAmount - fee_tentative
+        _outputs = outputs.slice()
         if (changeAmount < 546) {
           changeAmount = 0
+        } else {
+          _outputs.splice(changeOutputIndex, 0, {
+            script: changeOutputScript,
+            satoshis: changeAmount
+          })
         }
       }
       if (availableKeys.length > 0) {
         let ustx: bitcoincash.Transaction = new bitcoincash.Transaction()
           .from(utxos.map(utxo => new bitcoincash.Transaction.UnspentOutput(utxo)))
-        if (drain) {
-          ustx.addOutput(new bitcoincash.Transaction.Output({
-            script: outputs[0].script,
-            satoshis: toAmount
-          }))
-        } else {
-          outputs.forEach((output) => {
-            ustx.addOutput(new bitcoincash.Transaction.Output(output))
-          })
-        }
-        if (changeAmount > 0) {
-          ustx.fee(fee_tentative).change(this.currentWallet.cache.changeAddress)
-        }
+        _outputs.forEach((o) => {
+          ustx.addOutput(new bitcoincash.Transaction.Output(o))
+        })
         hex_tentative = this.signTx(ustx, availableKeys)
         fee_required = hex_tentative.length / 2
       } else {
-        fee_required = 149 * utxos.length + 34 * outputs.length + 10
-        if (changeAmount > 0) {
-          fee_required += 34
-        }
+        fee_required = 149 * utxos.length + 34 * _outputs.length + 10
       }
       if (fee_tentative >= fee_required) {
         break
@@ -1787,20 +1787,10 @@ export class Wallet {
       }
     }
 
-    let txOutputs: IOutput[]
-    if (drain) {
-      txOutputs = [{
-        script: outputs[0].script,
-        satoshis: toAmount
-      }]
-    } else if (changeAmount > 0) {
-      txOutputs = outputs.concat([{
-        path: this.getAddressTypeAndIndex(this.currentWallet.cache.changeAddress, 1),
-        script: this.scriptFromAddress(this.currentWallet.cache.changeAddress),
-        satoshis: changeAmount
-      }])
-    } else {
-      txOutputs = outputs.slice()
+    let txOutputs: IOutput[] = _outputs
+    let changeOutput: IOutput = txOutputs.find(o => o.script === changeOutputScript)
+    if (changeOutput) {
+      changeOutput.path = this.getAddressTypeAndIndex(this.currentWallet.cache.changeAddress, 1)
     }
 
     let txInputs: IInput[] = utxos.map(u => {
