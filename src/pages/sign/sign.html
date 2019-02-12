@@ -27,6 +27,7 @@
   <div text-center>
     <button ion-button clear icon-left (click)="signPreparedTx()" [disabled]="finished">{{ 'SIGN' | translate }}</button>
   </div>
+  <p *ngIf="qrCodeURLs && qrCodeURLs.length > 0" text-center>{{ 'SCAN_WITH_HOT' | translate }}</p>
   <div class="qrdiv" *ngFor="let qrCodeURL of qrCodeURLs; let i = index" text-center>
     <p *ngIf="qrCodeURLs.length > 1" >{{ i + 1 }}/{{ qrCodeURLs.length }}:</p>
     <img class="qrcode" [src]="qrCodeURL"/>

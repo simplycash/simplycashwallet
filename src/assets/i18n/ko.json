@@ -1,4 +1,8 @@
 {
+  "COLD_WALLET_TUTORIAL": "cold wallet guide",
+  "COLD_WALLET_TUTORIAL_CONTENT": "Create/recover a wallet on an offline phone.<br><br>Scan the xpub to create a watch-only wallet on an online phone.<br><br>Try to send and receive with the watch-only wallet.",
+  "SCAN_WITH_COLD": "scan with a cold wallet",
+  "SCAN_WITH_HOT": "scan with a hot wallet",
   "ERR_INVALID_XPUB": "잘못된 xpub",
   "ERR_INVALID_XPRV": "잘못된 xprv",
   "ERR_NOT_ENOUGH_ENTROPY": "엔트로피 부족",

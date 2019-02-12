@@ -194,6 +194,15 @@ export class MorePage {
     })
   }
 
+  async showColdWalletTutorial() {
+    await this.alertCtrl.create({
+      enableBackdropDismiss: false,
+      title: this.translate.instant('COLD_WALLET_TUTORIAL'),
+      message: this.translate.instant('COLD_WALLET_TUTORIAL_CONTENT'),
+      buttons: [this.translate.instant('OK')]
+    }).present()
+  }
+
   async showAnnouncement() {
     if (this.isShowingAnnouncement) {
       return
