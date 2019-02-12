@@ -18,6 +18,8 @@
 <ion-content no-bounce>
   <ion-toolbar color="primary">
     <ion-searchbar id="addresses-page-search-bar" placeholder="" (ionInput)="updateFilter($event)"></ion-searchbar>
+  </ion-toolbar>
+  <ion-toolbar color="primary">
     <ion-segment [(ngModel)]="type" color="light">
       <ion-segment-button value="receive">
         {{ 'RECEIVE' | translate }}
