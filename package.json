@@ -40,10 +40,8 @@
     "@ngx-translate/core": "8.0.0",
     "@ngx-translate/http-loader": "^2.0.0",
     "big-integer": "^1.6.26",
-    "bip38": "^2.0.2",
     "bitcoincashjs": "^0.1.10",
     "bn.js": "^4.11.8",
-    "bs58check": "^2.1.2",
     "buffer": "^5.1.0",
     "clipboard-polyfill": "^2.7.0",
     "cordova-android": "6.4.0",
@@ -79,7 +77,6 @@
     "rxjs": "^5.5.11",
     "socket.io-client": "^2.0.4",
     "sw-toolbox": "3.6.0",
-    "wif": "^2.0.6",
     "zone.js": "0.8.18"
   },
   "devDependencies": {
