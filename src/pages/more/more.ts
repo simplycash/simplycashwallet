@@ -181,7 +181,8 @@ export class MorePage {
             return false
           }
         },{
-          text: this.translate.instant('OK'),
+          cssClass: 'confirmDeleteBtnCSSClass',
+          text: this.translate.instant('DELETE') + '(5)',
           handler: data => {
             confirmDeleteAlert.dismiss().then(() => {
               resolve()
@@ -190,7 +191,24 @@ export class MorePage {
           }
         }]
       })
-      confirmDeleteAlert.present()
+      confirmDeleteAlert.present().then(() => {
+        let btn: any = window.document.querySelector('.confirmDeleteBtnCSSClass')
+        let btnSpan: any = btn.querySelector('span')
+        btn.setAttribute('disabled','')
+        let text: string = this.translate.instant('DELETE')
+        let counter: number = 4
+        let timer: any = window.setInterval(() => {
+          if (counter > 0) {
+            btnSpan.innerText = text + '(' + counter + ')'
+          } else {
+            window.clearInterval(timer)
+            btnSpan.innerText = text
+            btnSpan.setAttribute('style','color: red;')
+            btn.removeAttribute('disabled')
+          }
+          counter--
+        }, 1000)
+      })
     })
   }
 

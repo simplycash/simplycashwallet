@@ -1,4 +1,5 @@
 {
+  "DELETE": "delete",
   "COLD_WALLET_TUTORIAL": "cold wallet guide",
   "COLD_WALLET_TUTORIAL_CONTENT": "Create/recover a wallet on an offline phone.<br><br>Scan the xpub to create a watch-only wallet on an online phone.<br><br>Try to send and receive with the watch-only wallet.",
   "SCAN_WITH_COLD": "scan with a cold wallet",

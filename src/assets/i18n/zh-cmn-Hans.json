@@ -1,4 +1,5 @@
 {
+  "DELETE": "删除",
   "COLD_WALLET_TUTORIAL": "冷钱包指南",
   "COLD_WALLET_TUTORIAL_CONTENT": "在离线手机上创建/恢复钱包。<br><br>使用在线手机扫描xpub创建监视钱包。<br><br>尝试使用监视钱包收发。",
   "SCAN_WITH_COLD": "使用冷钱包扫描",
