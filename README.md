@@ -14,7 +14,7 @@ export interface ILocalNotification {
 }
 ```
 5. `ionic cordova prepare`
-6. modify platforms/android/src/.../MainActivity.java:
+6. modify platforms/android/app/src/.../MainActivity.java:
 ```java
 // add these 2 imports
 import android.os.Build;
