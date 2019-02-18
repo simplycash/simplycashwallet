@@ -712,8 +712,16 @@ export class Wallet {
     if (next) {
       await this.switchWallet(next)
     } else {
-      await this.updateStorage()
-      await this.startWallet()
+      let loader: any = this.loadingCtrl.create()
+      await loader.present()
+      try {
+        await this.updateStorage()
+        await this.startWallet()
+        await loader.dismiss()
+      } catch (err) {
+        await loader.dismiss()
+        throw err
+      }
     }
   }
 
@@ -2216,6 +2224,9 @@ export class Wallet {
           el.setAttribute('autocomplete', 'off')
           el.setAttribute('autocorrect', 'off')
         })
+        window.setTimeout(() => {
+          (window.document.querySelector('.promptForRecoveryCSSClass input') as any).blur()
+        }, 0)
       })
     }).catch((err) => {
       console.log(err)

@@ -64,8 +64,7 @@ export class AddressesPage {
 
   updateFilter(ev: any) {
     if (typeof ev.target.value === 'undefined') {
-      let el: any = document.querySelector('#addresses-page-search-bar input')
-      el.blur()
+      (window.document.querySelector('#addresses-page-search-bar input') as any).blur()
     }
     let v: string = ev.target.value || ''
     this.receiveAddrs = this._receiveAddrs.filter(o => o.address.indexOf(v) !== -1)
