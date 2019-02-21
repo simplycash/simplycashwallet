@@ -277,7 +277,7 @@ export class Wallet {
     return new Promise<string>((resolve, reject) => {
       let pinAlert = this.alertCtrl.create({
         enableBackdropDismiss: false,
-        title: 'PIN',
+        title: this.translate.instant('PIN'),
         inputs: [{
           name: 'pin1',
           type: 'password',
@@ -322,7 +322,7 @@ export class Wallet {
     return new Promise<string>((resolve, reject) => {
       let pinAlert = this.alertCtrl.create({
         enableBackdropDismiss: false,
-        title: 'PIN',
+        title: this.translate.instant('PIN'),
         inputs: [{
           name: 'pin',
           type: 'password',
@@ -768,7 +768,7 @@ export class Wallet {
             let pw: string = await new Promise<string>((resolve, reject) => {
               let pinAlert = this.alertCtrl.create({
                 enableBackdropDismiss: false,
-                title: 'PIN',
+                title: this.translate.instant('PIN'),
                 inputs: [{
                   name: 'pin',
                   type: 'password',
