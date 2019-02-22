@@ -101,7 +101,7 @@ export class MyApp {
     }
     browserLang = browserLang.toLowerCase()
     prefix = browserLang.split('-')[0]
-    if (browserLang && prefix.match(/^(en|ja|ko|zh|yue)$/gi)) {
+    if (browserLang && prefix.match(/^(en|es|ja|ko|zh|yue)$/gi)) {
       if (prefix.match(/^(zh|yue)$/gi)) {
         if (!browserLang.match(/-Hans/i) && browserLang.match(/-TW|-CHT|-Hant|-HK|-yue/i)) {
           lang = 'zh-cmn-Hant'
