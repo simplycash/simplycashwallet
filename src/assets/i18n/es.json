@@ -23,7 +23,7 @@
   "ERR_INVALID_DERIVATION_PATH": "camino de derivación inválido",
   "WIF_COPIED": "WIF copiado",
   "RECOVERY_PASSPHRASE": "BIP39 contraseña",
-  "WARN_DELETE_WALLET": "la billetera actual será borrada",
+  "WARN_DELETE_WALLET": "esta billetera será borrada",
   "CREATING": "creando",
   "CREATE_SUCCESS": "billetera ha sido creada",
   "CREATE_FAILED": "falla al crear una billetera",
