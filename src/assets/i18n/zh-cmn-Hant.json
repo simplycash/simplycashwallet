@@ -1,4 +1,6 @@
 {
+  "PRICE": "價格",
+  "SHARE": "分享",
   "DELETE": "刪除",
   "COLD_WALLET_TUTORIAL": "冷錢包指南",
   "COLD_WALLET_TUTORIAL_CONTENT": "在離線手機上創建/恢復錢包。<br><br>使用在線手機掃描xpub創建監視錢包。<br><br>嘗試使用監視錢包收發。",

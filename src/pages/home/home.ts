@@ -1,5 +1,5 @@
-import { ChangeDetectorRef, Component, NgZone } from '@angular/core'
-import { AlertController, App, IonicPage, LoadingController, NavController, Platform, PopoverController, ToastController } from 'ionic-angular'
+import { ChangeDetectorRef, Component, NgZone, ViewChild } from '@angular/core'
+import { ActionSheetController, AlertController, App, IonicPage, LoadingController, NavController, Platform, PopoverController, ToastController } from 'ionic-angular'
 import { QRScanner, QRScannerStatus } from '@ionic-native/qr-scanner'
 import { SocialSharing } from '@ionic-native/social-sharing'
 import { Clipboard } from '@ionic-native/clipboard'
@@ -14,12 +14,14 @@ import { Wallet } from '../../providers/providers'
   templateUrl: 'home.html'
 })
 export class HomePage {
+  @ViewChild('myAmount') myAmountEl
   public static readonly pageName = 'HomePage'
   public address: string
   public displayedAddress: string
   public amount: number
   public qrCodeURL: string
   public isSharing: boolean = false
+  public showRequestAmount: boolean = false
 
   public updateCallback: Function
   public priceCallback: Function
@@ -51,6 +53,7 @@ export class HomePage {
   public walletName: string
 
   constructor(
+    public actionSheetCtrl: ActionSheetController,
     public alertCtrl: AlertController,
     public app: App,
     public ref: ChangeDetectorRef,
@@ -135,16 +138,8 @@ export class HomePage {
 
   refresh() {
     this.address = this.wallet.getCacheReceiveAddress()
-    if (this.walletName !== this.wallet.getCurrentWalletName()) {
-      this.walletName = this.wallet.getCurrentWalletName()
-      this.handleClipboard()
-    }
-    // return this.updateQR()
-  }
-
-  addressChange(ev: any) {
-    this.displayedAddress = ev.value
-    return this.updateQR()
+    this.displayedAddress = this.address
+    this.updateQR()
   }
 
   amountChange(sat: number) {
@@ -161,22 +156,65 @@ export class HomePage {
     })
   }
 
-  async share() {
+  async onWalletSelectionChange(ev) {
+    if (ev === '') {
+      await this.wallet.promptForRecovery()
+      this.walletName = this.wallet.getCurrentWalletName()
+    } else if (ev !== this.wallet.getCurrentWalletName()) {
+      await this.wallet.switchWallet(ev)
+    }
+  }
+
+  async showQRActions() {
+    let content: string
+    let title: string
+    if (this.amount > 0) {
+      title = this.wallet.getPaymentRequestURL(this.displayedAddress, this.amount)
+      content = title
+    } else {
+      title = this.translate.instant('MY_BITCOIN_CASH_ADDRESS') + ' ' + this.displayedAddress
+      content = this.displayedAddress
+    }
+    this.actionSheetCtrl.create({
+      title: title,
+      buttons: [
+        {
+          text: this.translate.instant('COPY'),
+          icon: 'copy',
+          handler: () => {
+            this.copyAddress(content)
+          }
+        },{
+          text: this.translate.instant('SHARE'),
+          icon: 'share',
+          handler: () => {
+            this.share(content)
+          }
+        },{
+          text: this.translate.instant('REQUEST_AMOUNT'),
+          icon: this.showRequestAmount ? 'eye-off' : 'eye',
+          handler: () => {
+            this.showRequestAmount = !this.showRequestAmount
+            if (this.showRequestAmount) {
+              window.setTimeout(() => {
+                this.myAmountEl.setFocus()
+              }, 600)
+            } else {
+              this.myAmountEl.clear()
+            }
+          }
+        }
+      ]
+    }).present()
+  }
+
+  async share(content: string) {
     if (this.isSharing || !this.platform.is('cordova')) {
       return
     }
-    let message: string = `${this.translate.instant('MY_BITCOIN_CASH_ADDRESS')}:\n${this.displayedAddress}\n\n`
-    let link: string = 'https://simply.cash/send'
-    if (this.amount > 0) {
-      let amount: string = this.wallet.convertUnit('SATS', 'BSV', this.amount.toString()).replace(/\.?0+$/,'')
-      message += `${this.translate.instant('REQUEST_AMOUNT')}:\n${amount} BSV\n\n`
-      link += '-' + amount
-    }
-    link += `-BSV-to-${this.displayedAddress}`
-    message += `${this.translate.instant('SIMPLY_LAUNCH')}:\n${link}`
     this.isSharing = true
     try {
-      await this.socialSharing.share(message)
+      await this.socialSharing.share(content)
     } catch (err) {
       console.log(err)
     }
@@ -299,9 +337,8 @@ export class HomePage {
     })
   }
 
-  copyAddress() {
-    let a: string = this.displayedAddress
-    this.clipboard.copy(a).then(() => {
+  copyAddress(content: string) {
+    this.clipboard.copy(content).then(() => {
       if (this.copyToast) {
         window.clearTimeout(this.copyToastTimer)
       } else {
@@ -319,9 +356,7 @@ export class HomePage {
       this.copyToastTimer = window.setTimeout(() => {
         this.copyToast.dismiss()
       }, 1000)
-      // shortcut
-      this.clipboardContent = ''
-      // return this.handleClipboard()
+      return this.handleClipboard()
     }).catch((err: any) => {
       console.log(err)
     })
@@ -539,8 +574,7 @@ export class HomePage {
       if (!content) {
         return
       }
-      let af: string = this.wallet.getAddressFormat(content)
-      if (this.wallet.getRequestFromURL(content) || af && !this.wallet.isMyReceiveAddress(this.wallet.convertAddress(af, 'legacy', content))) {
+      if (this.wallet.getRequestFromURL(content) || this.wallet.getAddressFormat(content)) {
         this.clipboardContent = content
       }
     }).catch((err: any) => {

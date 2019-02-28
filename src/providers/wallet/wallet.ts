@@ -414,8 +414,8 @@ export class Wallet {
     return this.stored.preference.showBalance
   }
 
-  async setShowBalance(s: boolean): Promise<void> {
-    this.stored.preference.showBalance = s
+  async toggleShowBalance(): Promise<void> {
+    this.stored.preference.showBalance = !this.stored.preference.showBalance
     await this.updateStorage()
   }
 

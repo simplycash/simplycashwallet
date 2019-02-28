@@ -11,6 +11,12 @@ page-history {
   .ndelta {
 
   }
+  .balance-span, .pdelta, .ndelta {
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    max-width: 70%;
+  }
   ion-item[unseen] {
     font-weight: bold;
   }

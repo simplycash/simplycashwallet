@@ -1,22 +1,11 @@
 .platform-ios page-home {
-  ion-header {
-    -webkit-transform: translateY(0);
-    transform: translateY(0);
-
-    -webkit-transition: -webkit-transform 0.5s;
-    transition: transform 0.5s;
-  }
-  ion-header[transparent] {
-    -webkit-transform: translateY(-64px);
-    transform: translateY(-64px);
-  }
-  ion-content[style=""] {
+  ion-header, ion-content[style=""] {
     opacity: 1;
 
     -webkit-transition: opacity 0.2s;
     transition: opacity 0.2s;
   }
-  ion-content[style][transparent] {
+  ion-header[transparent], ion-content[style][transparent] {
     opacity: 0;
   }
   & + .nav-decor {
@@ -28,29 +17,27 @@
 }
 
 .platform-android page-home {
-  ion-header {
-    -webkit-transform: translateY(0);
-    transform: translateY(0);
-
-    -webkit-transition: -webkit-transform 0.5s;
-    transition: transform 0.5s;
-  }
-  ion-header[transparent] {
-    -webkit-transform: translateY(-76px);
-    transform: translateY(-76px);
-  }
-  ion-content {
+  ion-header, ion-content {
     opacity: 1;
 
     -webkit-transition: opacity 0.2s;
     transition: opacity 0.2s;
   }
-  ion-content[transparent] {
+  ion-header[transparent], ion-content[transparent] {
     opacity: 0;
   }
 }
 
 page-home {
+
+  ion-header > ion-navbar > div.toolbar-background {
+    background-color: transparent !important;
+  }
+
+  ion-content {
+    background-image: linear-gradient(to top right, #004e32, #009261);
+  }
+
   ion-fab.main-fab>button {
     color: white;
   }
@@ -91,7 +78,8 @@ page-home {
     justify-content: center;
     align-items: center;
     font-size: 2rem;
-    min-height: 50px;
+    min-height: 100px;
+    color: white;
   }
 
   .send-field {
@@ -100,7 +88,8 @@ page-home {
     justify-content: center;
     align-items: center;
     font-size: 2rem;
-    min-height: 50px;
+    min-height: 100px;
+    color: white;
   }
 
   .send-btn {
@@ -114,10 +103,43 @@ page-home {
     bottom: 71px;
   }
 
+  .balance-container {
+    color: white;
+    text-align: center;
+    margin: 20px 0;
+  }
+
+  .balance-container > div:not(:last-child) {
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    margin-bottom: 10px;
+  }
+
+  .qrcode-container {
+
+  }
+
+  .request-amount {
+    display: block;
+    margin: 0 auto;
+    width: 200px;
+  }
+
+  .request-amount > my-amount .item-md.item-block .item-inner {
+    border-bottom: 0;
+    box-shadow: none;
+  }
+
+  .request-amount > my-amount .item-ios.item-block .item-inner {
+    border-bottom: 0;
+  }
+
   .qrcode {
-    width: 100%;
-    max-width: 200px;
-    box-shadow: 0 4px 6px 0 rgba(0, 0, 0, 0.14), 0 4px 5px rgba(0, 0, 0, 0.1);
+    display: block;
+    margin: 0 auto;
+    width: 200px;
+    height: 200px;
   }
 
   .custom-footer {

@@ -20,10 +20,7 @@ export class SettingsPage {
   public supportedCurrencies: string[]
   public protection: string
   public supportedProtections: string[]
-  public currentWallet: string
-  public allWallets: string[]
   public isLeaving: boolean
-  // public useCashAddr: boolean
 
   constructor(
     public alertCtrl: AlertController,
@@ -46,18 +43,6 @@ export class SettingsPage {
     this.supportedCurrencies = this.wallet.getSupportedCurrencies()
     this.protection = this.wallet.getPreferredProtection()
     this.supportedProtections = this.wallet.getSupportedProtections()
-    this.currentWallet = this.wallet.getCurrentWalletName()
-    this.allWallets = [this.translate.instant('RECOVER_WALLET')].concat(this.wallet.getAllWalletNames().sort())
-    // this.useCashAddr = this.wallet.getPreferredAddressFormat() === 'cashaddr'
-  }
-
-  pushHistoryPage() {
-    if (this.isLeaving) {
-      return
-    }
-    this.isLeaving = true
-    this.viewCtrl.dismiss()
-    this.app.getRootNav().push('HistoryPage')
   }
 
   pushSendPage() {
@@ -100,25 +85,5 @@ export class SettingsPage {
       this.refresh()
     }
   }
-
-  async setCurrentWallet() {
-    if (this.currentWallet === this.wallet.getCurrentWalletName()) {
-      return
-    }
-    if (this.currentWallet === this.allWallets[0]) {
-      await this.wallet.promptForRecovery()
-    } else {
-      await this.wallet.switchWallet(this.currentWallet)
-    }
-    this.refresh()
-  }
-
-  // setAddressFormat() {
-  //   if (this.useCashAddr) {
-  //     return this.wallet.setPreferredAddressFormat('cashaddr').catch((err: any) => {console.log(err)})
-  //   } else {
-  //     return this.wallet.setPreferredAddressFormat('legacy').catch((err: any) => {console.log(err)})
-  //   }
-  // }
 
 }

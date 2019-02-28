@@ -24,6 +24,9 @@ ion-app.platform-android:not(.platform-mobileweb) {
     padding-top: 20px;
     background-color: color($colors, primary);
   }
+  page-home ion-header {
+    background-color: transparent;
+  }
 }
 
 .content .scroll-content {

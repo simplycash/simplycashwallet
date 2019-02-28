@@ -1,46 +1,48 @@
-<ion-header no-border  [attr.transparent]="isTransparent ? '' : null">
-
+<ion-header no-border [attr.transparent]="isTransparent ? '' : null">
   <ion-navbar color="primary">
-    <ion-title *ngIf="!wallet.getShowBalance()" (click)="wallet.setShowBalance(true)">
-      simply cash
+    <ion-title (click)="walletSelection.open()">
+      {{ wallet.getCurrentWalletName() }}
     </ion-title>
-    <ion-title *ngIf="wallet.getShowBalance()" (click)="wallet.setShowBalance(false)">
-      {{ (wallet.getCacheBalance().toString() | convertUnitPipe:wallet.getPreferredUnit():'comma':timestamp) || '--' }}
-      {{ wallet.getPreferredUnit() }}
-    </ion-title>
+    <ion-item hidden>
+      <ion-label>{{ 'WALLET' | translate }}</ion-label>
+      <ion-select #walletSelection [(ngModel)]="walletName" (ionChange)="onWalletSelectionChange($event)">
+        <ion-option value="">{{ 'RECOVER_WALLET' | translate }}</ion-option>
+        <ion-option *ngFor="let w of wallet.getAllWalletNames().sort()" [value]="w">{{ w }}</ion-option>
+      </ion-select>
+    </ion-item>
     <ion-buttons end>
       <button ion-button *ngIf="wallet.isConnecting() || wallet.isSyncing()">
         <ion-spinner color="light"></ion-spinner>
+      </button>
+      <button ion-button icon-only (click)="navCtrl.push('HistoryPage')">
+        <ion-icon ios="ios-time-outline" md="md-time"></ion-icon>
       </button>
       <button ion-button icon-only (click)="showMenu($event)">
         <ion-icon name="more"></ion-icon>
       </button>
     </ion-buttons>
   </ion-navbar>
-
 </ion-header>
-
-
 <ion-content no-bounce [attr.transparent]="isTransparent ? '' : null">
   <div class="flex-container">
-    <ion-list>
-      <ion-item>
-        <ion-label stacked color="primary">{{ 'MY_BITCOIN_CASH_ADDRESS' | translate}}</ion-label>
-        <ion-input
-          class="address"
-          [value]="address"
-          type="text"
-          (ionChange)="addressChange($event)"
-          readonly></ion-input>
-        <button ion-button item-end (click)="copyAddress()" outline>
-          {{ 'COPY' | translate }}
-        </button>
-      </ion-item>
-      <my-amount #myAmount label="{{ 'REQUEST_AMOUNT' | translate }}" (satoshisChange)="amountChange($event)"></my-amount>
-    </ion-list>
 
-    <div text-center>
-      <img *ngIf="qrCodeURL" class="qrcode" [src]="qrCodeURL" (click)="share()"/>
+    <div class="balance-container" (click)="wallet.toggleShowBalance()">
+      <div>{{ (wallet.getShowBalance() ? 'BALANCE' : 'PRICE') | translate }}</div>
+      <div style="font-size: 3rem;">
+        {{ ((wallet.getShowBalance() ? wallet.getCacheBalance().toString() : '100000000') | convertUnitPipe:wallet.getPreferredCurrency():'comma':timestamp) || '--' }}
+        {{ wallet.getPreferredCurrency() }}
+      </div>
+      <div style="font-size: 1.5rem;">
+        {{ ((wallet.getShowBalance() ? wallet.getCacheBalance().toString() : '100000000') | convertUnitPipe:wallet.getPreferredCryptoUnit():'comma':timestamp) || '--' }}
+        {{ wallet.getPreferredCryptoUnit() }}
+      </div>
+    </div>
+
+    <div class="qrcode-container">
+      <div class="request-amount" [hidden]="!showRequestAmount">
+        <my-amount #myAmount label="{{ 'REQUEST_AMOUNT' | translate }}" (satoshisChange)="amountChange($event)"></my-amount>
+      </div>
+      <img *ngIf="qrCodeURL" class="qrcode" [src]="qrCodeURL" (click)="showQRActions()"/>
     </div>
 
     <div *ngIf="!clipboardContent && platform.is('cordova')" class="camera-field" (touchstart)="startScan()" (touchend)="stopScan()">
@@ -49,7 +51,7 @@
 
     <div *ngIf="clipboardContent && platform.is('cordova')" class="quick-send-chip-container">
       <ion-chip class="quick-send-chip" (click)="quickSend()">
-        <ion-icon name="paper-plane"></ion-icon>
+        <ion-icon name="paper-plane" color="light"></ion-icon>
         <ion-label>{{ 'COPIED_ADDRESS' | translate }}</ion-label>
         <button ion-button clear color="primary" (click)="clearClipboard(); $event.stopPropagation()">
           <ion-icon name="close"></ion-icon>

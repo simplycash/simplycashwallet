@@ -1,4 +1,6 @@
 {
+  "PRICE": "precio",
+  "SHARE": "compartir",
   "DELETE": "eliminar",
   "COLD_WALLET_TUTORIAL": "guía de billetera fría",
   "COLD_WALLET_TUTORIAL_CONTENT": "Crear/recuperar una billetera en un teléfono fuera de línea.<br><br>Escanear el xpub para crear una billetera de solo-vigilar en un teléfono en línea.<br><br>Intente enviar y recibir con la billetera de solo-vigilar.",
