@@ -1345,6 +1345,9 @@ export class Wallet {
   }
 
   validateXprv(xprv: string): boolean {
+    if (!xprv) {
+      return false
+    }
     try {
       new bitcoincash.HDPrivateKey(xprv)
       return true
