@@ -195,7 +195,7 @@ export class SweepPage {
       return
     }
     if (await this.wallet.broadcastTx(hex, loader)) {
-      this.navCtrl.popToRoot()
+      this.navCtrl.pop()
     }
   }
 

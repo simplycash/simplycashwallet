@@ -65,4 +65,10 @@ export class WifPage {
     })
   }
 
+  pushSweepPage() {
+    this.navCtrl.push('SweepPage', {
+      wif: this.wif
+    })
+  }
+
 }
