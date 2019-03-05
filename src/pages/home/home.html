@@ -39,7 +39,7 @@
     </div>
 
     <div class="qrcode-container">
-      <div class="request-amount" [hidden]="!showRequestAmount">
+      <div class="request-amount" *ngIf="showRequestAmount">
         <my-amount #myAmount label="{{ 'REQUEST_AMOUNT' | translate }}" (satoshisChange)="amountChange($event)"></my-amount>
       </div>
       <img *ngIf="qrCodeURL" class="qrcode" [src]="qrCodeURL" (click)="showQRActions()"/>

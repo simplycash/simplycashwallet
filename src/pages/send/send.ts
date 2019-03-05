@@ -207,9 +207,9 @@ export class SendPage {
 
   validateSendDetails(): any[] {
     try {
-      let satoshis: number = this.myAmountEl.getSatoshis() //undefined -> drain
-      if (!(this.outputSum > 0) && satoshis <= 0) { //if manual input amount <= 0
-          throw new Error('invalid amount')
+      let satoshis: number = this.myAmountEl.getSatoshis()
+      if (!(this.outputSum > 0 || satoshis > 0)) { //predefined or input > 0
+        throw new Error('invalid amount')
       }
       let cacheBalance: number = this.wallet.getCacheBalance()
       if (satoshis > cacheBalance || cacheBalance === 0) {
@@ -268,7 +268,7 @@ export class SendPage {
   }
 
   async makeUnsignedTx(outputs: any[]) {
-    let drain: boolean = typeof this.myAmountEl.getSatoshis() === 'undefined'
+    let drain: boolean = this.myAmountEl.getSatoshis() === this.wallet.getCacheBalance()
     if (drain && !(await this.confirmDrain())) {
       return
     }
@@ -297,7 +297,7 @@ export class SendPage {
   }
 
   async signAndBroadcast(outputs: any[]) {
-    let drain: boolean = typeof this.myAmountEl.getSatoshis() === 'undefined'
+    let drain: boolean = this.myAmountEl.getSatoshis() === this.wallet.getCacheBalance()
 
     if (drain && !(await this.confirmDrain())) {
       return

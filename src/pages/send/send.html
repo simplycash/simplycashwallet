@@ -69,7 +69,7 @@
         type="text"
         readonly></ion-input>
     </ion-item>
-    <my-amount #myAmount placeholder="{{ 'MAX_AMOUNT_HINT' | translate }}"></my-amount>
+    <my-amount #myAmount [showMaxAmount]="true"></my-amount>
   </ion-list>
 
   <div text-center>

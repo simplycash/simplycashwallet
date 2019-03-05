@@ -14,3 +14,61 @@
 .list-ios > my-amount:last-child .item-block {
   border-bottom: 0px;
 }
+my-amount {
+  .max-amount-span {
+    color: #999;
+    pointer-events: auto;
+  }
+  .pad-outer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    background-color: #333;
+    color: white;
+    width: 100%;
+    overflow: hidden;
+    z-index: 1;
+  }
+  .pad-outer:after {
+    content: "";
+    display: block;
+    padding-bottom: 0;
+    transition: padding-bottom 0.2s;
+  }
+  .pad-outer[pad-is-shown]:after {
+    padding-bottom: 60%;
+  }
+  .pad-inner {
+    position: absolute;
+    width: 100%;
+  }
+  .pad-inner:after {
+    content: "";
+    display: block;
+    padding-bottom: 60%;
+  }
+  .pad {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+  .pad-row {
+    flex: 1;
+    display: flex;
+    flex-direction: row;
+  }
+  .pad-btn {
+    flex: 1;
+    display: flex;
+    text-align: center;
+    justify-content: center;
+    flex-flow: column wrap;
+    font-size: 2rem;
+  }
+  .pad-btn.pad-btn-active {
+    background-color: #444;
+  }
+
+}

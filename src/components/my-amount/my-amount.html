@@ -1,23 +1,51 @@
 <!-- Generated template for the MyAmountComponent component -->
+<div *ngIf="!fixedAmount" class="pad-outer" [attr.pad-is-shown]="isTyping ? '' : null">
+  <div class="pad-inner">
+    <div #pad class="pad"
+      (touchstart)="onPadTouchStart($event)"
+      (touchmove)="onPadTouchMove($event)"
+      (touchcancel)="onPadTouchCancel($event)"
+      (touchend)="onPadTouchEnd($event)"
+      (click)="onPadClick($event)">
+      <div class="pad-row">
+        <div class="pad-btn" data-btn="1">1</div>
+        <div class="pad-btn" data-btn="2">2</div>
+        <div class="pad-btn" data-btn="3">3</div>
+      </div>
+      <div class="pad-row">
+        <div class="pad-btn" data-btn="4">4</div>
+        <div class="pad-btn" data-btn="5">5</div>
+        <div class="pad-btn" data-btn="6">6</div>
+      </div>
+      <div class="pad-row">
+        <div class="pad-btn" data-btn="7">7</div>
+        <div class="pad-btn" data-btn="8">8</div>
+        <div class="pad-btn" data-btn="9">9</div>
+      </div>
+      <div class="pad-row">
+        <div class="pad-btn" data-btn=".">.</div>
+        <div class="pad-btn" data-btn="0">0</div>
+        <div class="pad-btn" data-btn="del" (press)="clear()">
+          <ion-icon name="backspace"></ion-icon>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 <ion-item>
-  <ion-label stacked color="primary">{{ label || ('AMOUNT' | translate) }}</ion-label>
+  <ion-label stacked color="primary">
+    {{ label || ('AMOUNT' | translate) }}
+    <span *ngIf="showMaxAmount && !fixedAmount" class="max-amount-span" (click)="enterMaxAmount()">
+      [{{ 'BALANCE' | translate }} {{ maxAmount }}]
+    </span>
+  </ion-label>
   <ion-input
     #amount
-    type="number"
+    type="text"
     [placeholder]="placeholder || ''"
-    [readonly]="fixedAmount ? '' : null"
-    (input)="amountInput($event)"
-    (ionChange)="amountChange($event)"
-    (ionFocus)="isTyping = true"
-    (ionBlur)="isTyping = false"></ion-input>
-    <button
-      *ngIf="!fixedAmount && isTyping"
-      class="custom-clear-btn"
-      ion-button clear item-end icon-only color="dark"
-      (touchstart)="clear()"
-      (mousedown)="clear()">
-      <ion-icon name="close"></ion-icon>
-    </button>
+    readonly
+    (ionFocus)="onAmountFocus()"
+    (ionBlur)="onAmountBlur()"></ion-input>
     <button ion-button outline item-end (click)="changeUnit()">
       {{ wallet.getPreferredUnit() }}
     </button>
