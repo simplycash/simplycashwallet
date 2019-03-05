@@ -30,7 +30,7 @@ export class SignPage {
   }
 
   ionViewDidLoad() {
-    this.myAmountEl.setFixedAmount(this.unsignedTx.satoshis)
+    this.myAmountEl.setFixedAmount(this.unsignedTx.satoshis.toString())
   }
 
   async signPreparedTx() {
