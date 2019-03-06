@@ -70,7 +70,6 @@ export class HomePage {
     public translate: TranslateService,
     public wallet: Wallet
   ) {
-    this.walletName = this.wallet.getCurrentWalletName()
     this.updateCallback = () => {
       this.refresh()
     }
@@ -99,6 +98,7 @@ export class HomePage {
   }
 
   ionViewWillEnter() {
+    this.walletName = this.wallet.getCurrentWalletName()
     this.wallet.subscribeUpdate(this.updateCallback)
     this.wallet.subscribePrice(this.priceCallback)
     this.priceCallback()
