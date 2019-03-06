@@ -45,7 +45,7 @@
       <img *ngIf="qrCodeURL" class="qrcode" [src]="qrCodeURL" (click)="showQRActions()"/>
     </div>
 
-    <div *ngIf="!clipboardContent && platform.is('cordova')" class="camera-field" (touchstart)="startScan()" (touchend)="stopScan()">
+    <div *ngIf="!clipboardContent && platform.is('cordova')" class="camera-field" (touchstart)="startScan()" (touchcancel)="stopScan()" (touchend)="stopScan()">
       <ion-icon name="md-camera"></ion-icon>
     </div>
 
