@@ -1,4 +1,4 @@
-<ion-header no-border>
+<ion-header no-border (click)="dummyFunction()">
 
   <ion-navbar color="primary">
     <ion-title *ngIf="allWallets.length > 1">{{ currentWallet }}</ion-title>
@@ -15,7 +15,7 @@
 
 </ion-header>
 
-<ion-content no-bounce>
+<ion-content no-bounce (click)="dummyFunction()">
 
   <ion-list>
     <ion-item hidden>

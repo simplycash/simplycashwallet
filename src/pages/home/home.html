@@ -1,4 +1,4 @@
-<ion-header no-border [attr.transparent]="isTransparent ? '' : null">
+<ion-header no-border [attr.transparent]="isTransparent ? '' : null" (click)="dummyFunction()">
   <ion-navbar color="primary">
     <ion-title (click)="walletSelection.open()">
       {{ wallet.getCurrentWalletName() }}
@@ -23,7 +23,7 @@
     </ion-buttons>
   </ion-navbar>
 </ion-header>
-<ion-content no-bounce [attr.transparent]="isTransparent ? '' : null">
+<ion-content no-bounce [attr.transparent]="isTransparent ? '' : null" (click)="dummyFunction()">
   <div class="flex-container">
 
     <div class="balance-container" (click)="wallet.toggleShowBalance()">

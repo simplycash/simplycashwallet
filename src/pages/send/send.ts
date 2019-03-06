@@ -510,4 +510,8 @@ export class SendPage {
     }
   }
 
+  dummyFunction() {
+    
+  }
+
 }

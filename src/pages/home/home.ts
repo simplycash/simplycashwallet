@@ -198,7 +198,7 @@ export class HomePage {
             if (this.showRequestAmount) {
               window.setTimeout(() => {
                 this.myAmountEl.setFocus()
-              }, 600)
+              }, 500)
             } else {
               this.myAmountEl.clear()
             }
@@ -592,6 +592,10 @@ export class HomePage {
     }).catch((err: any) => {
 
     })
+  }
+
+  dummyFunction() {
+
   }
 
 }

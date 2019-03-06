@@ -1,4 +1,4 @@
-import { Component, ElementRef, ViewChild, Input, Output, EventEmitter } from '@angular/core'
+import { Component, ElementRef, NgZone, ViewChild, Input, Output, EventEmitter } from '@angular/core'
 import { Platform } from 'ionic-angular'
 import { Wallet } from '../../providers/providers'
 
@@ -29,8 +29,13 @@ export class MyAmountComponent {
   public maxAmount: string
   public unregisterBackButtonAction: Function
   public padBtns: any[]
+  public windowClickListener: any
 
-  constructor(public platform: Platform, public wallet: Wallet) {
+  constructor(
+    public ngZone: NgZone,
+    public platform: Platform,
+    public wallet: Wallet
+  ) {
     this.preferredUnitCallback = (sym: string) => {
       this.updateInputField()
       this.updateMaxAmount()
@@ -46,6 +51,13 @@ export class MyAmountComponent {
     }
     this.updateCallback = () => {
       this.updateMaxAmount()
+    }
+    this.windowClickListener = (ev: any) => {
+      this.ngZone.run(() => {
+        if (!ev.target.matches('.pad-btn') && !ev.target.parentNode.matches('.pad-btn')) {
+          this.onAmountBlur()
+        }
+      })
     }
   }
 
@@ -127,22 +139,24 @@ export class MyAmountComponent {
   }
 
   setFocus() {
-    this.amountEl.setFocus()
+    this.onAmountFocus()
   }
 
   onAmountFocus() {
     if (this.fixedAmount) {
       return
     }
+    window.addEventListener('click', this.windowClickListener, true)
     this.isTyping = true
     this.unregisterBackButtonAction = this.platform.registerBackButtonAction(() => {
-      this.amountEl.setBlur()
+      this.onAmountBlur()
     })
     this.padBtns = this.padBtns || Array.from(this.padElRef.nativeElement.querySelectorAll('.pad-btn'))
     this.clear()
   }
 
   onAmountBlur() {
+    window.removeEventListener('click', this.windowClickListener, true)
     this.isTyping = false
     if (this.unregisterBackButtonAction) {
       this.unregisterBackButtonAction()
