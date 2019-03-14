@@ -37,7 +37,9 @@ export class MyAmountComponent {
     public wallet: Wallet
   ) {
     this.preferredUnitCallback = (sym: string) => {
-      this.updateInputField()
+      if (!this.isTyping) {
+        this.updateInputField()
+      }
       this.updateMaxAmount()
     }
     this.priceCallback = () => {
@@ -66,15 +68,35 @@ export class MyAmountComponent {
       this.fixedAmount = undefined
       this.fromUnit = undefined
     } else {
+      this.onAmountBlur()
       this.fixedAmount = a
       this.fromUnit = 'SATS'
-      if (this.unregisterBackButtonAction) {  // TODO:
-        this.unregisterBackButtonAction()
-      }
     }
     this.fromAmount = this.fixedAmount
     this.updateInputField()
     this.satoshisChange.emit(this.getSatoshis())
+  }
+
+  getAmountElValue(): string {
+    return this.amountEl.value.replace(/,/g, '')
+  }
+
+  setAmountElValue(value: string) {
+    if (value === '' || value === '--') {
+      this.amountEl.value = value
+      return
+    }
+    value = value.replace(/^0+/g, '')
+    if (value === '') {
+      this.amountEl.value = '0'
+      return
+    }
+    if (value.match(/^\d+(\.\d*)?$/g)) {
+      let a: string[] = value.split(/(?=\.)/g)
+      this.amountEl.value = a[0].split('').reverse().join('').match(/.{1,3}/g).join(',').split('').reverse().join('') + (a[1] || '')
+    } else if (value.match(/^\.\d*$/g)) {
+      this.amountEl.value = '0' + value
+    }
   }
 
   ngAfterViewInit() {
@@ -107,7 +129,7 @@ export class MyAmountComponent {
     } else {
       newValue = this.wallet.convertUnit(this.fromUnit, unit, this.fromAmount) || '--'
     }
-    this.amountEl.value = newValue
+    this.setAmountElValue(newValue)
   }
 
   updateMaxAmount() {
@@ -151,7 +173,7 @@ export class MyAmountComponent {
     this.unregisterBackButtonAction = this.platform.registerBackButtonAction(() => {
       this.onAmountBlur()
     })
-    this.padBtns = this.padBtns || Array.from(this.padElRef.nativeElement.querySelectorAll('.pad-btn'))
+    this.padBtns = Array.from(this.padElRef.nativeElement.querySelectorAll('.pad-btn'))
     this.clear()
   }
 
@@ -164,7 +186,7 @@ export class MyAmountComponent {
   }
 
   clear() {
-    this.amountEl.value = ''
+    this.setAmountElValue('')
     this.setFromAmount(undefined)
   }
 
@@ -223,21 +245,37 @@ export class MyAmountComponent {
 
   onPadClick(ev: any) {
     let btn: string = ev.target.dataset.btn
-    if (btn === 'del') {
-      this.amountEl.value = this.amountEl.value.slice(0, this.amountEl.value.length - 1)
+    if (btn === 'crypto') {
+      this.fromUnit = this.wallet.getPreferredCryptoUnit()
+      if (this.fromUnit !== this.wallet.getPreferredUnit()) {
+        this.changeUnit()
+      }
+    } else if (btn === 'fiat') {
+      this.fromUnit = this.wallet.getPreferredCurrency()
+      if (this.fromUnit !== this.wallet.getPreferredUnit()) {
+        this.changeUnit()
+      }
+    } else if (btn === 'empty') {
+      return
+    } else if (btn === 'hide') {
+      this.onAmountBlur()
+    } else if (btn === 'del') {
+      let v: string = this.getAmountElValue()
+      this.setAmountElValue(v.slice(0, Math.max(0, v.length - 1)))
     } else {
-      this.amountEl.value += btn
+      this.setAmountElValue(this.getAmountElValue() + btn)
     }
     this.fromUnit = this.wallet.getPreferredUnit()
-    if (!this.amountEl.value.match(/^\d+(\.\d*)?$/g) && !this.amountEl.value.match(/^\.\d+$/g)) {
+    let value: string = this.getAmountElValue()
+    if (!value.match(/^\d+(\.\d*)?$/g) && !value.match(/^\.\d+$/g)) {
       this.setFromAmount(undefined)
       return
     }
-    if (this.showMaxAmount && parseFloat(this.maxAmount) === parseFloat(this.amountEl.value)) {
+    if (this.showMaxAmount && parseFloat(this.maxAmount) === parseFloat(value)) {
       this.fromUnit = 'SATS'
       this.setFromAmount(this.wallet.getCacheBalance())
     } else {
-      this.setFromAmount(parseFloat(this.amountEl.value))
+      this.setFromAmount(parseFloat(value))
     }
   }
 

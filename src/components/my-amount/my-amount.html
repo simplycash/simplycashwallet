@@ -11,22 +11,32 @@
         <div class="pad-btn" data-btn="1">1</div>
         <div class="pad-btn" data-btn="2">2</div>
         <div class="pad-btn" data-btn="3">3</div>
+        <div class="pad-btn" data-btn="crypto" [class.pad-btn-dim]="wallet.getPreferredUnit() !== wallet.getPreferredCryptoUnit()">
+          {{ wallet.getPreferredCryptoUnit() }}
+        </div>
       </div>
       <div class="pad-row">
         <div class="pad-btn" data-btn="4">4</div>
         <div class="pad-btn" data-btn="5">5</div>
         <div class="pad-btn" data-btn="6">6</div>
+        <div class="pad-btn" data-btn="fiat" [class.pad-btn-dim]="wallet.getPreferredUnit() !== wallet.getPreferredCurrency()">
+          {{ wallet.getPreferredCurrency() }}
+        </div>
       </div>
       <div class="pad-row">
         <div class="pad-btn" data-btn="7">7</div>
         <div class="pad-btn" data-btn="8">8</div>
         <div class="pad-btn" data-btn="9">9</div>
+        <div class="pad-btn" data-btn="empty"></div>
       </div>
       <div class="pad-row">
         <div class="pad-btn" data-btn=".">.</div>
         <div class="pad-btn" data-btn="0">0</div>
         <div class="pad-btn" data-btn="del" (press)="clear()">
           <ion-icon name="backspace"></ion-icon>
+        </div>
+        <div class="pad-btn" data-btn="hide">
+          <ion-icon name="arrow-down"></ion-icon>
         </div>
       </div>
     </div>
