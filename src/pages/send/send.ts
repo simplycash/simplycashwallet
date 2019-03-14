@@ -143,12 +143,13 @@ export class SendPage {
     await this.wallet.switchWallet(this.currentWallet)
   }
 
-  confirmSend() {
+  confirmSend(satoshis: number) {
     return new Promise((resolve, reject) => {
       let ans: boolean = false
       let sendAlert = this.alertCtrl.create({
         enableBackdropDismiss: true,
         title: this.translate.instant('Q_SEND_NOW'),
+        message: this.wallet.convertUnit('SATS', this.wallet.getPreferredUnit(), satoshis.toString(), true) + ' ' + this.wallet.getPreferredUnit(),
         buttons: [{
           text: this.translate.instant('CANCEL')
         },
@@ -303,7 +304,7 @@ export class SendPage {
       return
     }
 
-    if (!drain && this.wallet.getPreferredProtection() === 'OFF' &&  !(await this.confirmSend())) {
+    if (!drain && this.wallet.getPreferredProtection() === 'OFF' &&  !(await this.confirmSend(outputs.map(o => o.satoshis).reduce((a, c) => a + c)))) {
       return
     }
 
@@ -511,7 +512,7 @@ export class SendPage {
   }
 
   dummyFunction() {
-    
+
   }
 
 }
