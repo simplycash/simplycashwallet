@@ -133,7 +133,7 @@ export class MyAmountComponent {
   }
 
   updateMaxAmount() {
-    this.maxAmount = this.wallet.convertUnit('SATS', this.wallet.getPreferredUnit(), this.wallet.getCacheBalance().toString()) || '--'
+    this.maxAmount = this.wallet.convertUnit('SATS', this.wallet.getPreferredUnit(), this.wallet.getCacheBalance().toString(), true) || '--'
   }
 
   enterMaxAmount() {
@@ -271,7 +271,7 @@ export class MyAmountComponent {
       this.setFromAmount(undefined)
       return
     }
-    if (this.showMaxAmount && parseFloat(this.maxAmount) === parseFloat(value)) {
+    if (this.showMaxAmount && parseFloat(this.maxAmount.replace(/,/g, '')) === parseFloat(value)) {
       this.fromUnit = 'SATS'
       this.setFromAmount(this.wallet.getCacheBalance())
     } else {
