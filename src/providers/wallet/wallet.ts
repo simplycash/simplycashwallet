@@ -1066,7 +1066,11 @@ export class Wallet {
         if (tx.delta <= 0) {
           return
         }
-        let msg: string = `${this.translate.instant('RECEIVED')} ${(this.convertUnit('SATS', unit, tx.delta.toString(), true) || '').replace(/\.?0+$/, '')} ${unit}`
+        let receivedAmount: string = this.convertUnit('SATS', unit, tx.delta.toString(), true) || ''
+        if (receivedAmount.match(/^\d+\.\d+$/g)) {
+          receivedAmount = receivedAmount.replace(/\.?0+$/, '')
+        }
+        let msg: string = `${this.translate.instant('RECEIVED')} ${receivedAmount} ${unit}`
         if (isCordova) {
           this.localNotifications.schedule({
             id: this.notificationId++,
