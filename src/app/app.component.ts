@@ -41,9 +41,9 @@ export class MyApp {
     public wallet: Wallet
   ) {
     platform.ready().then(async () => {
-      if (this.platform.is('android')) {
-        this.statusBar.backgroundColorByHexString("#00000000");
-      }
+      // if (this.platform.is('android')) {
+      //   this.statusBar.backgroundColorByHexString("#00000000");
+      // }
       if (this.platform.is('cordova')) {
         try {
           this.localNotifications.on('click').subscribe((notification) => {

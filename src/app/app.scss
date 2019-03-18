@@ -19,15 +19,15 @@ ion-app {
   background-color: transparent !important;
 }
 
-ion-app.platform-android:not(.platform-mobileweb) {
-  ion-header {
-    padding-top: 20px;
-    background-color: color($colors, primary);
-  }
-  page-home ion-header {
-    background-color: transparent;
-  }
-}
+// ion-app.platform-android:not(.platform-mobileweb) {
+//   ion-header {
+//     padding-top: $cordova-md-statusbar-padding;
+//     background-color: color($colors, primary);
+//   }
+//   page-home ion-header {
+//     background-color: transparent;
+//   }
+// }
 
 .content .scroll-content {
     overflow-y: auto;

@@ -2,6 +2,7 @@ import { ChangeDetectorRef, Component, NgZone, ViewChild } from '@angular/core'
 import { ActionSheetController, AlertController, App, IonicPage, LoadingController, NavController, Platform, PopoverController, ToastController } from 'ionic-angular'
 import { QRScanner, QRScannerStatus } from '@ionic-native/qr-scanner'
 import { SocialSharing } from '@ionic-native/social-sharing'
+import { StatusBar } from '@ionic-native/status-bar'
 import { Clipboard } from '@ionic-native/clipboard'
 import * as webClipboard from 'clipboard-polyfill'
 // import { Keyboard } from '@ionic-native/keyboard'
@@ -66,6 +67,7 @@ export class HomePage {
     public popoverCtrl: PopoverController,
     public qrScanner: QRScanner,
     public socialSharing: SocialSharing,
+    public statusBar: StatusBar,
     public toastCtrl: ToastController,
     public translate: TranslateService,
     public wallet: Wallet
@@ -260,11 +262,17 @@ export class HomePage {
           await this.stopScan(true)
           this.scanState = 'processing'
           await this.handleQRText(text)
+          if (this.platform.is('android')) {
+            this.statusBar.backgroundColorByHexString("#006944")
+          }
           this.isTransparent = false
           this.ref.detectChanges()
           await this.destroyScanner()
         })
       })
+      if (this.platform.is('android')) {
+        this.statusBar.backgroundColorByHexString("#000000")
+      }
       this.isTransparent = true
       this.qrScanner.show()
     } catch (err) {
@@ -316,6 +324,9 @@ export class HomePage {
     this.pauseSub.unsubscribe()
     this.scanSub.unsubscribe() // stop scanning
     if (!keepPreview) {
+      if (this.platform.is('android')) {
+        this.statusBar.backgroundColorByHexString("#006944")
+      }
       this.isTransparent = false
       this.scanState = 'willDestroy'
       window.setTimeout(() => {
