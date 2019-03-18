@@ -256,9 +256,9 @@ export class HomePage {
         })
       })
       this.scanSub = this.qrScanner.scan().subscribe((text: string) => {
-        this.scanState = 'processing'
         this.ngZone.run(async () => {
           await this.stopScan(true)
+          this.scanState = 'processing'
           await this.handleQRText(text)
           this.isTransparent = false
           this.ref.detectChanges()
