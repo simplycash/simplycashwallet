@@ -86,7 +86,7 @@ export class MorePage {
       let o: any = this.wallet.parseRecoveryString(m)
       let message: string
       if (o.xprv) {
-        message = 'account xprv:<br>' + o.xprv
+        message = 'Account XPRV:<br>' + o.xprv
       } else {
         message = this.translate.instant('RECOVERY_PHRASE') + ':<br>' + o.mnemonic + '<br><br>'
         if (o.passphrase) {
