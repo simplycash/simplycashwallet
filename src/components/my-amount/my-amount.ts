@@ -57,7 +57,7 @@ export class MyAmountComponent {
     this.windowClickListener = (ev: any) => {
       this.ngZone.run(() => {
         if (!ev.target.matches('.pad-btn') && !ev.target.parentNode.matches('.pad-btn')) {
-          this.onAmountBlur()
+          this.setBlur()
         }
       })
     }
@@ -68,7 +68,7 @@ export class MyAmountComponent {
       this.fixedAmount = undefined
       this.fromUnit = undefined
     } else {
-      this.onAmountBlur()
+      this.setBlur()
       this.fixedAmount = a
       this.fromUnit = 'SATS'
     }
@@ -161,23 +161,19 @@ export class MyAmountComponent {
   }
 
   setFocus() {
-    this.onAmountFocus()
-  }
-
-  onAmountFocus() {
     if (this.fixedAmount) {
       return
     }
     window.addEventListener('click', this.windowClickListener, true)
     this.isTyping = true
     this.unregisterBackButtonAction = this.platform.registerBackButtonAction(() => {
-      this.onAmountBlur()
+      this.setBlur()
     })
     this.padBtns = Array.from(this.padElRef.nativeElement.querySelectorAll('.pad-btn'))
     this.clear()
   }
 
-  onAmountBlur() {
+  setBlur() {
     window.removeEventListener('click', this.windowClickListener, true)
     this.isTyping = false
     if (this.unregisterBackButtonAction) {
@@ -256,9 +252,9 @@ export class MyAmountComponent {
         this.changeUnit()
       }
     } else if (btn === 'empty') {
-      return
+
     } else if (btn === 'hide') {
-      this.onAmountBlur()
+      this.setBlur()
     } else if (btn === 'del') {
       let v: string = this.getAmountElValue()
       this.setAmountElValue(v.slice(0, Math.max(0, v.length - 1)))
@@ -269,9 +265,7 @@ export class MyAmountComponent {
     let value: string = this.getAmountElValue()
     if (!value.match(/^\d+(\.\d*)?$/g) && !value.match(/^\.\d+$/g)) {
       this.setFromAmount(undefined)
-      return
-    }
-    if (this.showMaxAmount && parseFloat(this.maxAmount.replace(/,/g, '')) === parseFloat(value)) {
+    } else if (this.showMaxAmount && parseFloat(this.maxAmount.replace(/,/g, '')) === parseFloat(value)) {
       this.fromUnit = 'SATS'
       this.setFromAmount(this.wallet.getCacheBalance())
     } else {

@@ -54,7 +54,7 @@
     type="text"
     [placeholder]="placeholder || ''"
     readonly
-    (click)="onAmountFocus()"></ion-input>
+    (click)="setFocus()"></ion-input>
     <button ion-button outline item-end (click)="changeUnit()">
       {{ wallet.getPreferredUnit() }}
     </button>
