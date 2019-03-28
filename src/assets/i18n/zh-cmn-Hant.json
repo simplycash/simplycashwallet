@@ -3,7 +3,7 @@
   "SHARE": "分享",
   "DELETE": "刪除",
   "COLD_WALLET_TUTORIAL": "冷錢包指南",
-  "COLD_WALLET_TUTORIAL_CONTENT": "在離線手機上創建/恢復錢包。<br><br>使用在線手機掃描XPUB創建監視錢包。<br><br>嘗試使用監視錢包收發。",
+  "COLD_WALLET_TUTORIAL_CONTENT": "在離線手機上創建/恢復錢包。<br><br>使用在線手機掃描XPUB創建觀察錢包。<br><br>嘗試使用觀察錢包收發。",
   "SCAN_WITH_COLD": "使用冷錢包掃描",
   "SCAN_WITH_HOT": "使用熱錢包掃描",
   "ERR_INVALID_XPUB": "XPUB 無效",
