@@ -1714,7 +1714,7 @@ export class Wallet {
         Math.max(0, this.getFinalChangeAddressIndex() - 39)
       ]
       availableUtxos.forEach((u) => {
-        if (u.path[1] < limits[u.path[0]]) {
+        if (u.path[1] < limits[u.path[0]] && agedUtxos.length < 10) {
           agedUtxos.push(u)
           agedAmount += u.satoshis
         } else {
