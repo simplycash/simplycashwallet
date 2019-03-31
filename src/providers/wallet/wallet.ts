@@ -1782,7 +1782,7 @@ export class Wallet {
         _outputs.forEach((o) => {
           ustx.addOutput(new bsv.Transaction.Output(o))
         })
-        hex_tentative = this.signTx(ustx, availableKeys)
+        hex_tentative = await this.signTx(ustx, availableKeys)
         fee_required = hex_tentative.length / 2
       } else {
         fee_required = 149 * utxos.length + 34 * _outputs.length + 10
@@ -1831,8 +1831,34 @@ export class Wallet {
     return await this._makeTx([output], true, info.utxos, keys)
   }
 
-  signTx(ustx: bsv.Transaction, keys: bsv.PrivateKey[]): string {
-    return ustx.sign(keys).serialize({
+  async signTx(ustx: bsv.Transaction, keys: bsv.PrivateKey[]): Promise<string> {
+    if (!ustx.hasAllUtxoInfo()) {
+      throw new Error('invalid utxo')
+    }
+    let n: number = 0
+    for (let privKey of keys) {
+      privKey = new bsv.PrivateKey(privKey)
+      let sigtype = bsv.crypto.Signature.SIGHASH_ALL | bsv.crypto.Signature.SIGHASH_FORKID
+      let transaction = ustx
+      let results = []
+      let hashData = bsv.crypto.Hash.sha256ripemd160(privKey.publicKey.toBuffer())
+      for (let index = 0; index < transaction.inputs.length; index++) {
+        let sigs = transaction.inputs[index].getSignatures(transaction, privKey, index, sigtype, hashData)
+        for (let signature of sigs) {
+          results.push(signature)
+          if (n === 9) {
+            n = 0
+            await this.delay(0)
+          } else {
+            n++
+          }
+        }
+      }
+      results.forEach((signature) => {
+        transaction.applySignature(signature)
+      })
+    }
+    return ustx.serialize({
       disableDustOutputs: true,
       disableSmallFees: true
     })
@@ -1845,7 +1871,7 @@ export class Wallet {
       ustx.addOutput(new bsv.Transaction.Output(output))
     })
     let ak: bsv.PrivateKey[] = this.getPrivateKeys(tx.inputs.map(u => u.path), m)
-    tx.hex = this.signTx(ustx, ak)
+    tx.hex = await this.signTx(ustx, ak)
     return tx
   }
 
