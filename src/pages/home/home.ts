@@ -160,8 +160,9 @@ export class HomePage {
 
   async onWalletSelectionChange(ev) {
     if (ev === '') {
-      await this.wallet.promptForRecovery()
-      this.walletName = this.wallet.getCurrentWalletName()
+      await this.wallet.promptForRecovery().then(() => {
+        this.walletName = this.wallet.getCurrentWalletName()
+      })
     } else if (ev !== this.wallet.getCurrentWalletName()) {
       await this.wallet.switchWallet(ev)
     }
@@ -394,7 +395,9 @@ export class HomePage {
       return true
     }
     if (this.wallet.validateMnemonic(text) || this.wallet.validateXprv(text) || this.wallet.validateXpub(text)) {
-      this.wallet.promptForRecovery(text) // no await
+      this.wallet.promptForRecovery(text).then(() => {
+        this.walletName = this.wallet.getCurrentWalletName()
+      }) // no await
       return true
     }
     if (this.handleUnsignedTx(text)) {
