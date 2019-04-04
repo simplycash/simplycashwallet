@@ -11,9 +11,7 @@ import { LocalNotifications } from '@ionic-native/local-notifications'
 import { SplashScreen } from '@ionic-native/splash-screen'
 import 'rxjs/add/operator/timeout'
 import QRCode from 'qrcode'
-import * as bchaddr from 'bchaddrjs'
-import * as bsv from 'bsv'
-import * as Mnemonic from 'bsv/mnemonic'
+import * as bitcoincash from 'bitcoincashjs'
 // import * as bs58check from 'bs58check'
 import io from 'socket.io-client'
 import * as protobuf from 'protobufjs'
@@ -508,15 +506,11 @@ export class Wallet {
   }
 
   getAddressFormat(address: string): string {
-    try {
-      if (bchaddr.isLegacyAddress(address)) {
-        return 'legacy'
-      }
-      if (bchaddr.isCashAddress(address)) {
-        return 'cashaddr'
-      }
-    } catch (err) {
-
+    if (this.validateAddress(address, 'legacy')) {
+      return 'legacy'
+    }
+    if (this.validateAddress(address, 'cashaddr')) {
+      return 'cashaddr'
     }
     return undefined
   }
@@ -529,11 +523,22 @@ export class Wallet {
     if (from === 'cashaddr' && address.indexOf('bitcoincash:') !== 0) {
       address = 'bitcoincash:' + address
     }
-    if (to === 'legacy') {
-      return bchaddr.toLegacyAddress(address)
-    }
+    let result: string = bitcoincash.Address.fromString(address, '', '', from).toString(to)
     if (to === 'cashaddr') {
-      return bchaddr.toCashAddress(address).slice(12)
+      result = result.slice(12)
+    }
+    return result
+  }
+
+  validateAddress(address: string, format?: string): boolean {
+    try {
+      if (format === 'cashaddr' && address.indexOf('bitcoincash:') !== 0) {
+        address = 'bitcoincash:' + address
+      }
+      bitcoincash.Address.fromString(address, '', '', format || 'legacy')
+      return true
+    } catch (err) {
+      return false
     }
   }
 
@@ -644,11 +649,11 @@ export class Wallet {
     if (mnemonicOrXprvOrXpub && mnemonicOrXprvOrXpub.match(/^xpub/g)) {
       encrypted = undefined
       xpub = mnemonicOrXprvOrXpub
-      addresses = this.generateAddressesFromPublicKey(new bsv.HDPublicKey(xpub))
+      addresses = this.generateAddressesFromPublicKey(new bitcoincash.HDPublicKey(xpub))
     } else {
       let m: string = this.makeRecoveryString(mnemonicOrXprvOrXpub, path, passphrase)
-      let hdPrivateKey: bsv.HDPrivateKey = this.getHDPrivateKeyFromRecoveryString(m)
-      let hdPublicKey: bsv.HDPublicKey = hdPrivateKey.hdPublicKey
+      let hdPrivateKey: bitcoincash.HDPrivateKey = this.getHDPrivateKeyFromRecoveryString(m)
+      let hdPublicKey: bitcoincash.HDPublicKey = hdPrivateKey.hdPublicKey
       encrypted = this._encryptText(m, this.DUMMY_KEY)
       xpub = hdPublicKey.toString()
       addresses = this.generateAddressesFromPrivateKey(hdPrivateKey)
@@ -1215,10 +1220,10 @@ export class Wallet {
     if (pair.receive === currentWallet.addresses.receive.length - 1 && pair.change === currentWallet.addresses.change.length - 1) {
       return newAddresses
     }
-    let hdPublicKey: bsv.HDPublicKey = this.getHDPublicKey(currentWallet)
-    let d: bsv.HDPublicKey[] = [hdPublicKey.deriveChild(0), hdPublicKey.deriveChild(1)]
-    // let hdPrivateKey: bsv.HDPrivateKey = this.getHDPrivateKeyFromRecoveryString(this.getRecoveryString())
-    // let d: bsv.HDPrivateKey[] = [hdPrivateKey.deriveChild(0), hdPrivateKey.deriveChild(1)]
+    let hdPublicKey: bitcoincash.HDPublicKey = this.getHDPublicKey(currentWallet)
+    let d: bitcoincash.HDPublicKey[] = [hdPublicKey.deriveChild(0), hdPublicKey.deriveChild(1)]
+    // let hdPrivateKey: bitcoincash.HDPrivateKey = this.getHDPrivateKeyFromRecoveryString(this.getRecoveryString())
+    // let d: bitcoincash.HDPrivateKey[] = [hdPrivateKey.deriveChild(0), hdPrivateKey.deriveChild(1)]
     for (let i: number = currentWallet.addresses.receive.length; i <= pair.receive; i++) {
       await this.delay(0)
       newAddresses.receive.push(d[0].deriveChild(i).publicKey.toAddress().toString())
@@ -1289,11 +1294,11 @@ export class Wallet {
   }
 
   createMnemonic(): string {
-    return new Mnemonic(crypto.randomBytes(16)).phrase
+    return new bitcoincash.Mnemonic(crypto.randomBytes(16)).phrase
   }
 
-  generateAddressesFromPrivateKey(hdPrivateKey: bsv.HDPrivateKey): IAddresses {
-    let d: bsv.HDPrivateKey[] = [hdPrivateKey.deriveChild(0), hdPrivateKey.deriveChild(1)]
+  generateAddressesFromPrivateKey(hdPrivateKey: bitcoincash.HDPrivateKey): IAddresses {
+    let d: bitcoincash.HDPrivateKey[] = [hdPrivateKey.deriveChild(0), hdPrivateKey.deriveChild(1)]
     let addresses: IAddresses = { receive: [], change: [] }
     for (let i: number = 0; i < 20; i++) {
       addresses.receive[i] = d[0].deriveChild(i).privateKey.toAddress().toString()
@@ -1302,8 +1307,8 @@ export class Wallet {
     return addresses
   }
 
-  generateAddressesFromPublicKey(hdPublicKey: bsv.HDPublicKey): IAddresses {
-    let d: bsv.HDPublicKey[] = [hdPublicKey.deriveChild(0), hdPublicKey.deriveChild(1)]
+  generateAddressesFromPublicKey(hdPublicKey: bitcoincash.HDPublicKey): IAddresses {
+    let d: bitcoincash.HDPublicKey[] = [hdPublicKey.deriveChild(0), hdPublicKey.deriveChild(1)]
     let addresses: IAddresses = { receive: [], change: [] }
     for (let i: number = 0; i < 20; i++) {
       addresses.receive[i] = d[0].deriveChild(i).publicKey.toAddress().toString()
@@ -1312,12 +1317,12 @@ export class Wallet {
     return addresses
   }
 
-  getHDPrivateKeyFromRecoveryString(m: string): bsv.HDPrivateKey {
+  getHDPrivateKeyFromRecoveryString(m: string): bitcoincash.HDPrivateKey {
     let o: IRecoveryInfo = this.parseRecoveryString(m)
     if (o.xprv) {
-      return new bsv.HDPrivateKey(o.xprv)
+      return new bitcoincash.HDPrivateKey(o.xprv)
     }
-    return new Mnemonic(o.mnemonic).toHDPrivateKey(o.passphrase).deriveChild(o.path)
+    return new bitcoincash.Mnemonic(o.mnemonic).toHDPrivateKey(o.passphrase).deriveChild(o.path)
   }
 
   makeRecoveryString(mnemonicOrXprv?: string, path?: string, passphrase?: string): string {
@@ -1346,7 +1351,7 @@ export class Wallet {
 
   validateMnemonic(m: string): boolean {
     try {
-      return Mnemonic.isValid(m)
+      return bitcoincash.Mnemonic.isValid(m)
     } catch (err) {
       return false
     }
@@ -1357,7 +1362,7 @@ export class Wallet {
       return false
     }
     try {
-      new bsv.HDPrivateKey(xprv)
+      new bitcoincash.HDPrivateKey(xprv)
       return true
     } catch (err) {
       return false
@@ -1366,7 +1371,7 @@ export class Wallet {
 
   validateXpub(xpub: string): boolean {
     try {
-      new bsv.HDPublicKey(xpub)
+      new bitcoincash.HDPublicKey(xpub)
       return true
     } catch (err) {
       return false
@@ -1379,7 +1384,7 @@ export class Wallet {
       return false
     }
     try {
-      new bsv.PrivateKey(wif)
+      new bitcoincash.PrivateKey(wif)
       return true
     } catch (err) {
       return false
@@ -1409,11 +1414,11 @@ export class Wallet {
 
   scriptFromAddress(address: string): string {
     try {
-      let a: bsv.Address = new bsv.Address(address)
+      let a: bitcoincash.Address = new bitcoincash.Address(address)
       if (a.isPayToPublicKeyHash()) {
-        return bsv.Script.buildPublicKeyHashOut(a).toHex()
+        return bitcoincash.Script.buildPublicKeyHashOut(a).toHex()
       } else if (a.isPayToScriptHash()) {
-        return bsv.Script.buildScriptHashOut(a).toHex()
+        return bitcoincash.Script.buildScriptHashOut(a).toHex()
       } else {
         throw new Error('invalid address')
       }
@@ -1476,9 +1481,9 @@ export class Wallet {
 
   //getters
 
-  getHDPublicKey(currentWallet?: IWallet): bsv.HDPublicKey {
+  getHDPublicKey(currentWallet?: IWallet): bitcoincash.HDPublicKey {
     currentWallet = currentWallet || this.currentWallet
-    return new bsv.HDPublicKey(currentWallet.keys.xpub)
+    return new bitcoincash.HDPublicKey(currentWallet.keys.xpub)
   }
 
   getXpub(): string {
@@ -1612,7 +1617,7 @@ export class Wallet {
   }
 
   async getInfoFromWIF(wif: string): Promise<IWifInfo> {
-    let sk: bsv.PrivateKey = new bsv.PrivateKey(wif)
+    let sk: bitcoincash.PrivateKey = new bitcoincash.PrivateKey(wif)
     let address: string = sk.toAddress().toString()
     let result: any = await this.apiWS('utxos', { address: address })
     let utxos: IUtxo[] = result.map((obj: IUtxo) => {
@@ -1671,9 +1676,9 @@ export class Wallet {
     return this.currentWallet.cache.utxos.slice()
   }
 
-  getPrivateKeys(paths: [number, number][], m: string): bsv.PrivateKey[] {
-    let hdPrivateKey: bsv.HDPrivateKey = this.getHDPrivateKeyFromRecoveryString(m)
-    let d: bsv.HDPrivateKey[] = [hdPrivateKey.deriveChild(0), hdPrivateKey.deriveChild(1)]
+  getPrivateKeys(paths: [number, number][], m: string): bitcoincash.PrivateKey[] {
+    let hdPrivateKey: bitcoincash.HDPrivateKey = this.getHDPrivateKeyFromRecoveryString(m)
+    let d: bitcoincash.HDPrivateKey[] = [hdPrivateKey.deriveChild(0), hdPrivateKey.deriveChild(1)]
     return paths.map(path => d[path[0]].deriveChild(path[1]).privateKey)
   }
 
@@ -1689,7 +1694,7 @@ export class Wallet {
 
   async makeSignedTx(outputs: IOutput[], drain: boolean, m: string): Promise<ITransaction> {
     let au: IUtxo[] = this.getCacheUtxos()
-    let ak: bsv.PrivateKey[] = this.getPrivateKeys(au.map(u => u.path), m)
+    let ak: bitcoincash.PrivateKey[] = this.getPrivateKeys(au.map(u => u.path), m)
     return await this._makeTx(outputs, drain, au, ak)
   }
 
@@ -1698,7 +1703,7 @@ export class Wallet {
     return await this._makeTx(outputs, drain, au, [])
   }
 
-  async _makeTx(outputs: IOutput[], drain: boolean, availableUtxos: IUtxo[], availableKeys: bsv.PrivateKey[]): Promise<ITransaction> {
+  async _makeTx(outputs: IOutput[], drain: boolean, availableUtxos: IUtxo[], availableKeys: bitcoincash.PrivateKey[]): Promise<ITransaction> {
     let satoshis: number = drain ? undefined : outputs.map(output => output.satoshis).reduce((acc, curr) => acc + curr)
     if (availableUtxos.length === 0) {
       throw new Error('not enough fund')
@@ -1777,10 +1782,10 @@ export class Wallet {
         }
       }
       if (availableKeys.length > 0) {
-        let ustx: bsv.Transaction = new bsv.Transaction()
-          .from(utxos.map(utxo => new bsv.Transaction.UnspentOutput(utxo)))
+        let ustx: bitcoincash.Transaction = new bitcoincash.Transaction()
+          .from(utxos.map(utxo => new bitcoincash.Transaction.UnspentOutput(utxo)))
         _outputs.forEach((o) => {
-          ustx.addOutput(new bsv.Transaction.Output(o))
+          ustx.addOutput(new bitcoincash.Transaction.Output(o))
         })
         hex_tentative = await this.signTx(ustx, availableKeys)
         fee_required = hex_tentative.length / 2
@@ -1820,7 +1825,7 @@ export class Wallet {
   }
 
   async makeSweepTx(wif: string, info?: IWifInfo): Promise<ITransaction> {
-    let keys: bsv.PrivateKey[] = [new bsv.PrivateKey(wif)]
+    let keys: bitcoincash.PrivateKey[] = [new bitcoincash.PrivateKey(wif)]
     if (!info) {
       info = await this.getInfoFromWIF(wif)
     }
@@ -1831,17 +1836,17 @@ export class Wallet {
     return await this._makeTx([output], true, info.utxos, keys)
   }
 
-  async signTx(ustx: bsv.Transaction, keys: bsv.PrivateKey[]): Promise<string> {
+  async signTx(ustx: bitcoincash.Transaction, keys: bitcoincash.PrivateKey[]): Promise<string> {
     if (!ustx.hasAllUtxoInfo()) {
       throw new Error('invalid utxo')
     }
     let n: number = 0
     for (let privKey of keys) {
-      privKey = new bsv.PrivateKey(privKey)
-      let sigtype = bsv.crypto.Signature.SIGHASH_ALL | bsv.crypto.Signature.SIGHASH_FORKID
+      privKey = new bitcoincash.PrivateKey(privKey)
+      let sigtype = bitcoincash.crypto.Signature.SIGHASH_ALL | bitcoincash.crypto.Signature.SIGHASH_FORKID
       let transaction = ustx
       let results = []
-      let hashData = bsv.crypto.Hash.sha256ripemd160(privKey.publicKey.toBuffer())
+      let hashData = bitcoincash.crypto.Hash.sha256ripemd160(privKey.publicKey.toBuffer())
       for (let index = 0; index < transaction.inputs.length; index++) {
         let sigs = transaction.inputs[index].getSignatures(transaction, privKey, index, sigtype, hashData)
         for (let signature of sigs) {
@@ -1865,20 +1870,20 @@ export class Wallet {
   }
 
   async signPreparedTx(tx: ITransaction, m: string): Promise<ITransaction> {
-    let ustx: bsv.Transaction = new bsv.Transaction()
-      .from(tx.inputs.map(utxo => new bsv.Transaction.UnspentOutput(utxo)))
+    let ustx: bitcoincash.Transaction = new bitcoincash.Transaction()
+      .from(tx.inputs.map(utxo => new bitcoincash.Transaction.UnspentOutput(utxo)))
     tx.outputs.forEach((output) => {
-      ustx.addOutput(new bsv.Transaction.Output(output))
+      ustx.addOutput(new bitcoincash.Transaction.Output(output))
     })
-    let ak: bsv.PrivateKey[] = this.getPrivateKeys(tx.inputs.map(u => u.path), m)
+    let ak: bitcoincash.PrivateKey[] = this.getPrivateKeys(tx.inputs.map(u => u.path), m)
     tx.hex = await this.signTx(ustx, ak)
     return tx
   }
 
   validatePreparedTx(tx: ITransaction): void {
     let toAmount: number = 0
-    let hdPublicKey: bsv.HDPublicKey = this.getHDPublicKey()
-    let d: bsv.HDPublicKey[] = [hdPublicKey.deriveChild(0), hdPublicKey.deriveChild(1)]
+    let hdPublicKey: bitcoincash.HDPublicKey = this.getHDPublicKey()
+    let d: bitcoincash.HDPublicKey[] = [hdPublicKey.deriveChild(0), hdPublicKey.deriveChild(1)]
     tx.inputs.forEach(i => {
       let address: string = d[i.path[0]].deriveChild(i.path[1]).publicKey.toAddress().toString()
       if (this.scriptFromAddress(address) !== i.script) {
@@ -1902,7 +1907,7 @@ export class Wallet {
 
   getRecipientsFromTx(tx: ITransaction): string[] {
     return tx.outputs.filter(o => typeof o.path === 'undefined').map(o => {
-      let a: bsv.Address = (new bsv.Script(o.script)).toAddress()
+      let a: bitcoincash.Address = (new bitcoincash.Script(o.script)).toAddress()
       return a ? a.toString() : 'unknown'
     })
   }
@@ -2131,7 +2136,7 @@ export class Wallet {
     let Payment: any = root.lookupType("payments.Payment")
     let output: any = Output.create({
       amount: 0,
-      script: bsv.Script.buildPublicKeyHashOut(new bsv.Address(refundAddress)).toBuffer()
+      script: bitcoincash.Script.buildPublicKeyHashOut(new bitcoincash.Address(refundAddress)).toBuffer()
     })
     let payment: any = Payment.create({
       merchantData: merchantData,
@@ -2322,7 +2327,7 @@ export class Wallet {
     let length: number = Math.floor(entropy.length * Math.log2(base))
     length = (length - length % 32) / 8
     let buf: Buffer = new BN(entropy, base).toArrayLike(Buffer, 'be', length + 4).slice(-length)
-    return new Mnemonic(buf).phrase
+    return new bitcoincash.Mnemonic(buf).phrase
   }
 
   r_pathIsValid(path: string): boolean {
