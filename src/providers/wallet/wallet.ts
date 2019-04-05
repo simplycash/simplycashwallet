@@ -1709,9 +1709,16 @@ export class Wallet {
   }
 
   getPrivateKeys(paths: [number, number][], m: string): bitcoincash.PrivateKey[] {
+    let _paths: [number, number][] = []
+    paths.forEach((p) => {
+      let i: number = _paths.findIndex(_p => _p[0] === p[0] && _p[1] === p[1])
+      if (i === -1) {
+        _paths.push(p)
+      }
+    })
     let hdPrivateKey: bitcoincash.HDPrivateKey = this.getHDPrivateKeyFromRecoveryString(m)
     let d: bitcoincash.HDPrivateKey[] = [hdPrivateKey.deriveChild(0), hdPrivateKey.deriveChild(1)]
-    return paths.map(path => d[path[0]].deriveChild(path[1]).privateKey)
+    return _paths.map(p => d[p[0]].deriveChild(p[1]).privateKey)
   }
 
   getWIF(path: [number, number], m: string): string {
@@ -1877,12 +1884,11 @@ export class Wallet {
       privKey = new bitcoincash.PrivateKey(privKey)
       let sigtype = bitcoincash.crypto.Signature.SIGHASH_ALL | bitcoincash.crypto.Signature.SIGHASH_FORKID
       let transaction = ustx
-      let results = []
       let hashData = bitcoincash.crypto.Hash.sha256ripemd160(privKey.publicKey.toBuffer())
       for (let index = 0; index < transaction.inputs.length; index++) {
         let sigs = transaction.inputs[index].getSignatures(transaction, privKey, index, sigtype, hashData)
         for (let signature of sigs) {
-          results.push(signature)
+          transaction.applySignature(signature)
           if (n === 9) {
             n = 0
             await this.delay(0)
@@ -1891,9 +1897,6 @@ export class Wallet {
           }
         }
       }
-      results.forEach((signature) => {
-        transaction.applySignature(signature)
-      })
     }
     return ustx.serialize({
       disableDustOutputs: true,
