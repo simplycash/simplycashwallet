@@ -1367,6 +1367,16 @@ export class Wallet {
     }
   }
 
+  formatMnemonic(s: string): string {
+    s = s.trim()
+    s = s.replace(/\s+/g, ' ')
+    if (s.indexOf(' ') === -1) {
+      s = s.split('').join(' ')
+    }
+    s = s.toLowerCase()
+    return s
+  }
+
   validateMnemonic(m: string): boolean {
     try {
       return bitcoincash.Mnemonic.isValid(m)
@@ -2309,8 +2319,8 @@ export class Wallet {
   }
 
   r_validatedMnemonicOnly(m: string): string {
-    m = m.trim()
     let errMessage: string
+    m = this.formatMnemonic(m)
     if (!this.validateMnemonic(m)) {
       errMessage = this.translate.instant('ERR_INVALID_RECOVERY_PHRASE')
     }
@@ -2327,8 +2337,8 @@ export class Wallet {
   }
 
   r_validatedMnemonicOrXprvOrXpub(m: string): string {
-    m = m.trim()
     let errMessage: string
+    m = m.trim()
     if (m.match(/^xpub.+$/gi)) {
       if (!this.validateXpub(m)) {
         errMessage = this.translate.instant('ERR_INVALID_XPUB')
@@ -2357,8 +2367,11 @@ export class Wallet {
     //     m = m.toLowerCase()
     //     m = this.r_entropyToMnemonic(m, 16)
     //   }
-    } else if (!this.validateMnemonic(m)) {
-      errMessage = this.translate.instant('ERR_INVALID_RECOVERY_PHRASE')
+    } else {
+      m = this.formatMnemonic(m)
+      if (!this.validateMnemonic(m)) {
+        errMessage = this.translate.instant('ERR_INVALID_RECOVERY_PHRASE')
+      }
     }
     if (errMessage) {
       this.alertCtrl.create({
