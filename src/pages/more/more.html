@@ -7,7 +7,7 @@
 <ion-header no-border>
 
   <ion-navbar color="primary">
-    <ion-title>{{ walletName }}</ion-title>
+    <ion-title>{{ wallet.getCurrentWalletName() }}</ion-title>
     <ion-buttons end>
       <button ion-button icon-only (click)="renameCurrentWallet()">
         <ion-icon name="create"></ion-icon>
@@ -23,11 +23,10 @@
 
 <ion-content no-bounce>
   <ion-list no-lines>
-    <ion-item (click)="showWRP()" *ngIf="!isWatchOnly">{{ 'BACKUP_WALLET' | translate }}</ion-item>
+    <ion-item (click)="showWRP()" *ngIf="!wallet.isWatchOnly()">{{ 'BACKUP_WALLET' | translate }}</ion-item>
     <ion-item (click)="pushAddressesPage()">{{ 'ADDRESSES' | translate }}</ion-item>
     <ion-item (click)="pushXpubPage()">XPUB</ion-item>
     <ion-item (click)="promptForWIF()">{{ 'SWEEP' | translate }}</ion-item>
-    <ion-item (click)="showColdWalletTutorial()">{{ 'COLD_WALLET_TUTORIAL' | translate }}</ion-item>
     <ion-item (click)="launchTwitter()">
       <ion-icon name="logo-twitter"></ion-icon>
       @simplycashapp
@@ -36,6 +35,8 @@
       <ion-icon name="md-paper-plane"></ion-icon>
       @simplycashgroup
     </ion-item>
+    <ion-item *ngIf="wallet.isBIP32Compliant()" (click)="promptForNonCompliantRecovery()">{{ 'RECOVER_NON_COMPLIANT_WALLET' | translate }}</ion-item>
+    <ion-item (click)="showColdWalletTutorial()">{{ 'COLD_WALLET_TUTORIAL' | translate }}</ion-item>
     <ion-item (click)="showAnnouncement()">{{ 'ANNOUNCEMENT' | translate }}</ion-item>
     <ion-item (click)="showDisclaimer()">{{ 'DISCLAIMER' | translate }}</ion-item>
   </ion-list>

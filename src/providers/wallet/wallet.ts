@@ -65,6 +65,7 @@ interface IWallet {
   protection: string,
   keys: {
     encMnemonic: string,
+    compliant: boolean,
     xpub: string
   },
   addresses: IAddresses,
@@ -165,7 +166,7 @@ export class Wallet {
 
   public readonly ANNOUNCEMENT_URL: string = 'https://simply.cash/announcement.json'
   public readonly WS_URL: string = 'https://ws.simply.cash:3000'
-  public readonly VERSION: string = '0.0.79'
+  public readonly VERSION: string = '0.0.80'
 
   public readonly supportedAddressFormats: ReadonlyArray<string> = ['legacy', 'cashaddr']
   public readonly supportedProtections: ReadonlyArray<string> = ['OFF', 'PIN', 'FINGERPRINT']
@@ -642,7 +643,8 @@ export class Wallet {
     return this.stored.wallets.map(w => w.name)
   }
 
-  async createWallet(mnemonicOrXprvOrXpub?: string, path?: string, passphrase?: string, name?: string): Promise<void> {
+  async createWallet(mnemonicOrXprvOrXpub?: string, path?: string, passphrase?: string, name?: string, compliant?: boolean): Promise<void> {
+    compliant = compliant === false ? false : true
     let encrypted: string
     let xpub: string
     let addresses: IAddresses
@@ -652,7 +654,7 @@ export class Wallet {
       addresses = this.generateAddressesFromPublicKey(new bitcoincash.HDPublicKey(xpub))
     } else {
       let m: string = this.makeRecoveryString(mnemonicOrXprvOrXpub, path, passphrase)
-      let hdPrivateKey: bitcoincash.HDPrivateKey = this.getHDPrivateKeyFromRecoveryString(m)
+      let hdPrivateKey: bitcoincash.HDPrivateKey = this.getHDPrivateKeyFromRecoveryString(m, compliant)
       let hdPublicKey: bitcoincash.HDPublicKey = hdPrivateKey.hdPublicKey
       encrypted = this._encryptText(m, this.DUMMY_KEY)
       xpub = hdPublicKey.toString()
@@ -664,6 +666,7 @@ export class Wallet {
       protection: 'off',
       keys: {
         encMnemonic: encrypted,
+        compliant: compliant,
         xpub: xpub,
       },
       addresses: addresses,
@@ -680,9 +683,9 @@ export class Wallet {
     await this.updateStorage()
   }
 
-  async recoverWalletFromMnemonicOrXprvOrXpub(mnemonicOrXprvOrXpub?: string, path?: string, passphrase?: string, name?: string): Promise<void> {
+  async recoverWalletFromMnemonicOrXprvOrXpub(mnemonicOrXprvOrXpub: string, path: string, passphrase: string, name: string, compliant: boolean): Promise<void> {
     this.closeWallet()
-    await this.createWallet(mnemonicOrXprvOrXpub, path, passphrase, name)
+    await this.createWallet(mnemonicOrXprvOrXpub, path, passphrase, name, compliant)
     await this.startWallet()
   }
 
@@ -843,6 +846,14 @@ export class Wallet {
         delete value.preference.password
         delete value.preference.fingerprint
         value.version = '0.0.61'
+        willUpdate = true
+      }
+      let ver = value.version.split('.').map(v => parseInt(v))
+      // pre 0.0.80 bip 32 compliance issues
+      if (ver[0] === 0 && ver[1] === 0 && ver[2] < 80) {
+        value.wallets.forEach((wallet: any) => {
+          wallet.keys.compliant = false
+        })
         willUpdate = true
       }
       // ensure no missing preferences
@@ -1317,12 +1328,19 @@ export class Wallet {
     return addresses
   }
 
-  getHDPrivateKeyFromRecoveryString(m: string): bitcoincash.HDPrivateKey {
+  getHDPrivateKeyFromRecoveryString(m: string, compliant?: boolean): bitcoincash.HDPrivateKey {
     let o: IRecoveryInfo = this.parseRecoveryString(m)
     if (o.xprv) {
       return new bitcoincash.HDPrivateKey(o.xprv)
     }
-    return new bitcoincash.Mnemonic(o.mnemonic).toHDPrivateKey(o.passphrase).deriveChild(o.path)
+    compliant = typeof compliant === 'boolean' ? compliant : this.isBIP32Compliant()
+    if (compliant) {
+      console.log('derive compliant')
+      return new bitcoincash.Mnemonic(o.mnemonic).toHDPrivateKey(o.passphrase).deriveChild(o.path)
+    } else {
+      console.log('derive non-compliant')
+      return new bitcoincash.Mnemonic(o.mnemonic).toHDPrivateKey(o.passphrase).derive(o.path)
+    }
   }
 
   makeRecoveryString(mnemonicOrXprv?: string, path?: string, passphrase?: string): string {
@@ -1498,6 +1516,10 @@ export class Wallet {
     } else {
       throw new Error('invalid password')
     }
+  }
+
+  isBIP32Compliant(): boolean {
+    return this.currentWallet.keys.compliant
   }
 
   _encryptText(text: string, password: string): string {
@@ -2195,12 +2217,13 @@ export class Wallet {
 
   // recovery dialog
 
-  promptForRecovery(autoFill?: string): Promise<void> {
+  promptForRecovery(autoFill?: string, compliant?: boolean): Promise<void> {
+    compliant = compliant === false ? false : true
     return new Promise<void>((resolve, reject) => {
       let recoverAlert = this.alertCtrl.create({
         enableBackdropDismiss: false,
         cssClass: 'promptForRecoveryCSSClass',
-        title: this.translate.instant('RECOVER_WALLET'),
+        title: this.translate.instant(compliant ? 'RECOVER_WALLET' : 'RECOVER_NON_COMPLIANT_WALLET'),
         // message: this.translate.instant('RECOVERY_HINT'),
         inputs: [{
           name: 'name',
@@ -2208,7 +2231,7 @@ export class Wallet {
         }, {
           name: 'mnemonicOrXprvOrXpub',
           value: autoFill || '',
-          placeholder: this.translate.instant('RECOVERY_PHRASE_OR_XPRV')
+          placeholder: this.translate.instant(compliant ? 'RECOVERY_PHRASE_OR_XPRV' : 'RECOVERY_PHRASE')
         }, {
           name: 'path',
           placeholder: "m/44'/145'/0'"
@@ -2231,15 +2254,23 @@ export class Wallet {
             if (data.name && !this.r_nameIsValid(data.name) || data.path && !this.r_pathIsValid(data.path)) {
               return false
             }
-            if (data.mnemonicOrXprvOrXpub) {
-              let validated: string = this.r_validatedMnemonicOrXprvOrXpub(data.mnemonicOrXprvOrXpub)
+            if (compliant) {
+              if (data.mnemonicOrXprvOrXpub) {
+                let validated: string = this.r_validatedMnemonicOrXprvOrXpub(data.mnemonicOrXprvOrXpub)
+                if (!validated) {
+                  return false
+                }
+                data.mnemonicOrXprvOrXpub = validated
+              }
+            } else {
+              let validated: string = this.r_validatedMnemonicOnly(data.mnemonicOrXprvOrXpub)
               if (!validated) {
                 return false
               }
               data.mnemonicOrXprvOrXpub = validated
             }
             recoverAlert.dismiss().then(() => {
-              return this.r_recover(data.mnemonicOrXprvOrXpub, data.path, data.passphrase, data.name)
+              return this.r_recover(data.mnemonicOrXprvOrXpub, data.path, data.passphrase, data.name, compliant)
             }).catch((err) => {
               console.log(err)
             }).then(() => {
@@ -2274,6 +2305,24 @@ export class Wallet {
       return false
     } else {
       return true
+    }
+  }
+
+  r_validatedMnemonicOnly(m: string): string {
+    m = m.trim()
+    let errMessage: string
+    if (!this.validateMnemonic(m)) {
+      errMessage = this.translate.instant('ERR_INVALID_RECOVERY_PHRASE')
+    }
+    if (errMessage) {
+      this.alertCtrl.create({
+        enableBackdropDismiss: false,
+        title: this.translate.instant('ERROR'),
+        message: errMessage,
+        buttons: [this.translate.instant('OK')]
+      }).present()
+    } else {
+      return m
     }
   }
 
@@ -2345,7 +2394,7 @@ export class Wallet {
     }
   }
 
-  async r_recover(mnemonicOrXprvOrXpub?: string, path?: string, passphrase?: string, name?: string): Promise<void> {
+  async r_recover(mnemonicOrXprvOrXpub: string, path: string, passphrase: string, name: string, compliant: boolean): Promise<void> {
     path = path ? path.trim().replace(/[‘’]/g, "'") : undefined
     passphrase = passphrase || undefined
     name = name || undefined
@@ -2361,7 +2410,7 @@ export class Wallet {
     })
     await loader.present()
     try {
-      await this.recoverWalletFromMnemonicOrXprvOrXpub(mnemonicOrXprvOrXpub, path, passphrase, name)
+      await this.recoverWalletFromMnemonicOrXprvOrXpub(mnemonicOrXprvOrXpub, path, passphrase, name, compliant)
     } catch (err) {
       console.log(err)
       error = err

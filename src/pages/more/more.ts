@@ -11,8 +11,6 @@ import { Wallet } from '../../providers/providers'
   templateUrl: 'more.html',
 })
 export class MorePage {
-  public walletName: string
-  public isWatchOnly: boolean
   public isShowingAnnouncement: boolean = false
 
   constructor(
@@ -25,8 +23,7 @@ export class MorePage {
     public translate: TranslateService,
     public wallet: Wallet
   ) {
-    this.walletName = this.wallet.getCurrentWalletName()
-    this.isWatchOnly = this.wallet.isWatchOnly()
+
   }
   pushAddressesPage() {
     this.navCtrl.push('AddressesPage')
@@ -109,28 +106,27 @@ export class MorePage {
   }
 
   async renameCurrentWallet() {
+    let walletName: string = this.wallet.getCurrentWalletName()
     let renameAlert = this.alertCtrl.create({
       enableBackdropDismiss: false,
       title: this.translate.instant('RENAME_WALLET'),
       inputs: [{
         name: 'name',
-        value: this.walletName
+        value: walletName
       }],
       buttons: [{
         text: this.translate.instant('CANCEL')
       },{
         text: this.translate.instant('OK'),
         handler: data => {
-          if (this.walletName === data.name) {
+          if (walletName === data.name) {
             return
           }
           if (data.name && this.nameIsValid(data.name)) {
             renameAlert.dismiss().then(() => {
-              return this.wallet.renameWallet(this.walletName, data.name)
+              return this.wallet.renameWallet(walletName, data.name)
             }).catch((err) => {
               console.log(err)
-            }).then(() => {
-              this.walletName = this.wallet.getCurrentWalletName()
             })
           }
           return false
@@ -210,6 +206,10 @@ export class MorePage {
         }, 1000)
       })
     })
+  }
+
+  async promptForNonCompliantRecovery() {
+    await this.wallet.promptForRecovery(undefined, false)
   }
 
   async showColdWalletTutorial() {
