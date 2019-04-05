@@ -16,7 +16,7 @@
   "DISCLAIMER_CONTENT": "請注意，對於因使用此應用程序而對用戶造成的任何財務損失，我們不承擔任何責任。使用風險請自行承擔。",
   "NO_ANNOUNCEMENT": "沒有公告",
   "ERR_UNABLE_TO_SIGN": "無法簽署交易",
-  "RECOVERY_PHRASE_OR_XPRV": "助記詞/XPRV/XPUB/骰子[1-6]",
+  "RECOVERY_PHRASE_OR_XPRV": "助記詞/xprv/xpub/骰子[1-6]",
   "XPUB_COPIED": "已複製 XPUB",
   "XPRV_COPIED": "已複製 XPRV",
   "RENAME_WALLET": "錢包名稱",

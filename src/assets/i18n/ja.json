@@ -16,7 +16,7 @@
   "DISCLAIMER_CONTENT": "このアプリを使用した結果としてユーザーに生じたいかなる金銭的損失についても、当社は一切責任を負いません。自己責任。",
   "NO_ANNOUNCEMENT": "通告なし",
   "ERR_UNABLE_TO_SIGN": "取引に署名できません",
-  "RECOVERY_PHRASE_OR_XPRV": "復元フレーズ/XPRV/XPUB/さいころ[1-6]",
+  "RECOVERY_PHRASE_OR_XPRV": "復元フレーズ/xprv/xpub/さいころ[1-6]",
   "XPUB_COPIED": "XPUBをコピーしました",
   "XPRV_COPIED": "XPRVをコピーしました",
   "RENAME_WALLET": "ウォレット名",

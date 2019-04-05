@@ -17,7 +17,7 @@
   "DISCLAIMER_CONTENT": "Please be reminded that we accept no responsibility for any financial losses occurred to users as a result of using this app. Use at your own risk.",
   "NO_ANNOUNCEMENT": "No announcement",
   "ERR_UNABLE_TO_SIGN": "Unable to sign transaction",
-  "RECOVERY_PHRASE_OR_XPRV": "Mnemonics/XPRV/XPUB/Dice[1-6]",
+  "RECOVERY_PHRASE_OR_XPRV": "Mnemonics/xprv/xpub/Dice[1-6]",
   "XPUB_COPIED": "XPUB copied",
   "XPRV_COPIED": "XPRV copied",
   "RENAME_WALLET": "Wallet name",

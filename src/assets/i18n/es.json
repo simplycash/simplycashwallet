@@ -16,7 +16,7 @@
   "DISCLAIMER_CONTENT": "Recuerde que no aceptamos ninguna responsabilidad por las pérdidas financieras que hayan sufrido los usuarios como resultado del uso de esta aplicación. Úselo bajo su propio riesgo.",
   "NO_ANNOUNCEMENT": "Sin anuncio",
   "ERR_UNABLE_TO_SIGN": "Incapaz de firmar la transacción",
-  "RECOVERY_PHRASE_OR_XPRV": "Mnemotécnica/XPRV/XPUB/Dado[1-6]",
+  "RECOVERY_PHRASE_OR_XPRV": "Mnemotécnica/xprv/xpub/Dado[1-6]",
   "XPUB_COPIED": "XPUB copiado",
   "XPRV_COPIED": "XPRV copiado",
   "RENAME_WALLET": "Nombre de billetera",
