@@ -1,5 +1,5 @@
 {
-  "RECOVER_NON_COMPLIANT_WALLET": "Non-compliant recovery",
+  "RECOVER_NON_COMPLIANT_WALLET": "Buggy BIP32 recovery",
   "PRICE": "Price",
   "SHARE": "Share",
   "DELETE": "Delete",

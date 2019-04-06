@@ -35,9 +35,9 @@
       <ion-icon name="md-paper-plane"></ion-icon>
       @simplycashgroup
     </ion-item>
-    <ion-item *ngIf="wallet.isBIP32Compliant()" (click)="promptForNonCompliantRecovery()">{{ 'RECOVER_NON_COMPLIANT_WALLET' | translate }}</ion-item>
     <ion-item (click)="showColdWalletTutorial()">{{ 'COLD_WALLET_TUTORIAL' | translate }}</ion-item>
     <ion-item (click)="showAnnouncement()">{{ 'ANNOUNCEMENT' | translate }}</ion-item>
     <ion-item (click)="showDisclaimer()">{{ 'DISCLAIMER' | translate }}</ion-item>
+    <ion-item (click)="promptForNonCompliantRecovery()">v{{ wallet.VERSION }}</ion-item>
   </ion-list>
 </ion-content>

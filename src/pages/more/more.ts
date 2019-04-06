@@ -12,6 +12,7 @@ import { Wallet } from '../../providers/providers'
 })
 export class MorePage {
   public isShowingAnnouncement: boolean = false
+  public secretCounter: number = 0
 
   constructor(
     public alertCtrl: AlertController,
@@ -209,6 +210,10 @@ export class MorePage {
   }
 
   async promptForNonCompliantRecovery() {
+    if (this.secretCounter < 6) {
+      this.secretCounter++
+      return
+    }
     await this.wallet.promptForRecovery(undefined, false)
   }
 
