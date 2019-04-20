@@ -1668,12 +1668,12 @@ export class Wallet {
     }
   }
 
-  getFinalReceiveAddressIndex(): number {
-    return this.currentWallet.addresses.receive.length - 1
+  getReceiveAddressCount(): number {
+    return this.currentWallet.addresses.receive.length
   }
 
-  getFinalChangeAddressIndex(): number {
-    return this.currentWallet.addresses.change.length - 1
+  getChangeAddressCount(): number {
+    return this.currentWallet.addresses.change.length
   }
 
   getAllReceiveAddresses(): string[] {
@@ -1754,8 +1754,8 @@ export class Wallet {
     let recentUtxos: IUtxo[] = []
     if (!drain) {
       let limits: number[] = [
-        Math.max(0, this.getFinalReceiveAddressIndex() - 39),
-        Math.max(0, this.getFinalChangeAddressIndex() - 39)
+        Math.max(0, this.getReceiveAddressCount() - 20 - 20),
+        Math.max(0, this.getChangeAddressCount() - 20 - 20)
       ]
       availableUtxos.forEach((u) => {
         if (u.path[1] < limits[u.path[0]] && agedUtxos.length < 10) {
