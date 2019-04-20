@@ -46,8 +46,8 @@ interface IAddresses {
 interface IUtxo {
   txid: string,
   vout: number,
-  address: string,
-  path: [number, number],
+  address?: string,
+  path?: [number, number],
   scriptPubKey: string,
   satoshis: number
 }
