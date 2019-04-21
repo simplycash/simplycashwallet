@@ -32,4 +32,7 @@
       <span item-end>{{ tx.value }}</span>
     </ion-item> -->
   </ion-list>
+  <ion-infinite-scroll threshold="200%" (ionInfinite)="doInfinite($event)">
+    <ion-infinite-scroll-content></ion-infinite-scroll-content>
+ </ion-infinite-scroll>
 </ion-content>

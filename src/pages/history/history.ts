@@ -18,6 +18,7 @@ export class HistoryPage {
   public txs: { txid: string, date: string, time: string, delta: number, seen: boolean }[] = []
   public dateGroups: { date: string, txs: any[] }[] = []
   public updateCallback: Function
+  public cacheHistory: any
 
   constructor(
     public alertCtrl: AlertController,
@@ -59,33 +60,54 @@ export class HistoryPage {
     this.wallet.seeTheUnseen()
   }
 
+  doInfinite(ev) {
+    this.fetchHistory()
+    ev.complete()
+  }
+
+  fetchHistory(start?, end?) {
+    let lastDG
+    if (typeof start === 'undefined') {
+      if (this.dateGroups.length === 0) {
+        start = 0
+      } else {
+        lastDG = this.dateGroups[this.dateGroups.length - 1]
+        let lastTx = lastDG.txs[lastDG.txs.length - 1]
+        start = this.cacheHistory.findIndex(tx => tx.txid === lastTx.txid) + 1
+        if (start >= this.cacheHistory.length || start === -1) {
+          return
+        }
+      }
+    }
+    if (typeof end === 'undefined') {
+      end = start + 30
+    }
+    this.transformTxs(this.cacheHistory.slice(start, end)).forEach((tx) => {
+      if (lastDG && lastDG.date === tx.date) {
+        lastDG.txs.push(tx)
+      } else {
+        this.dateGroups.push({
+          date: tx.date,
+          txs: [tx]
+        })
+        lastDG = this.dateGroups[this.dateGroups.length - 1]
+      }
+    })
+  }
+
   refresh() {
     console.log('history refresh')
     this.balance = this.wallet.getCacheBalance()
-    this.txs = this.transformTxs(this.wallet.getCacheHistory())
-    this.dateGroups.length = 0
-
-    let o: any = {}
-    this.txs.forEach((tx: any) => {
-      let date: string = tx.date
-      if (!o[date]) {
-        o[date] = []
-      }
-      o[date].push(tx)
-    })
-    if (typeof o['unknown'] !== 'undefined') {
-      // this.dateGroups.push({
-      //   date: 'unknown',
-      //   txs: o['unknown']
-      // })
-      delete o['unknown']
+    this.cacheHistory = this.wallet.getCacheHistory()
+    let start = 0
+    let end = 30
+    if (this.dateGroups.length > 0) {
+      let lastDG = this.dateGroups[this.dateGroups.length - 1]
+      let lastTx = lastDG.txs[lastDG.txs.length - 1]
+      end = this.cacheHistory.findIndex(tx => tx.txid === lastTx.txid) + 1
+      this.dateGroups.length = 0
     }
-    for (let date in o) {
-      this.dateGroups.push({
-        date: date,
-        txs: o[date]
-      })
-    }
+    this.fetchHistory(start, end)
   }
 
   transformTxs(txs: any[]) {

@@ -54,6 +54,7 @@ interface IUtxo {
 
 interface ITxRecord {
   txid: string,
+  height: number,
   timestamp: number,
   friendlyTimestamp: number,
   delta: number,
@@ -1051,13 +1052,19 @@ export class Wallet {
 
     let syncTaskId: number = this.syncTaskId++
     let targetAddresses: string[] = fullSync ? undefined : this.pendingAddresses.slice()
+    let minHeight: number = 0
+    try {
+      minHeight = Math.max(0, currentWallet.cache.history.find(h => h.height > 0).height - 200)
+    } catch (err) {
+      console.log(err)
+    }
     this.pendingAddresses.length = 0
     let results: any[] = await Promise.all([
       this.apiWS('finaladdresspair').then(result => this.syncAddresses(currentWallet, result)),
       this.apiWS('unusedreceiveaddress'),
       this.apiWS('unusedchangeaddress'),
       this.apiWS('utxos', { addresses: targetAddresses }),
-      this.apiWS('history', { addresses: targetAddresses })
+      this.apiWS('history', { addresses: targetAddresses, minHeight: minHeight })
     ])
 
     if (currentWallet !== this.currentWallet || syncTaskId !== this.syncTaskId - 1) {
@@ -1072,17 +1079,18 @@ export class Wallet {
     let allTxids: string[] = this.getAllTxids()
     let newTxs: ITxRecord[] = results[4].filter(tx => allTxids.indexOf(tx.txid) === -1)
     let oldTxs: ITxRecord[] = results[4].filter(tx => allTxids.indexOf(tx.txid) !== -1)
-    let lastConfirmed: ITxRecord = this.currentWallet.cache.history.find(tx => typeof tx.timestamp !== 'undefined')
-    if (typeof lastConfirmed !== 'undefined') {
-      newTxs = newTxs.filter(tx => typeof tx.timestamp === 'undefined' || tx.timestamp >= lastConfirmed.timestamp)
-    }
     let newTxids: string[] = newTxs.map(tx => tx.txid)
 
     let skipNotification: boolean = (allTxids.length === 0 && results[4].length > 1) || this.app.getRootNav().getActive().component.pageName === 'HistoryPage'
     if (!skipNotification) {
+      let _newTxs: ITxRecord[] = newTxs
+      let lastConfirmed: ITxRecord = currentWallet.cache.history.find(tx => typeof tx.timestamp !== 'undefined')
+      if (typeof lastConfirmed !== 'undefined') {
+        _newTxs = _newTxs.filter(tx => typeof tx.timestamp === 'undefined' || tx.timestamp >= lastConfirmed.timestamp)
+      }
       let unit: string = this.getPreferredUnit()
       let isCordova: boolean = this.platform.is('cordova')
-      newTxs.forEach((tx) => {
+      _newTxs.forEach((tx) => {
         if (tx.delta <= 0) {
           return
         }
@@ -1108,60 +1116,36 @@ export class Wallet {
       })
     }
 
-    // new history
+    // update history
+    let currentHistory: ITxRecord[] = currentWallet.cache.history
+    let unseenTxids: string[] = this.getUnseenTxids().concat(newTxids)
     let currentTimestamp: number = Math.floor(new Date().getTime() / 1000)
-    let newHistory: ITxRecord[]
-    if (fullSync) {
-      let oldUnconfirmed: ITxRecord[] = this.currentWallet.cache.history.filter(tx => typeof tx.timestamp === 'undefined')
-      let newUnconfirmed: ITxRecord[] = results[4].filter(tx => typeof tx.timestamp === 'undefined')
-      let stillUnconfirmed: ITxRecord[] = oldUnconfirmed.filter(otx => typeof newUnconfirmed.find(ntx => ntx.txid === otx.txid) !== 'undefined')
-      let freshUnconfirmed: ITxRecord[] = newUnconfirmed.filter(ntx => typeof stillUnconfirmed.find(stx => ntx.txid === stx.txid) === 'undefined')
-
-      let oldConfirmed: ITxRecord[] = this.currentWallet.cache.history.filter(tx => typeof tx.timestamp !== 'undefined')
-      let newConfirmed: ITxRecord[] = results[4].filter(tx => typeof tx.timestamp !== 'undefined')
-      newConfirmed = newConfirmed.map(n => oldUnconfirmed.find(o => o.txid === n.txid) || n)
-      let stillConfirmed: ITxRecord[] = oldConfirmed.filter(otx => typeof newConfirmed.find(ntx => ntx.txid === otx.txid) !== 'undefined')
-      let freshConfirmed: ITxRecord[] = newConfirmed.filter(ntx => typeof stillConfirmed.find(stx => ntx.txid === stx.txid) === 'undefined')
-
-      let unseenTxids: string[] = this.getUnseenTxids().concat(newTxids)
-      newHistory = freshUnconfirmed.concat(stillUnconfirmed).concat(freshConfirmed).concat(stillConfirmed).map((tx) => {
-        return {
-          txid: tx.txid,
-          timestamp: tx.timestamp,
-          friendlyTimestamp: tx.friendlyTimestamp || (tx.timestamp ? Math.min(tx.timestamp, currentTimestamp) : currentTimestamp),
-          delta: tx.delta,
-          seen: unseenTxids.indexOf(tx.txid) === -1
-        }
-      })
-    } else {
-      let h1: ITxRecord[] = newTxs.map((tx) => {
-        return {
-          txid: tx.txid,
-          timestamp: tx.timestamp,
-          friendlyTimestamp: currentTimestamp,
-          delta: tx.delta,
-          seen: false
-        }
-      })
-      let h2: ITxRecord[] = this.currentWallet.cache.history.map((h) => {
-        let match: ITxRecord = oldTxs.find(tx => tx.txid === h.txid)
-        if (typeof match === 'undefined') {
-          return h
-        }
-        return {
-          txid: match.txid,
-          timestamp: match.timestamp,
-          friendlyTimestamp: h.friendlyTimestamp,
-          delta: match.delta,
-          seen: h.seen
-        }
-      })
-      newHistory = h1.concat(h2).slice(0, 30)
-    }
-    newHistory.forEach((h, i) => {
+    oldTxs.forEach((otx) => {
+      let tx: ITxRecord = currentHistory.find(tx => tx.txid === otx.txid)
+      let newValue: ITxRecord = {
+        txid: otx.txid,
+        height: otx.height,
+        timestamp: otx.timestamp,
+        friendlyTimestamp: tx.friendlyTimestamp || (otx.timestamp ? Math.min(otx.timestamp, currentTimestamp) : currentTimestamp),
+        delta: otx.delta,
+        seen: unseenTxids.indexOf(otx.txid) === -1
+      }
+      Object.assign(tx, newValue)
+    })
+    currentHistory.splice.apply(currentHistory, ([0, 0] as any[]).concat(newTxs.map(ntx => {
+      return {
+        txid: ntx.txid,
+        height: ntx.height,
+        timestamp: ntx.timestamp,
+        friendlyTimestamp: ntx.timestamp ? Math.min(ntx.timestamp, currentTimestamp) : currentTimestamp,
+        delta: ntx.delta,
+        seen: false
+      }
+    })))
+    currentHistory.forEach((h, i) => {
       (h as any).tempIndex = i
     })
-    newHistory.sort((a, b) => {
+    currentHistory.sort((a, b) => {
       // descending friendlyTimestamp
       let v = b.friendlyTimestamp - a.friendlyTimestamp
       if (v !== 0) {
@@ -1170,7 +1154,7 @@ export class Wallet {
       // ascending tempIndex
       return (a as any).tempIndex - (b as any).tempIndex
     })
-    newHistory.forEach((h) => {
+    currentHistory.forEach((h) => {
       delete (h as any).tempIndex
     })
 
@@ -1210,7 +1194,7 @@ export class Wallet {
       receiveAddress: results[1],
       changeAddress: results[2],
       utxos: newUtxos,
-      history: newHistory
+      history: currentHistory
     }
     await this.updateStorage()
     if (!this.isSyncing() || currentWallet !== this.currentWallet || syncTaskId !== this.syncTaskId - 1) {
