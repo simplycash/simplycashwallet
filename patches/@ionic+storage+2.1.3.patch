@@ -1,0 +1,51 @@
+diff --git a/node_modules/@ionic/storage/dist/storage.js b/node_modules/@ionic/storage/dist/storage.js
+index d477368..98c42d7 100644
+--- a/node_modules/@ionic/storage/dist/storage.js
++++ b/node_modules/@ionic/storage/dist/storage.js
+@@ -159,7 +159,45 @@ var Storage = (function () {
+      * @returns {Promise} Returns a promise with the value of the given key
+      */
+     Storage.prototype.get = function (key) {
+-        return this._dbPromise.then(function (db) { return db.getItem(key); });
++        //return this._dbPromise.then(function (db) { return db.getItem(key); });
++        var _this = this;
++        var newDB;
++        return this._dbPromise.then(function (db) {
++            newDB = db;
++            return db.getItem(key);
++        }).then(function (value) {
++            if (!value) {
++                console.log('fallback to old db');
++                var oldValue;
++                var oldDB;
++                var defaultConfig = getDefaultConfig();
++                var actualConfig = Object.assign(defaultConfig, {
++                    driverOrder: ['indexeddb', 'websql', 'localstorage']
++                });
++                oldDB = LocalForage.createInstance(actualConfig);
++                return oldDB.setDriver(_this._getDriverOrder(actualConfig.driverOrder)).then(function () {
++                    console.log('get old db');
++                    return oldDB.getItem(key);
++                }).then(function (value) {
++                    oldValue = value;
++                    if (!oldValue) {
++                        return;
++                    }
++                    console.log('set new db');
++                    return newDB.setItem(key, value);
++                }).then(function () {
++                    if (!oldValue) {
++                        return;
++                    }
++                    console.log('remove old db');
++                    return oldDB.removeItem(key);
++                }).then(function () {
++                    return oldValue;
++                });
++            } else {
++                return value;
++            }
++        });
+     };
+     /**
+      * Set the value for the given key.

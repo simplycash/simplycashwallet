@@ -5,14 +5,12 @@
   "homepage": "http://ionicframework.com/",
   "private": true,
   "scripts": {
+    "postinstall": "patch-package",
     "clean": "ionic-app-scripts clean",
     "build": "ionic-app-scripts build",
     "lint": "ionic-app-scripts lint",
     "ionic:build": "ionic-app-scripts build",
     "ionic:serve": "ionic-app-scripts serve"
-  },
-  "config": {
-    "ionic_webpack": "webpack.config.js"
   },
   "dependencies": {
     "@angular/common": "5.0.3",
@@ -82,6 +80,7 @@
   },
   "devDependencies": {
     "@ionic/app-scripts": "3.1.8",
+    "patch-package": "^6.1.2",
     "typescript": "2.4.2"
   },
   "description": "An Ionic project",

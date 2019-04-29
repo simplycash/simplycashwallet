@@ -1,0 +1,22 @@
+diff --git a/node_modules/@ionic/app-scripts/config/webpack.config.js b/node_modules/@ionic/app-scripts/config/webpack.config.js
+index 80520bd..de99b2d 100644
+--- a/node_modules/@ionic/app-scripts/config/webpack.config.js
++++ b/node_modules/@ionic/app-scripts/config/webpack.config.js
+@@ -74,7 +74,7 @@ var devConfig = {
+ 
+   resolve: {
+     extensions: ['.ts', '.js', '.json'],
+-    modules: [path.resolve('node_modules')]
++    modules: ['node_modules']
+   },
+ 
+   module: {
+@@ -116,7 +116,7 @@ var prodConfig = {
+ 
+   resolve: {
+     extensions: ['.ts', '.js', '.json'],
+-    modules: [path.resolve('node_modules')]
++    modules: ['node_modules']
+   },
+ 
+   module: {

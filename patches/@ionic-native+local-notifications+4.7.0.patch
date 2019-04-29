@@ -1,0 +1,12 @@
+diff --git a/node_modules/@ionic-native/local-notifications/index.d.ts b/node_modules/@ionic-native/local-notifications/index.d.ts
+index a1aae1e..3481996 100644
+--- a/node_modules/@ionic-native/local-notifications/index.d.ts
++++ b/node_modules/@ionic-native/local-notifications/index.d.ts
+@@ -157,6 +157,7 @@ export interface ILocalNotificationProgressBar {
+     status?: string;
+ }
+ export interface ILocalNotification {
++    foreground?: boolean;
+     /**
+      * A unique identifier required to clear, cancel, update or retrieve the local notification in the future
+      * Default: 0
