@@ -2,8 +2,8 @@ import { Component, ViewChild } from '@angular/core';
 import { AlertController, IonicPage, LoadingController, NavController, NavParams } from 'ionic-angular';
 import { TranslateService } from '@ngx-translate/core';
 import { Wallet } from '../../providers/providers'
-// import * as bip38 from 'bip38'
-// import * as wif from 'wif'
+import * as bip38 from 'bip38'
+import * as wif from 'wif'
 
 /**
  * Generated class for the SweepPage page.
@@ -133,8 +133,8 @@ export class SweepPage {
     this.wallet.closeWallet()
     let result: string
     try {
-      // let decrypted: any = bip38.decrypt(encrypted, passphrase)
-      // result = wif.encode(0x80, decrypted.privateKey, decrypted.compressed)
+      let decrypted: any = bip38.decrypt(encrypted, passphrase)
+      result = wif.encode(0x80, decrypted.privateKey, decrypted.compressed)
     } catch (err) {
 
     }
