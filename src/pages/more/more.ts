@@ -37,6 +37,7 @@ export class MorePage {
   async promptForWIF(): Promise<void> {
     let wifAlert: any = this.alertCtrl.create({
       enableBackdropDismiss: false,
+      cssClass: 'promptForWIFCSSClass',
       title: 'WIF',
       inputs: [{
         name: 'wif'
@@ -75,7 +76,12 @@ export class MorePage {
         }
       }]
     })
-    await wifAlert.present()
+    await wifAlert.present().then(() => {
+      (window.document.querySelectorAll('.promptForWIFCSSClass input') as any).forEach((el: any) => {
+        el.setAttribute('autocomplete', 'off')
+        el.setAttribute('autocorrect', 'off')
+      })
+    })
   }
 
   async showWRP() {
