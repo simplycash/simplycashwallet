@@ -40,7 +40,8 @@ export class MorePage {
       cssClass: 'promptForWIFCSSClass',
       title: 'WIF',
       inputs: [{
-        name: 'wif'
+        name: 'wif',
+        type: 'password'
       }],
       buttons: [{
         text: this.translate.instant('CANCEL')
@@ -77,7 +78,8 @@ export class MorePage {
       }]
     })
     await wifAlert.present().then(() => {
-      (window.document.querySelectorAll('.promptForWIFCSSClass input') as any).forEach((el: any) => {
+      Array.from(window.document.querySelectorAll('.promptForWIFCSSClass input')).forEach((el: any) => {
+        el.setAttribute('type', 'text')
         el.setAttribute('autocomplete', 'off')
         el.setAttribute('autocorrect', 'off')
       })

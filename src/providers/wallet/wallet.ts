@@ -2226,13 +2226,16 @@ export class Wallet {
           placeholder: this.nextWalletName()
         }, {
           name: 'mnemonicOrXprvOrXpub',
+          type: 'password',
           value: autoFill || '',
           placeholder: this.translate.instant(compliant ? 'RECOVERY_PHRASE_OR_XPRV' : 'RECOVERY_PHRASE')
         }, {
           name: 'path',
+          type: 'password',
           placeholder: "m/44'/145'/0'"
         }, {
           name: 'passphrase',
+          type: 'password',
           placeholder: this.translate.instant('RECOVERY_PASSPHRASE')
         }],
         buttons: [{
@@ -2277,7 +2280,8 @@ export class Wallet {
         }]
       })
       recoverAlert.present().then(() => {
-        (window.document.querySelectorAll('.promptForRecoveryCSSClass input') as any).forEach((el: any) => {
+        Array.from(window.document.querySelectorAll('.promptForRecoveryCSSClass input')).forEach((el: any) => {
+          el.setAttribute('type', 'text')
           el.setAttribute('autocomplete', 'off')
           el.setAttribute('autocorrect', 'off')
         })
