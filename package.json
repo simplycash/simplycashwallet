@@ -78,7 +78,10 @@
     "zone.js": "0.8.18"
   },
   "devDependencies": {
+    "@babel/core": "7.4.4",
+    "@babel/preset-env": "7.4.4",
     "@ionic/app-scripts": "3.2.3",
+    "babel-loader": "8.0.6",
     "patch-package": "^6.1.2",
     "typescript": "2.4.2"
   },
