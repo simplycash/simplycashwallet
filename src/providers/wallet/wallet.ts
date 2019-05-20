@@ -11,7 +11,9 @@ import { LocalNotifications } from '@ionic-native/local-notifications'
 import { SplashScreen } from '@ionic-native/splash-screen'
 import 'rxjs/add/operator/timeout'
 import QRCode from 'qrcode'
-import * as bitcoincash from 'bitcoincashjs'
+import * as bitcoincash from 'bsv'
+import * as bitcoincash_Mnemonic from 'bsv/mnemonic'
+import * as bchaddr from 'bchaddrjs'
 import * as bs58check from 'bs58check'
 import io from 'socket.io-client'
 import * as protobuf from 'protobufjs'
@@ -508,11 +510,16 @@ export class Wallet {
   }
 
   getAddressFormat(address: string): string {
-    if (this.validateAddress(address, 'legacy')) {
-      return 'legacy'
-    }
-    if (this.validateAddress(address, 'cashaddr')) {
-      return 'cashaddr'
+    try {
+      let format: string = bchaddr.detectAddressFormat(address)
+      if (format === bchaddr.Format.Legacy) {
+        return 'legacy'
+      }
+      if (format === bchaddr.Format.Cashaddr) {
+        return 'cashaddr'
+      }
+    } catch (err) {
+
     }
     return undefined
   }
@@ -525,22 +532,11 @@ export class Wallet {
     if (from === 'cashaddr' && address.indexOf('bitcoincash:') !== 0) {
       address = 'bitcoincash:' + address
     }
-    let result: string = bitcoincash.Address.fromString(address, '', '', from).toString(to)
-    if (to === 'cashaddr') {
-      result = result.slice(12)
+    if (to === 'legacy') {
+      return bchaddr.toLegacyAddress(address)
     }
-    return result
-  }
-
-  validateAddress(address: string, format?: string): boolean {
-    try {
-      if (format === 'cashaddr' && address.indexOf('bitcoincash:') !== 0) {
-        address = 'bitcoincash:' + address
-      }
-      bitcoincash.Address.fromString(address, '', '', format || 'legacy')
-      return true
-    } catch (err) {
-      return false
+    if (to === 'cashaddr') {
+      return bchaddr.toCashAddress(address).slice(12)
     }
   }
 
@@ -1289,7 +1285,7 @@ export class Wallet {
   }
 
   createMnemonic(): string {
-    return new bitcoincash.Mnemonic(crypto.randomBytes(16)).phrase
+    return new bitcoincash_Mnemonic(crypto.randomBytes(16)).phrase
   }
 
   generateAddressesFromPrivateKey(hdPrivateKey: bitcoincash.HDPrivateKey): IAddresses {
@@ -1320,10 +1316,10 @@ export class Wallet {
     compliant = typeof compliant === 'boolean' ? compliant : this.isBIP32Compliant()
     if (compliant) {
       console.log('derive compliant')
-      return new bitcoincash.Mnemonic(o.mnemonic).toHDPrivateKey(o.passphrase).deriveChild(o.path)
+      return new bitcoincash_Mnemonic(o.mnemonic).toHDPrivateKey(o.passphrase).deriveChild(o.path)
     } else {
       console.log('derive non-compliant')
-      return new bitcoincash.Mnemonic(o.mnemonic).toHDPrivateKey(o.passphrase).derive(o.path)
+      return new bitcoincash_Mnemonic(o.mnemonic).toHDPrivateKey(o.passphrase).deriveNonCompliantChild(o.path)
     }
   }
 
@@ -1363,7 +1359,7 @@ export class Wallet {
 
   validateMnemonic(m: string): boolean {
     try {
-      return bitcoincash.Mnemonic.isValid(m)
+      return bitcoincash_Mnemonic.isValid(m)
     } catch (err) {
       return false
     }
@@ -2379,7 +2375,7 @@ export class Wallet {
     let length: number = Math.floor(entropy.length * Math.log2(base))
     length = (length - length % 32) / 8
     let buf: Buffer = new BN(entropy, base).toArrayLike(Buffer, 'be', length + 4).slice(-length)
-    return new bitcoincash.Mnemonic(buf).phrase
+    return new bitcoincash_Mnemonic(buf).phrase
   }
 
   r_pathIsValid(path: string): boolean {
