@@ -299,7 +299,7 @@ export class HomePage {
       return
     }
     this.scanEndTime = new Date().getTime()
-    if (this.scanEndTime - this.scanBeginTime < 500) {
+    if (this.scanEndTime - this.scanBeginTime < 500 && !keepPreview) {
       if (typeof this.hint === 'undefined') {
         this.hint = this.toastCtrl.create({
           message: this.translate.instant('CAMERA_BUTTON_HINT'),

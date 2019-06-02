@@ -169,7 +169,7 @@ export class Wallet {
 
   public readonly ANNOUNCEMENT_URL: string = 'https://simply.cash/announcement.json'
   public readonly WS_URL: string = 'https://ws.simply.cash:3000'
-  public readonly VERSION: string = '0.0.87'
+  public readonly VERSION: string = '0.0.88'
 
   public readonly supportedAddressFormats: ReadonlyArray<string> = ['legacy', 'cashaddr']
   public readonly supportedProtections: ReadonlyArray<string> = ['OFF', 'PIN', 'FINGERPRINT']
@@ -1542,7 +1542,7 @@ export class Wallet {
   }
 
   getQRs(text: string, prefix: string): Promise<string[]> {
-    let segLength: number = Math.ceil(text.length / Math.ceil(text.length / 2500))
+    let segLength: number = Math.ceil(text.length / Math.ceil(text.length / 1100))
     let regex: RegExp = new RegExp('.{1,' + segLength + '}', 'gi')
     let segments: string[] = text.match(regex)
     let last: number = segments.length - 1
@@ -1733,8 +1733,8 @@ export class Wallet {
     let recentUtxos: IUtxo[] = []
     if (!drain) {
       let limits: number[] = [
-        Math.max(0, this.getReceiveAddressCount() - 20 - 20),
-        Math.max(0, this.getChangeAddressCount() - 20 - 20)
+        Math.max(0, this.getReceiveAddressCount() - 20 - 100),
+        Math.max(0, this.getChangeAddressCount() - 20 - 100)
       ]
       availableUtxos.forEach((u) => {
         if (u.path[1] < limits[u.path[0]] && agedUtxos.length < 10) {
