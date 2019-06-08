@@ -46,7 +46,7 @@
     </div>
 
     <div class="handle-container">
-      <div (click)="onHandleClick()" (press)="onHandlePress()">{{ wallet.getHandle() || '~' }}@simply.cash</div>
+      <div (tap)="onHandleClick()" (press)="onHandlePress()">{{ wallet.getHandle() || '~' }}@simply.cash</div>
     </div>
 
     <div *ngIf="!clipboardContent && platform.is('cordova')" class="camera-field" (touchstart)="startScan()" (touchcancel)="stopScan()" (touchend)="stopScan()">
