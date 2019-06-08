@@ -13,6 +13,7 @@ import 'rxjs/add/operator/timeout'
 import QRCode from 'qrcode'
 import * as bitcoincash from 'bsv'
 import * as bitcoincash_Mnemonic from 'bsv/mnemonic'
+import * as bitcoincash_Message from 'bsv/message'
 import * as bchaddr from 'bchaddrjs'
 import * as bs58check from 'bs58check'
 import io from 'socket.io-client'
@@ -64,6 +65,7 @@ interface ITxRecord {
 }
 
 interface IWallet {
+  handle: string,
   name: string,
   protection: string,
   keys: {
@@ -127,7 +129,8 @@ interface IRequest {
   outputs: IAddressOutput[],
   url?: string,
   label?: string,
-  message?: string
+  message?: string,
+  purpose?: string
 }
 
 interface IWifInfo {
@@ -169,7 +172,7 @@ export class Wallet {
 
   public readonly ANNOUNCEMENT_URL: string = 'https://simply.cash/announcement.json'
   public readonly WS_URL: string = 'https://ws.simply.cash:3000'
-  public readonly VERSION: string = '0.0.88'
+  public readonly VERSION: string = '0.0.89'
 
   public readonly supportedAddressFormats: ReadonlyArray<string> = ['legacy', 'cashaddr']
   public readonly supportedProtections: ReadonlyArray<string> = ['OFF', 'PIN', 'FINGERPRINT']
@@ -659,6 +662,7 @@ export class Wallet {
     }
 
     let wallet: IWallet = {
+      handle: '',
       name: name || this.nextWalletName(),
       protection: 'off',
       keys: {
@@ -853,6 +857,13 @@ export class Wallet {
         })
         willUpdate = true
       }
+      // introduce handle in 0.0.89
+      if (ver[0] === 0 && ver[1] === 0 && ver[2] < 89) {
+        value.wallets.forEach((wallet: any) => {
+          wallet.handle = ''
+        })
+        willUpdate = true
+      }
       // ensure no missing preferences
       Object.keys(this.defaultPreference).forEach((k) => {
         if (typeof value.preference[k] === 'undefined') {
@@ -980,6 +991,7 @@ export class Wallet {
         }
         this.changeState(EState.CONNECTED)
         await Promise.all([
+          this.refreshHandle(),
           this.apiWS('price.subscribe').then((price) => { this.updatePrice(price) }),
           this.apiWS('address.subscribe'),
           this.syncEverything(true)
@@ -1551,12 +1563,14 @@ export class Wallet {
   }
 
   getRequestFromURL(text: string): IRequest {
+    let isPaymail: boolean = false
     let params: any = {}
     let address: string
     let satoshis: number
     let url: string
     let label: string
     let message: string
+    let purpose: string
 
     if (text.match(/^bitcoin:/gi)) {
       text = text.slice(8)
@@ -1568,6 +1582,9 @@ export class Wallet {
       text = text.slice(10)
     } else if (text.match(/^bitcoin[-_]sv:/gi)) {
       text = text.slice(11)
+    } else if (text.match(/^payto:/gi)) {
+      text = text.slice(6)
+      isPaymail = true
     } else {
       return
     }
@@ -1579,7 +1596,7 @@ export class Wallet {
     } else {
       addr = text.slice(0, i)
     }
-    if (typeof this.getAddressFormat(addr) !== 'undefined') {
+    if (isPaymail && this.validatePaymail(addr) || typeof this.getAddressFormat(addr) !== 'undefined') {
       address = addr
     }
     if (typeof address === 'undefined' && i === -1) {
@@ -1599,9 +1616,16 @@ export class Wallet {
       params[s[0]] = s.slice(1).join('=')
     })
     if (typeof params.amount !== 'undefined') {
-      let amount: number = parseFloat(params.amount)
-      if (amount > 0) {
-        satoshis = parseFloat(this.convertUnit('BSV', 'SATS', amount.toString()))
+      if (isPaymail) {
+        let amount: number = parseInt(params.amount)
+        if (amount > 0) {
+          satoshis = amount
+        }
+      } else {
+        let amount: number = parseFloat(params.amount)
+        if (amount > 0) {
+          satoshis = parseFloat(this.convertUnit('BSV', 'SATS', amount.toString()))
+        }
       }
     }
     if (typeof params.r !== 'undefined') {
@@ -1615,6 +1639,9 @@ export class Wallet {
     if (typeof params.message !== 'undefined') {
       message = decodeURIComponent(params.message)
     }
+    if (typeof params.purpose !== 'undefined') {
+      purpose = decodeURIComponent(params.purpose)
+    }
 
     return {
       outputs: typeof address === 'undefined' ? [] : [{
@@ -1623,7 +1650,8 @@ export class Wallet {
       }],
       url: url,
       label: label,
-      message: message
+      message: message,
+      purpose: purpose
     }
   }
 
@@ -1685,6 +1713,16 @@ export class Wallet {
 
   getCacheUtxos(): IUtxo[] {
     return this.currentWallet.cache.utxos.slice()
+  }
+
+  getIdentityPrivateKey(m: string): bitcoincash.PrivateKey {
+    let hdPrivateKey: bitcoincash.HDPrivateKey = this.getHDPrivateKeyFromRecoveryString(m)
+    return hdPrivateKey.deriveChild(2).deriveChild(0).privateKey
+  }
+
+  getIdentityPublicKey(): bitcoincash.PublicKey {
+    let hdPublicKey: bitcoincash.HDPublicKey = this.getHDPublicKey()
+    return hdPublicKey.deriveChild(2).deriveChild(0).publicKey
   }
 
   getPrivateKeys(paths: [number, number][], m: string): bitcoincash.PrivateKey[] {
@@ -2205,6 +2243,280 @@ export class Wallet {
       }]
     })
     updateAlert.present()
+  }
+
+  // handle/paymail
+
+  validatePaymail(text: string): boolean {
+    return text.match(/^[^@:]+@[^@]+\.[^@]+$/g) ? true : false
+  }
+
+  lookupPaymail(paymail: string, senderPaymail: string, signingKey: bitcoincash.PrivateKey): Promise<string> {
+    if (!senderPaymail) {
+      senderPaymail = 'someone@simply.cash'
+      signingKey = new bitcoincash.PrivateKey('KyWGFe4Xy2eotn8uVmA3YMVp3HsGdzvqpteZAt7Ax7WQf1SFRREN')
+    }
+    let dt: string = JSON.parse(JSON.stringify({'now': new Date()})).now
+    // follow mb signature implementation, not bsvalias.org ¯\_(ツ)_/¯
+    let hashed: string = bitcoincash.crypto.Hash.sha256(Buffer.from(senderPaymail + '0' + dt + '')).toString('hex')
+    let signature: string = bitcoincash_Message.sign(hashed, signingKey)
+    return this.apiWS('paymail.lookup', {
+      paymail: paymail,
+      senderRequest: {
+        senderHandle: senderPaymail,
+        senderPaymail: senderPaymail,
+        dt: dt,
+        signature: signature
+      }
+    })
+  }
+
+  getHandle(): string {
+    return this.currentWallet.handle
+  }
+
+  getPaymail(): string {
+    return this.currentWallet.handle + '@simply.cash'
+  }
+
+  async refreshHandle(): Promise<void> {
+    let currentWallet: IWallet = this.currentWallet
+    let currentHandle: string = this.getHandle()
+    let latestHandle: string = currentHandle
+    let public_key: string = this.getIdentityPublicKey().toString()
+    try {
+      latestHandle = await this.apiWS('handle.get', {
+        public_key: public_key
+      })
+    } catch (err) {
+      console.log(err)
+      return
+    }
+    if (this.currentWallet !== currentWallet) {
+      return
+    }
+    if (latestHandle !== currentHandle) {
+      this.currentWallet.handle = latestHandle
+      await this.updateStorage()
+    }
+  }
+
+  h_handleIsValid(handle: string): boolean {
+    if (handle.match(/^[a-z0-9_]{1,15}$/g)) {
+      return true
+    } else {
+      this.alertCtrl.create({
+        enableBackdropDismiss: false,
+        title: this.translate.instant('ERROR'),
+        message: this.translate.instant('ERR_INVALID_HANDLE'),
+        buttons: [this.translate.instant('OK')]
+      }).present()
+      return false
+    }
+  }
+
+  async h_handleIsAvailable(handle): Promise<boolean> {
+    try {
+      let result: string = await this.apiWS('handle.is_available', {
+        handle: handle
+      })
+      if (result === 'true') {
+        return true
+      }
+      this.alertCtrl.create({
+        enableBackdropDismiss: false,
+        title: this.translate.instant('ERROR'),
+        message: this.translate.instant('ERR_HANDLE_NOT_AVAILABLE'),
+        buttons: [this.translate.instant('OK')]
+      }).present()
+      return false
+    } catch (err) {
+      console.log(err)
+      this.alertCtrl.create({
+        enableBackdropDismiss: false,
+        title: this.translate.instant('ERROR'),
+        buttons: [this.translate.instant('OK')]
+      }).present()
+      return false
+    }
+  }
+
+  async h_doPOW(handle, public_key, _threshold): Promise<string> {
+    let threshold: Buffer = Buffer.from(_threshold, 'hex')
+    let byteLength: number = threshold.length + 2
+    let buf: Buffer = Buffer.concat([
+      Buffer.from(handle, 'utf8'),
+      Buffer.from(public_key, 'hex'),
+      Buffer.alloc(byteLength)
+    ])
+    let offset: number = buf.length - byteLength
+    let i: number = 0
+    let valid: boolean = false
+    while (!valid) {
+      if (i % 10000 === 9999) {
+        await this.delay(0)
+      }
+      buf.writeUIntBE(i, offset, byteLength)
+      valid = bitcoincash.crypto.Hash.sha256(buf).slice(0, threshold.length).compare(threshold) <= 0
+      i++
+    }
+    return buf.slice(-byteLength).toString('hex')
+  }
+
+  async h_register(handle: string, privateKey: bitcoincash.PrivateKey): Promise<void> {
+    let loader = this.loadingCtrl.create({
+      content: this.translate.instant('PLEASE_WAIT')
+    })
+    await loader.present()
+    try {
+      let threshold: string = await this.apiWS('handle.pow_threshold')
+      let public_key: string = privateKey.publicKey.toString()
+      let address: string = this.getCacheReceiveAddress()
+      let pow: string = await this.h_doPOW(handle, public_key, threshold)
+      let timestamp: number = Math.floor(new Date().getTime() / 1000)
+      let message: string = ['register', handle, public_key, address, timestamp].join(':')
+      let signature: string = bitcoincash_Message.sign(message, privateKey)
+      await this.apiWS('handle.register', {
+        handle: handle,
+        public_key: public_key,
+        address: address,
+        pow: pow,
+        timestamp: timestamp,
+        signature: signature
+      })
+      await this.refreshHandle()
+      await loader.dismiss()
+    } catch (err) {
+      console.log(err)
+      await this.refreshHandle()
+      await loader.dismiss()
+      this.alertCtrl.create({
+        enableBackdropDismiss: false,
+        title: this.translate.instant('ERROR'),
+        buttons: [this.translate.instant('OK')]
+      }).present()
+    }
+  }
+
+  async h_deregister(privateKey: bitcoincash.PrivateKey): Promise<void> {
+    let loader = this.loadingCtrl.create()
+    await loader.present()
+    try {
+      let handle: string = this.getHandle()
+      let timestamp: number = Math.floor(new Date().getTime() / 1000)
+      let message: string = ['deregister', handle, timestamp].join(':')
+      let signature: string = bitcoincash_Message.sign(message, privateKey)
+      await this.apiWS('handle.deregister', {
+        handle: handle,
+        timestamp: timestamp,
+        signature: signature
+      })
+      await this.refreshHandle()
+      await loader.dismiss()
+    } catch (err) {
+      await this.refreshHandle()
+      await loader.dismiss()
+      this.alertCtrl.create({
+        enableBackdropDismiss: false,
+        title: this.translate.instant('ERROR'),
+        buttons: [this.translate.instant('OK')]
+      }).present()
+    }
+  }
+
+  async promptForHandle(): Promise<void> {
+    let startTime: number
+    try {
+      startTime = await this.apiWS('handle.start_time')
+    } catch (err)  {
+      return
+    }
+    if (new Date().getTime() < startTime) {
+      await this.alertCtrl.create({
+        enableBackdropDismiss: false,
+        title: this.translate.instant('HANDLE_REGISTRATION_TIME'),
+        message: new Date(startTime).toUTCString(),
+        buttons: [this.translate.instant('OK')]
+      }).present()
+      return
+    }
+    let privateKey: bitcoincash.PrivateKey
+    try {
+      let m: string = await this.authorize()
+      privateKey = this.getIdentityPrivateKey(m)
+    } catch (err) {
+      if (err.message !== 'cancelled') {
+        console.log(err)
+      }
+      return
+    }
+    return new Promise<void>((resolve, reject) => {
+      let freeze: boolean = false
+      let handleAlert = this.alertCtrl.create({
+        enableBackdropDismiss: false,
+        title: this.translate.instant('ENTER_HANDLE'),
+        inputs: [{
+          name: 'handle',
+          value: this.getHandle() || '',
+          placeholder: 'a-z 0-9 _'
+        }],
+        buttons: [{
+          role: 'cancel',
+          text: this.translate.instant('CANCEL'),
+          handler: data => {
+            if (freeze) {
+              return false
+            }
+            handleAlert.dismiss().then(() => {
+              resolve()
+            })
+            return false
+          }
+        }, {
+          text: this.translate.instant('OK'),
+          handler: data => {
+            if (freeze) {
+              return false
+            }
+            let newHandle: string = data.handle.trim().toLowerCase()
+            let oldHandle: string = this.getHandle()
+            if (!newHandle && !oldHandle || newHandle === oldHandle) {
+              handleAlert.dismiss().then(() => {
+                resolve()
+              })
+              return false
+            }
+            if (newHandle && !this.h_handleIsValid(newHandle)) {
+              return false
+            }
+            if (!newHandle) {
+              handleAlert.dismiss().then(() => {
+                return this.h_deregister(privateKey)
+              }).then(() => {
+                resolve()
+              })
+            } else {
+              freeze = true
+              this.h_handleIsAvailable(newHandle).then((isAvailable) => {
+                freeze = false
+                if (!isAvailable) {
+                  return
+                }
+                handleAlert.dismiss().then(() => {
+                  return this.h_register(newHandle, privateKey)
+                }).then(() => {
+                  resolve()
+                })
+              })
+            }
+            return false
+          }
+        }]
+      })
+      handleAlert.present()
+    }).catch((err) => {
+      console.log(err)
+    })
   }
 
   // recovery dialog

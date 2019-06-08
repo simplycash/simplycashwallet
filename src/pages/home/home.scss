@@ -121,6 +121,15 @@ page-home {
 
   }
 
+  .handle-container {
+    margin: 20px 0;
+    text-align: center;
+    div {
+      display: inline-block;
+      color: white;
+    }
+  }
+
   .request-amount {
     display: block;
     margin: 0 auto;

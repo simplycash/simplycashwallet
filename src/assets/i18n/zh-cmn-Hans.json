@@ -1,4 +1,10 @@
 {
+  "HANDLE_REGISTRATION_TIME": "注册时间",
+  "PLEASE_WAIT": "请稍等",
+  "ERR_INVALID_HANDLE": "用户名无效",
+  "ERR_HANDLE_NOT_AVAILABLE": "用户名不可用",
+  "ENTER_HANDLE": "选择用户名",
+  "ERR_UNRESOLVED_PAYMAIL": "不明的 Paymail",
   "PRICE": "价格",
   "SHARE": "分享",
   "DELETE": "删除",

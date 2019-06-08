@@ -1,4 +1,10 @@
 {
+  "HANDLE_REGISTRATION_TIME": "登録時間",
+  "PLEASE_WAIT": "お待ちください",
+  "ERR_INVALID_HANDLE": "無効なユーザー名",
+  "ERR_HANDLE_NOT_AVAILABLE": "ユーザー名が利用できません",
+  "ENTER_HANDLE": "ユーザー名を選択",
+  "ERR_UNRESOLVED_PAYMAIL": "不明なPaymail",
   "PRICE": "価格",
   "SHARE": "シェア",
   "DELETE": "削除",

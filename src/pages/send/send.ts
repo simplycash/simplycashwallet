@@ -192,18 +192,66 @@ export class SendPage {
   }
 
   async send() {
+    this.canLeave = false
+    let txComplete: boolean = await this._send()
+    this.canLeave = true
+    if (txComplete)  {
+      this.navCtrl.popToRoot()
+    }
+  }
+
+  async _send() {
     this.qrCodeURLs = []
     let outputs: any[] = this.validateSendDetails()
     if (!outputs) {
       return
     }
-    this.canLeave = false
+
+    // authorize
+    let m: string
+    if (!this.wallet.isWatchOnly()) {
+      try {
+        m = await this.wallet.authorize()
+      } catch (err) {
+        if (err.message !== 'cancelled') {
+          console.log(err)
+        }
+        return
+      }
+    }
+
+    let hasPaymail: boolean = outputs.find(output => output.paymail) ? true : false
+    if (hasPaymail) {
+      let senderPaymail: string
+      let signingKey: any
+      if (!this.wallet.isWatchOnly() && this.wallet.getHandle()) {
+        senderPaymail = this.wallet.getPaymail()
+        signingKey = this.wallet.getIdentityPrivateKey(m)
+      }
+      try {
+        await Promise.all(outputs.map(async (output) => {
+          if (!output.paymail) {
+            return
+          }
+          output.script = await this.wallet.lookupPaymail(output.paymail, senderPaymail, signingKey)
+          delete output.paymail
+        }))
+      } catch (err) {
+        this.alertCtrl.create({
+          enableBackdropDismiss: false,
+          title: this.translate.instant('ERROR'),
+          message: this.translate.instant('ERR_UNRESOLVED_PAYMAIL'),
+          buttons: [this.translate.instant('OK')]
+        }).present()
+        return
+      }
+    }
+
     if (this.wallet.isWatchOnly()) {
       await this.makeUnsignedTx(outputs)
     } else {
-      await this.signAndBroadcast(outputs)
+      return await this.signAndBroadcast(outputs, m)
     }
-    this.canLeave = true
   }
 
   validateSendDetails(): any[] {
@@ -233,12 +281,16 @@ export class SendPage {
       }
       outputs.forEach((output) => {
         if (typeof output.address !== 'undefined') {
-          let af: string = this.wallet.getAddressFormat(output.address)
-          if (typeof af === 'undefined') {
-            throw new Error('invalid address')
+          if (this.wallet.validatePaymail(output.address)) {
+            output.paymail = output.address
+          } else {
+            let af: string = this.wallet.getAddressFormat(output.address)
+            if (typeof af === 'undefined') {
+              throw new Error('invalid address')
+            }
+            let legacyAddr: string = this.wallet.convertAddress(af, 'legacy', output.address)
+            output.script = this.wallet.scriptFromAddress(legacyAddr)
           }
-          let legacyAddr: string = this.wallet.convertAddress(af, 'legacy', output.address)
-          output.script = this.wallet.scriptFromAddress(legacyAddr)
           delete output.address
         } else if (typeof output.script === 'undefined') {
           throw new Error('invalid output')
@@ -297,7 +349,7 @@ export class SendPage {
     }
   }
 
-  async signAndBroadcast(outputs: any[]) {
+  async signAndBroadcast(outputs: any[], m: string) {
     let drain: boolean = this.myAmountEl.getSatoshis() === this.wallet.getCacheBalance()
 
     if (drain && !(await this.confirmDrain())) {
@@ -305,17 +357,6 @@ export class SendPage {
     }
 
     if (!drain && this.wallet.getPreferredProtection() === 'OFF' &&  !(await this.confirmSend(outputs.map(o => o.satoshis).reduce((a, c) => a + c)))) {
-      return
-    }
-
-    // authorize
-    let m: string
-    try {
-      m = await this.wallet.authorize()
-    } catch (err) {
-      if (err.message !== 'cancelled') {
-        console.log(err)
-      }
       return
     }
 
@@ -361,8 +402,9 @@ export class SendPage {
       await this.clipboard.copy('').catch((err: any) => {
 
       })
-      this.navCtrl.popToRoot()// BUG: this.canLeave is still false
     }
+
+    return txComplete
 
   }
 
@@ -410,7 +452,7 @@ export class SendPage {
 
   sp_handlePaste(ev: any) {
     let text: string = ev.clipboardData.getData('text')
-    if (typeof this.wallet.getAddressFormat(text) === 'undefined') {
+    if (!this.wallet.validatePaymail(text) && typeof this.wallet.getAddressFormat(text) === 'undefined') {
       this.sp_handleURL(text)
     }
   }
@@ -428,8 +470,9 @@ export class SendPage {
         return
       }
       this.lastRawClipboardContent = content
+      let isPaymail: boolean = this.wallet.validatePaymail(content)
       let af: string = this.wallet.getAddressFormat(content)
-      if (!content || !af && !this.wallet.getRequestFromURL(content)) {
+      if (!content || !isPaymail && !af && !this.wallet.getRequestFromURL(content)) {
         this.currentClipboardContent = ''
         return
       }
@@ -443,7 +486,9 @@ export class SendPage {
         this.initPage(undefined)
         this.ionViewDidLoad()
         let url: string
-        if (af === 'legacy') {
+        if (isPaymail) {
+          url = 'payto:' + this.activeClipboardContent
+        } else if (af === 'legacy') {
           url = 'bitcoin:' + this.activeClipboardContent + '?sv'
         } else if (af === 'cashaddr' && !this.activeClipboardContent.match(/^bitcoincash:/gi)) {
           url = 'bitcoincash:' + this.activeClipboardContent

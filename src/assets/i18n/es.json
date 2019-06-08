@@ -1,4 +1,10 @@
 {
+  "HANDLE_REGISTRATION_TIME": "Tiempo de registro",
+  "PLEASE_WAIT": "Por favor espera",
+  "ERR_INVALID_HANDLE": "Nombre de usuario no válido",
+  "ERR_HANDLE_NOT_AVAILABLE": "Nombre de usuario no disponible",
+  "ENTER_HANDLE": "Elige un nombre de usuario",
+  "ERR_UNRESOLVED_PAYMAIL": "Paymail desconocido",
   "PRICE": "Precio",
   "SHARE": "Compartir",
   "DELETE": "Eliminar",

@@ -1,4 +1,10 @@
 {
+  "HANDLE_REGISTRATION_TIME": "Registration time",
+  "PLEASE_WAIT": "Please wait",
+  "ERR_INVALID_HANDLE": "Invalid handle",
+  "ERR_HANDLE_NOT_AVAILABLE": "Handle unavailable",
+  "ENTER_HANDLE": "Choose a handle",
+  "ERR_UNRESOLVED_PAYMAIL": "Unknown Paymail",
   "RECOVER_NON_COMPLIANT_WALLET": "Buggy BIP32 recovery",
   "PRICE": "Price",
   "SHARE": "Share",

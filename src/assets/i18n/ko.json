@@ -1,4 +1,10 @@
 {
+  "HANDLE_REGISTRATION_TIME": "등록 시간",
+  "PLEASE_WAIT": "기다려주세요",
+  "ERR_INVALID_HANDLE": "잘못된 사용자 이름",
+  "ERR_HANDLE_NOT_AVAILABLE": "사용자 이름을 사용할 수 없음",
+  "ENTER_HANDLE": "사용자 이름 선택",
+  "ERR_UNRESOLVED_PAYMAIL": "알 수없는 Paymail",
   "PRICE": "가격",
   "SHARE": "공유",
   "DELETE": "삭제",

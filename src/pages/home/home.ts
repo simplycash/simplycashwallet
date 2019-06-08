@@ -22,6 +22,7 @@ export class HomePage {
   public amount: number
   public qrCodeURL: string
   public isSharing: boolean = false
+  public isRegistering: boolean = false
   public showRequestAmount: boolean = false
 
   public updateCallback: Function
@@ -381,6 +382,9 @@ export class HomePage {
     if (this.wallet.getAddressFormat(text) && await this.handleURL('bitcoin:' + text + '?sv')) { // possibly bitcoin:cashaddr?sv
       return true
     }
+    if (this.wallet.validatePaymail(text) && await this.handleURL('payto:' + text)) {
+      return true
+    }
     if (this.wallet.validateWIF(text)) {
       await this.navCtrl.push('SweepPage', {
         wif: text
@@ -547,7 +551,7 @@ export class HomePage {
 
     // Check if app was resume by custom url scheme
     (window as any).handleOpenURL = (url: string) => {
-      if (this.platform.is('ios') && !url.match(/^bitcoin([-_]?(sv|cash))?:.*$/gi)) {
+      if (this.platform.is('ios') && !url.match(/^bitcoin([-_]?(sv|cash))?:.+$/gi) && !url.match(/^payto:.+$/gi)) {
         return
       }
       if (
@@ -588,7 +592,7 @@ export class HomePage {
       if (!content) {
         return
       }
-      if (this.wallet.getRequestFromURL(content) || this.wallet.getAddressFormat(content)) {
+      if (this.wallet.getRequestFromURL(content) || this.wallet.getAddressFormat(content) || this.wallet.validatePaymail(content)) {
         this.clipboardContent = content
       }
     }).catch((err: any) => {
@@ -610,6 +614,23 @@ export class HomePage {
 
   dummyFunction() {
 
+  }
+
+  async onHandleClick() {
+    if (this.isRegistering || this.wallet.isWatchOnly()) {
+      return
+    }
+    this.isRegistering = true
+    await this.wallet.promptForHandle()
+    this.isRegistering = false
+  }
+
+  onHandlePress() {
+    let handle = this.wallet.getHandle()
+    if (!handle) {
+      return
+    }
+    this.copyAddress(this.wallet.getPaymail())
   }
 
 }
