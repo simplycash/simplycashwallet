@@ -2432,9 +2432,11 @@ export class Wallet {
       let freeze: boolean = false
       let handleAlert = this.alertCtrl.create({
         enableBackdropDismiss: false,
+        cssClass: 'promptForHandleCSSClass',
         title: this.translate.instant('ENTER_HANDLE'),
         inputs: [{
           name: 'handle',
+          type: 'password',
           placeholder: 'a-z 0-9 _'
         }],
         buttons: [{
@@ -2475,7 +2477,13 @@ export class Wallet {
           }
         }]
       })
-      handleAlert.present()
+      handleAlert.present().then(() => {
+        Array.from(window.document.querySelectorAll('.promptForHandleCSSClass input')).forEach((el: any) => {
+          el.setAttribute('type', 'text')
+          el.setAttribute('autocomplete', 'off')
+          el.setAttribute('autocorrect', 'off')
+        })
+      })
     }).catch((err) => {
       console.log(err)
     })
