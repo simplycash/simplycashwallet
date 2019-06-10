@@ -2302,7 +2302,7 @@ export class Wallet {
   }
 
   h_handleIsValid(handle: string): boolean {
-    if (handle.match(/^[a-z0-9_]{1,15}$/g)) {
+    if (handle.match(/^[a-z0-9_]{1,30}$/g)) {
       return true
     } else {
       this.alertCtrl.create({
