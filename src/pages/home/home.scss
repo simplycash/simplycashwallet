@@ -79,7 +79,7 @@ page-home {
     justify-content: center;
     align-items: center;
     font-size: 2rem;
-    min-height: 100px;
+    // min-height: 100px;
     color: white;
   }
 
@@ -89,7 +89,7 @@ page-home {
     justify-content: center;
     align-items: center;
     font-size: 2rem;
-    min-height: 100px;
+    // min-height: 100px;
     color: white;
   }
 
@@ -122,9 +122,9 @@ page-home {
   }
 
   .handle-container {
-    margin: 20px 0;
     text-align: center;
     div {
+      padding: 20px 0;
       display: inline-block;
       color: white;
     }
