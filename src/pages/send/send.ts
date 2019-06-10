@@ -224,6 +224,8 @@ export class SendPage {
     if (hasPaymail) {
       let senderPaymail: string
       let signingKey: any
+      let loader = this.loadingCtrl.create()
+      await loader.present()
       if (!this.wallet.isWatchOnly() && this.wallet.getHandle()) {
         senderPaymail = this.wallet.getPaymail()
         signingKey = this.wallet.getIdentityPrivateKey(m)
@@ -236,7 +238,9 @@ export class SendPage {
           output.script = await this.wallet.lookupPaymail(output.paymail, senderPaymail, signingKey)
           delete output.paymail
         }))
+        await loader.dismiss()
       } catch (err) {
+        await loader.dismiss()
         this.alertCtrl.create({
           enableBackdropDismiss: false,
           title: this.translate.instant('ERROR'),

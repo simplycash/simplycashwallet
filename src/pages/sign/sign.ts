@@ -1,5 +1,5 @@
 import { Component, ViewChild } from '@angular/core'
-import { AlertController, IonicPage, NavController, NavParams, Platform, ToastController } from 'ionic-angular'
+import { AlertController, IonicPage, LoadingController, NavController, NavParams, Platform, ToastController } from 'ionic-angular'
 
 import { TranslateService } from '@ngx-translate/core'
 import { Wallet } from '../../providers/providers'
@@ -17,6 +17,7 @@ export class SignPage {
   public finished: boolean
   constructor(
     public alertCtrl: AlertController,
+    public loadingCtrl: LoadingController,
     public navCtrl: NavController,
     public navParams: NavParams,
     public platform: Platform,
@@ -34,17 +35,23 @@ export class SignPage {
   }
 
   async signPreparedTx() {
+    let loader = this.loadingCtrl.create({
+      content: this.translate.instant('SIGNING') + '...'
+    })
     this.finished = true
     try {
       let m: string = await this.wallet.authorize()
+      await loader.present()
       let signed: any = await this.wallet.signPreparedTx(this.unsignedTx, m)
       let urls: string[] = await this.wallet.getQRs(signed.hex, 'signed')
       this.qrCodeURLs = urls
+      await loader.dismiss()
     } catch (err) {
       this.finished = false
       if (err.message === 'cancelled') {
         return
       }
+      await loader.dismiss()
       console.log(err)
       await this.alertCtrl.create({
         enableBackdropDismiss: false,
