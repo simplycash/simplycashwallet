@@ -2398,32 +2398,6 @@ export class Wallet {
     }
   }
 
-  async h_deregister(privateKey: bitcoincash.PrivateKey): Promise<void> {
-    let loader = this.loadingCtrl.create()
-    await loader.present()
-    try {
-      let handle: string = this.getHandle()
-      let timestamp: number = Math.floor(new Date().getTime() / 1000)
-      let message: string = ['deregister', handle, timestamp].join(':')
-      let signature: string = bitcoincash_Message.sign(message, privateKey)
-      await this.apiWS('handle.deregister', {
-        handle: handle,
-        timestamp: timestamp,
-        signature: signature
-      })
-      await this.refreshHandle()
-      await loader.dismiss()
-    } catch (err) {
-      await this.refreshHandle()
-      await loader.dismiss()
-      this.alertCtrl.create({
-        enableBackdropDismiss: false,
-        title: this.translate.instant('ERROR'),
-        buttons: [this.translate.instant('OK')]
-      }).present()
-    }
-  }
-
   async promptForHandle(): Promise<void> {
     let loader = this.loadingCtrl.create()
     await loader.present()
@@ -2461,7 +2435,6 @@ export class Wallet {
         title: this.translate.instant('ENTER_HANDLE'),
         inputs: [{
           name: 'handle',
-          value: this.getHandle() || '',
           placeholder: 'a-z 0-9 _'
         }],
         buttons: [{
@@ -2482,37 +2455,22 @@ export class Wallet {
             if (freeze) {
               return false
             }
-            let newHandle: string = data.handle.trim().toLowerCase()
-            let oldHandle: string = this.getHandle()
-            if (!newHandle && !oldHandle || newHandle === oldHandle) {
-              handleAlert.dismiss().then(() => {
-                resolve()
-              })
+            let handle: string = data.handle.trim().toLowerCase()
+            if (!handle || !this.h_handleIsValid(handle)) {
               return false
             }
-            if (newHandle && !this.h_handleIsValid(newHandle)) {
-              return false
-            }
-            if (!newHandle) {
+            freeze = true
+            this.h_handleIsAvailable(handle).then((isAvailable) => {
+              freeze = false
+              if (!isAvailable) {
+                return
+              }
               handleAlert.dismiss().then(() => {
-                return this.h_deregister(privateKey)
+                return this.h_register(handle, privateKey)
               }).then(() => {
                 resolve()
               })
-            } else {
-              freeze = true
-              this.h_handleIsAvailable(newHandle).then((isAvailable) => {
-                freeze = false
-                if (!isAvailable) {
-                  return
-                }
-                handleAlert.dismiss().then(() => {
-                  return this.h_register(newHandle, privateKey)
-                }).then(() => {
-                  resolve()
-                })
-              })
-            }
+            })
             return false
           }
         }]

@@ -617,7 +617,7 @@ export class HomePage {
   }
 
   async onHandleClick() {
-    if (this.isRegistering || this.wallet.isWatchOnly()) {
+    if (this.wallet.getHandle() || this.isRegistering || this.wallet.isWatchOnly() || !this.wallet.isSynced()) {
       return
     }
     this.isRegistering = true
