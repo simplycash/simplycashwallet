@@ -491,8 +491,16 @@ export class HomePage {
   }
 
   handleSignedTx(text: string): boolean {
-    return this.handleSplitQR(text, 'signed', (hex) => {
-      this.wallet.broadcastTx(hex)
+    return this.handleSplitQR(text, 'signed', async (hex) => {
+      let txComplete: boolean = await this.wallet.broadcastTx(hex)
+      if (!txComplete) {
+        return
+      }
+      await this.alertCtrl.create({
+        enableBackdropDismiss: false,
+        title: this.translate.instant('TX_COMPLETE'),
+        buttons: [this.translate.instant('OK')]
+      }).present()
     })
   }
 

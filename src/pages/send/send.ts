@@ -253,8 +253,28 @@ export class SendPage {
 
     if (this.wallet.isWatchOnly()) {
       await this.makeUnsignedTx(outputs)
+      return false
     } else {
-      return await this.signAndBroadcast(outputs, m)
+      let txComplete: boolean = await this.signAndBroadcast(outputs, m)
+      if (!txComplete) {
+        return false
+      }
+      let message: string
+      try {
+        let unit: string = this.wallet.getPreferredUnit()
+        let recipient: string = this.addressEl.value
+        let amount: string = this.wallet.convertUnit('SATS', unit, this.myAmountEl.getSatoshis().toString(), true)
+        message = `${recipient}<br>${amount} ${unit}`
+      } catch (err) {
+        console.log(err)
+      }
+      await this.alertCtrl.create({
+        enableBackdropDismiss: false,
+        title: this.translate.instant('TX_COMPLETE'),
+        message: message,
+        buttons: [this.translate.instant('OK')]
+      }).present()
+      return true
     }
   }
 
@@ -277,6 +297,9 @@ export class SendPage {
           outputs = [Object.assign({}, this.info.outputs[0])]
           outputs[0].satoshis = satoshis
         } else {
+          if (this.wallet.validatePaymail(this.addressEl.value)) {
+            this.addressEl.value = this.addressEl.value.trim().toLowerCase()
+          }
           outputs = [{
             address: this.addressEl.value,
             satoshis: satoshis

@@ -1981,12 +1981,6 @@ export class Wallet {
     try {
       await this._broadcastTx(hex)
       await loader.dismiss()
-      let successAlert = this.alertCtrl.create({
-        enableBackdropDismiss: false,
-        title: this.translate.instant('TX_COMPLETE'),
-        buttons: [this.translate.instant('OK')]
-      })
-      await successAlert.present()
       return true
     } catch (err) {
       await loader.dismiss()

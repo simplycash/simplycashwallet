@@ -195,6 +195,11 @@ export class SweepPage {
       return
     }
     if (await this.wallet.broadcastTx(hex, loader)) {
+      await this.alertCtrl.create({
+        enableBackdropDismiss: false,
+        title: this.translate.instant('TX_COMPLETE'),
+        buttons: [this.translate.instant('OK')]
+      }).present()
       this.navCtrl.pop()
     }
   }
