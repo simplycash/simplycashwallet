@@ -2393,25 +2393,6 @@ export class Wallet {
   }
 
   async promptForHandle(): Promise<void> {
-    let loader = this.loadingCtrl.create()
-    await loader.present()
-    let startTime: number
-    try {
-      startTime = await this.apiWS('handle.start_time')
-    } catch (err)  {
-      await loader.dismiss()
-      return
-    }
-    await loader.dismiss()
-    if (new Date().getTime() < startTime) {
-      await this.alertCtrl.create({
-        enableBackdropDismiss: false,
-        title: this.translate.instant('HANDLE_REGISTRATION_TIME'),
-        message: new Date(startTime).toUTCString(),
-        buttons: [this.translate.instant('OK')]
-      }).present()
-      return
-    }
     let privateKey: bitcoincash.PrivateKey
     try {
       let m: string = await this.authorize()
