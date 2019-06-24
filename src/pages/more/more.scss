@@ -1,3 +1,5 @@
-page-more {
-
+.platform-ios page-more {
+  ion-header > ion-navbar > ion-buttons > button {
+    margin: 0 0.5rem;
+  }
 }

@@ -11,8 +11,8 @@
   & + .nav-decor {
     background-color: transparent !important;
   }
-  .toolbar-ios ion-title {
-    padding: 0 70px 1px;
+  ion-header > ion-navbar > ion-buttons > button {
+    margin: 0 0.5rem;
   }
 }
 

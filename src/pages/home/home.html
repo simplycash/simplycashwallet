@@ -10,10 +10,12 @@
         <ion-option *ngFor="let w of wallet.getAllWalletNames().sort()" [value]="w">{{ w }}</ion-option>
       </ion-select>
     </ion-item>
-    <ion-buttons end>
+    <ion-buttons start>
       <button ion-button *ngIf="wallet.isConnecting() || wallet.isSyncing()">
         <ion-spinner color="light"></ion-spinner>
       </button>
+    </ion-buttons>
+    <ion-buttons end>
       <button ion-button icon-only (click)="navCtrl.push('HistoryPage')">
         <ion-icon ios="ios-time-outline" md="md-time"></ion-icon>
       </button>

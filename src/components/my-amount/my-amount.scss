@@ -36,7 +36,7 @@ my-amount {
     transition: padding-bottom 0.2s;
   }
   .pad-outer[pad-is-shown]:after {
-    padding-bottom: 60%;
+    padding-bottom: 65%;
   }
   .pad-inner {
     position: absolute;
@@ -45,7 +45,7 @@ my-amount {
   .pad-inner:after {
     content: "";
     display: block;
-    padding-bottom: 60%;
+    padding-bottom: 65%;
   }
   .pad {
     position: absolute;
@@ -53,6 +53,7 @@ my-amount {
     height: 100%;
     display: flex;
     flex-direction: column;
+    padding-bottom: 35px;
   }
   .pad-row {
     flex: 1;
