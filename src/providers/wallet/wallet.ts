@@ -1103,7 +1103,7 @@ export class Wallet {
           return
         }
         let receivedAmount: string = this.convertUnit('SATS', unit, tx.delta.toString(), true) || ''
-        if (receivedAmount.match(/^\d+\.\d+$/g)) {
+        if (unit === 'BSV' && receivedAmount.match(/^\d+\.\d+$/g)) {
           receivedAmount = receivedAmount.replace(/\.?0+$/, '')
         }
         let msg: string = `${this.translate.instant('RECEIVED')} ${receivedAmount} ${unit}`
