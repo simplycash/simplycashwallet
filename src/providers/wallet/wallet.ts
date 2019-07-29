@@ -1847,7 +1847,22 @@ export class Wallet {
         hex_tentative = await this.signTx(ustx, availableKeys)
         fee_required = hex_tentative.length / 2
       } else {
-        fee_required = 149 * utxos.length + 34 * _outputs.length + 10
+        let f1 = 149 * utxos.length
+        let f2 = _outputs.map((o) => {
+          let len = o.script.length / 2
+          let f = len + 8 + 1
+          if (len <= 75) {
+            return f
+          }
+          if (len <= 256) {
+            return f + 1
+          }
+          if (len <= 65536) {
+            return f + 2
+          }
+          return f + 4
+        }).reduce((a, c) => a + c)
+        fee_required = f1 + f2 + 10
       }
       if (fee_tentative >= fee_required) {
         break
@@ -1872,13 +1887,49 @@ export class Wallet {
       }
     })
 
+    let fee_final: number = acc - toAmount - changeAmount
+    if (fee_final > 100000) {
+      await this.confirmFee(fee_final)
+    }
+
     return {
       satoshis: toAmount,
-      fee: acc - toAmount - changeAmount,
+      fee: fee_final,
       hex: hex_tentative,
       inputs: txInputs,
       outputs: txOutputs
     }
+  }
+
+  async confirmFee(fee: number): Promise<void> {
+    let unit: string = this.getPreferredUnit()
+    let message: string = `${this.convertUnit('SATS', unit, fee.toString(), true) || '--'} ${unit}`
+    return new Promise<void>((resolve, reject) => {
+      let feeAlert = this.alertCtrl.create({
+        enableBackdropDismiss: true,
+        title: this.translate.instant('FEE'),
+        message: message,
+        buttons: [{
+          role: 'cancel',
+          text: this.translate.instant('CANCEL'),
+          handler: () => {
+            feeAlert.dismiss().then(() => {
+              reject(new Error('cancelled'))
+            })
+            return false
+          }
+        }, {
+          text: this.translate.instant('OK'),
+          handler: () => {
+            feeAlert.dismiss().then(() => {
+              resolve()
+            })
+            return false
+          }
+        }]
+      })
+      feeAlert.present()
+    })
   }
 
   async makeSweepTx(wif: string, info?: IWifInfo): Promise<ITransaction> {

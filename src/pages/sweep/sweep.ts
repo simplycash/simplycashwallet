@@ -177,6 +177,9 @@ export class SweepPage {
       hex = signedTx.hex
     } catch (err) {
       await loader.dismiss()
+      if (err.message === 'cancelled') {
+        return
+      }
       console.log(err)
       let message: string
       if (err.message == 'not connected') {

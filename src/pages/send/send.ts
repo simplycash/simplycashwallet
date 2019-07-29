@@ -361,8 +361,11 @@ export class SendPage {
       }), drain)
       this.qrCodeURLs = await this.wallet.getQRs(JSON.stringify(unsignedTx), 'unsigned')
     } catch (err) {
-      console.log(err)
       this.qrCodeURLs = []
+      if (err.message === 'cancelled') {
+        return
+      }
+      console.log(err)
       let errMessage = err.message
       if (err.message === 'not enough fund') {
         errMessage = this.translate.instant('ERR_NOT_ENOUGH_FUND')
@@ -403,12 +406,15 @@ export class SendPage {
       }), drain, m)
       hex = signedTx.hex
     } catch (err) {
+      await loader.dismiss()
+      if (err.message === 'cancelled') {
+        return
+      }
       console.log(err)
       let errMessage = err.message
       if (err.message === 'not enough fund') {
         errMessage = this.translate.instant('ERR_NOT_ENOUGH_FUND')
       }
-      await loader.dismiss()
       await this.alertCtrl.create({
         enableBackdropDismiss: false,
         title: this.translate.instant('ERROR'),
