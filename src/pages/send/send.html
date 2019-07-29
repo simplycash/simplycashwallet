@@ -38,7 +38,7 @@
         type="text"
         readonly></ion-input>
     </ion-item>
-    <ion-item *ngIf="!info || !info.bip70">
+    <ion-item *ngIf="!info || !info.bip70 && !info.isBitcoinOut">
       <ion-label stacked color="primary">{{ 'BITCOIN_CASH_ADDRESS' | translate }}</ion-label>
       <ion-input
         #address

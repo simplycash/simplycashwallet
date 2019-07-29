@@ -93,7 +93,7 @@ export class SendPage {
   }
 
   ionViewDidLoad() {
-    if (this.outputSum > 0) {
+    if (this.outputSum > 0 || this.info.isBitcoinOut) {
       this.myAmountEl.setFixedAmount(this.outputSum.toString())
     } else {
       this.myAmountEl.setFixedAmount(undefined)
@@ -115,7 +115,7 @@ export class SendPage {
   }
 
   ionViewDidEnter() {
-    if (!this.addressValue || this.outputSum > 0) {
+    if (!this.addressValue || this.outputSum > 0 || this.info.isBitcoinOut) {
       return
     }
     window.setTimeout(() => {
@@ -262,7 +262,7 @@ export class SendPage {
       let message: string
       try {
         let unit: string = this.wallet.getPreferredUnit()
-        let recipient: string = this.addressEl.value
+        let recipient: string = this.info.isBitcoinOut ? (this.labelValue || 'Script') : this.addressEl.value
         let amount: string = this.wallet.convertUnit('SATS', unit, this.myAmountEl.getSatoshis().toString(), true)
         message = `${recipient}<br>${amount} ${unit}`
       } catch (err) {
@@ -281,7 +281,7 @@ export class SendPage {
   validateSendDetails(): any[] {
     try {
       let satoshis: number = this.myAmountEl.getSatoshis()
-      if (!(this.outputSum > 0 || satoshis > 0)) { //predefined or input > 0
+      if (!(this.outputSum > 0 || this.info.isBitcoinOut || satoshis > 0)) { //predefined or input > 0
         throw new Error('invalid amount')
       }
       let cacheBalance: number = this.wallet.getCacheBalance()
@@ -289,7 +289,9 @@ export class SendPage {
         throw new Error('not enough fund')
       }
       let outputs: any[]
-      if (this.outputSum > 0) { //if amount is predefined
+      if (this.info.isBitcoinOut) {
+        outputs = this.info.outputs.map(o => Object.assign({}, o))
+      } else if (this.outputSum > 0) { //if amount is predefined
         outputs = this.info.outputs.map(o => Object.assign({}, o))
         outputs = outputs.filter(o => o.satoshis > 0)
       } else { //if manual input amount

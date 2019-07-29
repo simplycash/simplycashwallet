@@ -116,21 +116,19 @@ interface IInput {
 
 interface IOutput {
   path?: [number, number],
-  script: string,
-  satoshis: number
-}
-
-interface IAddressOutput {
-  address: string,
+  address?: string,
+  script?: string,
   satoshis: number
 }
 
 interface IRequest {
-  outputs: IAddressOutput[],
+  outputs: IOutput[],
   url?: string,
   label?: string,
   message?: string,
-  purpose?: string
+  purpose?: string,
+  isPaymail: boolean,
+  isBitcoinOut: boolean
 }
 
 interface IWifInfo {
@@ -1565,6 +1563,8 @@ export class Wallet {
 
   getRequestFromURL(text: string): IRequest {
     let isPaymail: boolean = false
+    let isBitcoinOut: boolean = false
+    let outputs: IOutput[]
     let params: any = {}
     let address: string
     let satoshis: number
@@ -1586,21 +1586,50 @@ export class Wallet {
     } else if (text.match(/^payto:/gi)) {
       text = text.slice(6)
       isPaymail = true
+    } else if (text.match(/^bitcoin-out:/gi)) {
+      isBitcoinOut = true
+      text = text.slice(12)
     } else {
       return
     }
 
-    let addr: string
+    let path: string
     let i: number = text.indexOf('?')
     if (i === -1) {
-      addr = text
+      path = text
     } else {
-      addr = text.slice(0, i)
+      path = text.slice(0, i)
     }
-    if (isPaymail && this.validatePaymail(addr) || typeof this.getAddressFormat(addr) !== 'undefined') {
-      address = addr
-    }
-    if (typeof address === 'undefined' && i === -1) {
+    if (typeof this.getAddressFormat(path) !== 'undefined') {
+      address = path
+    } else if (isPaymail) {
+      if (!this.validatePaymail(path)) {
+        return
+      }
+      address = path.trim().toLowerCase()
+    } else if (isBitcoinOut) {
+      try {
+        let a = JSON.parse(decodeURIComponent(path).toLowerCase())
+        if (!Array.isArray(a) || a.length === 0) {
+          throw new Error()
+        }
+        a.forEach((o) => {
+          if (!(typeof o.v === 'number' && o.v >= 0)) {
+            throw new Error()
+          }
+          if (!o.s.match(/^([a-f0-9]{2})+$/)) {
+            throw new Error()
+          }
+        })
+        outputs = a.map(o => ({
+          script: o.s,
+          satoshis: parseInt((o.v * 1e8).toFixed(0))
+        }))
+      } catch (err) {
+        console.log(err)
+        return
+      }
+    } else {
       return
     }
 
@@ -1631,7 +1660,7 @@ export class Wallet {
     }
     if (typeof params.r !== 'undefined') {
       url = decodeURIComponent(params.r)
-    } else if (typeof address === 'undefined') {
+    } else if (typeof address === 'undefined' && !isBitcoinOut) {
       return
     }
     if (typeof params.label !== 'undefined') {
@@ -1644,15 +1673,21 @@ export class Wallet {
       purpose = decodeURIComponent(params.purpose)
     }
 
-    return {
-      outputs: typeof address === 'undefined' ? [] : [{
+    if (!outputs) {
+      outputs = !address ? [] : [{
         address: address,
         satoshis: satoshis
-      }],
+      }]
+    }
+
+    return {
+      outputs: outputs,
       url: url,
       label: label,
       message: message,
-      purpose: purpose
+      purpose: purpose,
+      isPaymail: isPaymail,
+      isBitcoinOut: isBitcoinOut
     }
   }
 
