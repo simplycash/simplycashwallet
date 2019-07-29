@@ -514,7 +514,7 @@ export class SendPage {
         this.ionViewDidLoad()
         let url: string
         if (isPaymail) {
-          url = 'payto:' + this.activeClipboardContent
+          url = 'payto:' + this.activeClipboardContent.trim().toLowerCase()
         } else if (af === 'legacy') {
           url = 'bitcoin:' + this.activeClipboardContent + '?sv'
         } else if (af === 'cashaddr' && !this.activeClipboardContent.match(/^bitcoincash:/gi)) {

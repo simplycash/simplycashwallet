@@ -382,7 +382,7 @@ export class HomePage {
     if (this.wallet.getAddressFormat(text) && await this.handleURL('bitcoin:' + text + '?sv')) { // possibly bitcoin:cashaddr?sv
       return true
     }
-    if (this.wallet.validatePaymail(text) && await this.handleURL('payto:' + text)) {
+    if (this.wallet.validatePaymail(text) && await this.handleURL('payto:' + text.trim().toLowerCase())) {
       return true
     }
     if (this.wallet.validateWIF(text)) {
