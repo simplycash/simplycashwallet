@@ -57,8 +57,9 @@ export class MyApp {
             }
             let data: any = notification.data
             if (data.page === 'HistoryPage' && this.navCtrl.getActive().component.pageName !== 'HistoryPage') {
-              this.ngZone.run(() => {
-                this.navCtrl.push('HistoryPage', data.navParams)
+              this.ngZone.run(async () => {
+                await this.navCtrl.popToRoot()
+                await this.navCtrl.push('HistoryPage', data.navParams)
               })
             }
           })

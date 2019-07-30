@@ -572,6 +572,7 @@ export class HomePage {
       }
       window.setTimeout(() => {
         this.ngZone.run(async () => {
+          await this.navCtrl.popToRoot()
           if (await this.handleURL(url)) {
             return
           }
