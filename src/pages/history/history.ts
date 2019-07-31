@@ -1,8 +1,8 @@
 import { Component } from '@angular/core'
-import { AlertController, IonicPage, NavController, Platform } from 'ionic-angular'
+import { ActionSheetController, AlertController, IonicPage, NavController, Platform } from 'ionic-angular'
 import { InAppBrowser } from '@ionic-native/in-app-browser'
 import { LocalNotifications } from '@ionic-native/local-notifications'
-
+import { TranslateService } from '@ngx-translate/core'
 import { Wallet } from '../../providers/providers'
 
 @IonicPage()
@@ -21,11 +21,13 @@ export class HistoryPage {
   public cacheHistory: any
 
   constructor(
+    public actionSheetCtrl: ActionSheetController,
     public alertCtrl: AlertController,
     public iab: InAppBrowser,
     public localNotifications: LocalNotifications,
     public navCtrl: NavController,
     public platform: Platform,
+    public translate: TranslateService,
     public wallet: Wallet
   ) {
     this.updateCallback = () => {
@@ -118,6 +120,7 @@ export class HistoryPage {
           date: 'unknown',
           time: '',
           delta: tx.delta,
+          remark: tx.remark || '',
           seen: tx.seen
         }
       }
@@ -129,6 +132,7 @@ export class HistoryPage {
         date: dateStr,
         time: timeStr,
         delta: tx.delta,
+        remark: tx.remark || '',
         seen: tx.seen
       }
     })
@@ -144,7 +148,36 @@ export class HistoryPage {
     this.currentUnit = this.wallet.getPreferredUnit()
   }
 
-  showTx(txid: string) {
-    this.iab.create('https://whatsonchain.com/tx/'+txid, '_system')
+  showTxAction(tx: any) {
+    let action = this.actionSheetCtrl.create({
+      buttons: [{
+          text: this.translate.instant('REMARK'),
+          icon: 'create',
+          handler: () => {
+            action.dismiss().then(() => {
+              this.addRemark(tx)
+            })
+            return false
+          }
+        }, {
+          text: this.translate.instant('BLOCK_EXPLORER'),
+          icon: 'globe',
+          handler: () => {
+            action.dismiss().then(() => {
+              this.iab.create('https://whatsonchain.com/tx/' + tx.txid, '_system')
+            })
+            return false
+          }
+      }]
+    })
+    action.present()
+  }
+
+  async addRemark(tx: any) {
+    try {
+      tx.remark = await this.wallet.promptForTxRemark(tx.txid) || ''
+    } catch (err) {
+      console.log(err)
+    }
   }
 }

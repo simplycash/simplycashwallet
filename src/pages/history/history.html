@@ -22,8 +22,8 @@
     <ion-item-group *ngFor="let dateGroup of dateGroups">
       <ion-item-divider *ngIf="dateGroup.date === today()" color="light">{{ 'TODAY' | translate }}</ion-item-divider>
       <ion-item-divider *ngIf="dateGroup.date !== today()" color="light">{{ dateGroup.date }}</ion-item-divider>
-      <ion-item *ngFor="let tx of dateGroup.txs" (click)="showTx(tx.txid)" [attr.unseen]="tx.seen ? null : ''">
-        <span>{{ tx.time }}</span>
+      <ion-item *ngFor="let tx of dateGroup.txs" (click)="showTxAction(tx)" [attr.unseen]="tx.seen ? null : ''">
+        <span>{{ tx.time }}&nbsp;&nbsp;&nbsp;&nbsp;{{ tx.remark }}</span>
         <span item-end [attr.class]="tx.delta > 0 ? 'pdelta' : 'ndelta'">{{ tx.delta.toString() | convertUnitPipe:currentUnit:'comma' }}</span>
       </ion-item>
     </ion-item-group>

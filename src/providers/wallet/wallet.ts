@@ -61,6 +61,7 @@ interface ITxRecord {
   timestamp: number,
   friendlyTimestamp: number,
   delta: number,
+  remark: string,
   seen: boolean
 }
 
@@ -1087,6 +1088,13 @@ export class Wallet {
     let oldTxs: ITxRecord[] = results[4].filter(tx => allTxids.indexOf(tx.txid) !== -1)
     let newTxids: string[] = newTxs.map(tx => tx.txid)
 
+    // publish only after updated this.currentWallet.cache
+    window.setTimeout(() => {
+      newTxids.forEach((txid) => {
+        this.events.publish(`tx:${txid}`)
+      })
+    }, 0)
+
     let skipNotification: boolean = (allTxids.length === 0 && results[4].length > 1) || this.app.getRootNav().getActive().component.pageName === 'HistoryPage'
     if (!skipNotification) {
       let _newTxs: ITxRecord[] = newTxs
@@ -1135,6 +1143,7 @@ export class Wallet {
         timestamp: otx.timestamp,
         friendlyTimestamp: tx.friendlyTimestamp || (otx.timestamp ? Math.min(otx.timestamp, currentTimestamp) : currentTimestamp),
         delta: otx.delta,
+        remark: tx.remark,
         seen: unseenTxids.indexOf(otx.txid) === -1
       }
       Object.assign(tx, newValue)
@@ -1146,6 +1155,7 @@ export class Wallet {
         timestamp: ntx.timestamp,
         friendlyTimestamp: ntx.timestamp ? Math.min(ntx.timestamp, currentTimestamp) : currentTimestamp,
         delta: ntx.delta,
+        remark: undefined,
         seen: false
       }
     })))
@@ -1283,6 +1293,16 @@ export class Wallet {
   unsubscribePreferredUnit(callback: Function): void {
     this.events.unsubscribe('wallet:preferredunit', callback)
     console.log('unsubscribePreferredUnit')
+  }
+
+  subscribeTx(txid: string, callback: () => void): void {
+    this.events.subscribe(`tx:${txid}`, callback)
+    console.log('subscribeTx')
+  }
+
+  unsubscribeTx(txid: string, callback: () => void): void {
+    this.events.unsubscribe(`tx:${txid}`, callback)
+    console.log('unsubscribeTx')
   }
 
   //helper
@@ -1495,6 +1515,52 @@ export class Wallet {
     if (touch) {
       await this.updateStorage()
     }
+  }
+
+  promptForTxRemark(txid: string): Promise<string> {
+    let r: ITxRecord = this.currentWallet.cache.history.find(tx => tx.txid === txid)
+    if (!r) {
+      return Promise.reject(new Error('cancelled'))
+    }
+    return new Promise((resolve, reject) => {
+      let remarkAlert = this.alertCtrl.create({
+        enableBackdropDismiss: false,
+        title: this.translate.instant('REMARK'),
+        inputs: [{
+          name: 'remark',
+          value: r.remark
+        }],
+        buttons: [{
+          role: 'cancel',
+          text: this.translate.instant('CANCEL'),
+          handler: data => {
+            remarkAlert.dismiss().then(() => {
+              reject(new Error('cancelled'))
+            })
+            return false
+          }
+        }, {
+          text: this.translate.instant('OK'),
+          handler: data => {
+            let remark: string = data.remark.trim()
+            if (r.remark === remark || !r.remark && !remark) {
+              remarkAlert.dismiss().then(() => {
+                reject(new Error('cancelled'))
+              })
+            } else {
+              remarkAlert.dismiss().then(() => {
+                r.remark = remark || undefined
+                return this.updateStorage()
+              }).then(() => {
+                resolve(r.remark)
+              })
+            }
+            return false
+          }
+        }]
+      })
+      remarkAlert.present()
+    })
   }
 
   //getters
@@ -1783,6 +1849,10 @@ export class Wallet {
   }
 
   //tx
+
+  getTxidFromHex(hex: string): string {
+    return bitcoincash.crypto.Hash.sha256(bitcoincash.crypto.Hash.sha256(Buffer.from(hex, 'hex'))).reverse().toString('hex')
+  }
 
   async makeSignedTx(outputs: IOutput[], drain: boolean, m: string): Promise<ITransaction> {
     let au: IUtxo[] = this.getCacheUtxos()

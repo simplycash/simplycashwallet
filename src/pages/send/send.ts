@@ -255,10 +255,17 @@ export class SendPage {
       await this.makeUnsignedTx(outputs)
       return false
     } else {
-      let txComplete: boolean = await this.signAndBroadcast(outputs, m)
-      if (!txComplete) {
+      let txid: string = await this.signAndBroadcast(outputs, m)
+      if (!txid) {
         return false
       }
+      let txReceived = false
+      let txCallback = () => {
+        txReceived = true
+        let btn = window.document.querySelector('.addRemarkBtnCSSClass')
+        btn && btn.removeAttribute('disabled')
+      }
+      this.wallet.subscribeTx(txid, txCallback)
       let message: string
       try {
         let unit: string = this.wallet.getPreferredUnit()
@@ -268,12 +275,41 @@ export class SendPage {
       } catch (err) {
         console.log(err)
       }
-      await this.alertCtrl.create({
+      let needToggleBalance = false
+      if (this.wallet.getShowBalance() === true) {
+        needToggleBalance = true
+        await this.wallet.toggleShowBalance()
+      }
+      let txCompleteAlert = this.alertCtrl.create({
         enableBackdropDismiss: false,
         title: this.translate.instant('TX_COMPLETE'),
         message: message,
-        buttons: [this.translate.instant('OK')]
-      }).present()
+        buttons: [{
+          cssClass: 'addRemarkBtnCSSClass',
+          text: this.translate.instant('REMARK'),
+          handler: () => {
+            this.wallet.unsubscribeTx(txid, txCallback)
+            needToggleBalance && this.wallet.toggleShowBalance()
+            txCompleteAlert.dismiss().then(() => {
+              return this.wallet.promptForTxRemark(txid)
+            }).catch((err) => {
+              console.log(err)
+            })
+            return false
+          }
+        }, {
+          text: this.translate.instant('OK'),
+          handler: () => {
+            this.wallet.unsubscribeTx(txid, txCallback)
+            needToggleBalance && this.wallet.toggleShowBalance()
+          }
+        }]
+      })
+      await txCompleteAlert.present()
+      if (!txReceived) {
+        let addRemarkBtn = window.document.querySelector('.addRemarkBtnCSSClass')
+        addRemarkBtn.setAttribute('disabled', '')
+      }
       return true
     }
   }
@@ -381,7 +417,7 @@ export class SendPage {
     }
   }
 
-  async signAndBroadcast(outputs: any[], m: string) {
+  async signAndBroadcast(outputs: any[], m: string): Promise<string> {
     let drain: boolean = this.myAmountEl.getSatoshis() === this.wallet.getCacheBalance()
 
     if (drain && !(await this.confirmDrain())) {
@@ -439,7 +475,7 @@ export class SendPage {
       })
     }
 
-    return txComplete
+    return txComplete ? this.wallet.getTxidFromHex(hex) : undefined
 
   }
 
