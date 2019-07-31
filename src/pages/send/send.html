@@ -45,8 +45,10 @@
         value="{{ addressValue }}"
         type="text"
         (paste)="sp_handlePaste($event)"
-        [readonly]="addressValue ? '' : null"
-        [clearInput]="addressValue ? false : true"></ion-input>
+        [readonly]="addressValue ? '' : null"></ion-input>
+      <button *ngIf="!addressValue" ion-button icon-only clear item-end (tap)="selectFromContacts()">
+        <ion-icon name="contacts"></ion-icon>
+      </button>
     </ion-item>
     <ion-item *ngIf="rValue">
       <ion-label stacked color="primary">{{ 'REQUEST_ORIGIN' | translate }}</ion-label>

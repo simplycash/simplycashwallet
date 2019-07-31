@@ -143,6 +143,14 @@ export class SendPage {
     await this.wallet.switchWallet(this.currentWallet)
   }
 
+  async selectFromContacts() {
+    await this.navCtrl.push('ContactsPage', {
+      cb: (contact) => {
+        this.addressEl.value = contact
+      }
+    })
+  }
+
   confirmSend(satoshis: number) {
     return new Promise((resolve, reject) => {
       let ans: boolean = false
@@ -236,6 +244,7 @@ export class SendPage {
             return
           }
           output.script = await this.wallet.lookupPaymail(output.paymail, senderPaymail, signingKey)
+          await this.wallet.addContact(output.paymail).catch((err) => { console.log(err) })
           delete output.paymail
         }))
         await loader.dismiss()

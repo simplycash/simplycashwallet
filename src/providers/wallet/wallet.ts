@@ -84,6 +84,7 @@ interface IWallet {
 }
 
 interface IPreference {
+  contacts: string[],
   defaultWallet: string,
   showBalance: boolean,
   unitIndex: number,
@@ -187,14 +188,17 @@ export class Wallet {
 
   public currentWallet: IWallet
   public stored: IStorage
-  public defaultPreference: Readonly<IPreference> = {
-    defaultWallet: '',
-    showBalance: true,
-    unitIndex: 0,
-    cryptoUnit: 'BSV',
-    currency: 'USD',
-    addressFormat: 'legacy',
-    lastAnnouncement: ''
+  getDefaultPreference(): IPreference {
+    return {
+      contacts: ['tips@simply.cash'],
+      defaultWallet: '',
+      showBalance: true,
+      unitIndex: 0,
+      cryptoUnit: 'BSV',
+      currency: 'USD',
+      addressFormat: 'legacy',
+      lastAnnouncement: ''
+    }
   }
 
   constructor(
@@ -612,7 +616,7 @@ export class Wallet {
     let obj: IStorage = {
       version: this.VERSION,
       wallets: [],
-      preference: Object.assign({}, this.defaultPreference)
+      preference: this.getDefaultPreference()
     }
     let value: IStorage = await this.updateStorage(obj)
     console.log('successfully created new storage')
@@ -864,9 +868,10 @@ export class Wallet {
         willUpdate = true
       }
       // ensure no missing preferences
-      Object.keys(this.defaultPreference).forEach((k) => {
+      let defaultPreference: IPreference = this.getDefaultPreference()
+      Object.keys(defaultPreference).forEach((k) => {
         if (typeof value.preference[k] === 'undefined') {
-          value.preference[k] = this.defaultPreference[k]
+          value.preference[k] = defaultPreference[k]
           willUpdate = true
         }
       })
@@ -2394,6 +2399,34 @@ export class Wallet {
       }]
     })
     updateAlert.present()
+  }
+
+  // contacts
+
+  getContacts(): string[] {
+    return this.stored.preference.contacts.slice()
+  }
+
+  async addContact(address: string): Promise<void> {
+    address = address.trim().toLowerCase()
+    let contacts = this.stored.preference.contacts
+    if (contacts.indexOf(address) !== -1) {
+      return
+    }
+    contacts.push(address)
+    contacts.sort()
+    await this.updateStorage()
+  }
+
+  async removeContact(address: string): Promise<void> {
+    address = address.trim().toLowerCase()
+    let contacts = this.stored.preference.contacts
+    let i = contacts.indexOf(address)
+    if (i === -1) {
+      return
+    }
+    contacts.splice(i, 1)
+    await this.updateStorage()
   }
 
   // handle/paymail
