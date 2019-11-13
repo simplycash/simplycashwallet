@@ -239,6 +239,9 @@ export class Wallet {
       // intended
       if (await this.canUseFingerprint()) {
         return await this.authorizeFingerprint()
+      } else {
+        await this.fingerprintNAPrompt()
+        throw new Error('cancelled')
       }
     } else if (p === 'PIN') {
       return await this.authorizePIN()
