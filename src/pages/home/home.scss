@@ -108,6 +108,9 @@ page-home {
     color: white;
     text-align: center;
     margin: 20px 0;
+    @media (max-height: 480px) {
+      margin: 10px 0;
+    }
   }
 
   .balance-container > div:not(:last-child) {
@@ -115,6 +118,9 @@ page-home {
     text-overflow: ellipsis;
     overflow: hidden;
     margin-bottom: 10px;
+    @media (max-height: 480px) {
+      margin-bottom: 0;
+    }
   }
 
   .qrcode-container {
@@ -150,6 +156,10 @@ page-home {
     margin: 0 auto;
     width: 200px;
     height: 200px;
+    @media (max-height: 480px) {
+      max-width: 50%;
+      height: auto;
+    }
   }
 
   .custom-footer {
