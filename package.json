@@ -44,7 +44,7 @@
     "bsv": "0.27.0",
     "buffer": "^5.1.0",
     "clipboard-polyfill": "^2.7.0",
-    "cordova-android": "7.1.4",
+    "cordova-android": "8.1.0",
     "cordova-clipboard": "git+https://github.com/simplycash/cordova-clipboard.git#8a5d31e6f048ef4e15d0b4f3bbd47cf9e3607050",
     "cordova-ios": "4.5.4",
     "cordova-plugin-add-swift-support": "^1.7.2",

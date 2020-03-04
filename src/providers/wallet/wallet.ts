@@ -1126,7 +1126,7 @@ export class Wallet {
             id: this.notificationId++,
             text: msg,
             data: { page: 'HistoryPage', navParams: {} },
-            icon: 'file://assets/icon/ic_launcher.png',
+            // icon: 'file://assets/icon/ic_launcher.png',
             foreground: true // need to modify @ionic-native/local-notifications ILocalNotification interface
           })
         } else {
