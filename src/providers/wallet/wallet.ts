@@ -1732,9 +1732,7 @@ export class Wallet {
         }
       }
     }
-    if (typeof params.r !== 'undefined') {
-      url = decodeURIComponent(params.r)
-    } else if (typeof address === 'undefined' && !isBitcoinOut) {
+    if (typeof address === 'undefined' && !isBitcoinOut) {
       return
     }
     if (typeof params.label !== 'undefined') {
