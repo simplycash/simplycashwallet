@@ -229,6 +229,7 @@ export class SendPage {
     }
 
     let hasPaymail: boolean = outputs.find(output => output.paymail) ? true : false
+    let paymentRefs: any[] = []
     if (hasPaymail) {
       let senderPaymail: string
       let signingKey: any
@@ -239,14 +240,16 @@ export class SendPage {
         signingKey = this.wallet.getIdentityPrivateKey(m)
       }
       try {
-        await Promise.all(outputs.map(async (output) => {
-          if (!output.paymail) {
-            return
+        let resolvedOutputs: any[] = []
+        await Promise.all(outputs.filter(o => o.paymail).map(async (output) => {
+          let paymentRef: any = await this.wallet.lookupPaymail(output.paymail, output.satoshis, senderPaymail, signingKey)
+          if (paymentRef.reference) {
+            paymentRefs.push(paymentRef)
           }
-          output.script = await this.wallet.lookupPaymail(output.paymail, senderPaymail, signingKey)
+          resolvedOutputs.push(...paymentRef.outputs)
           await this.wallet.addContact(output.paymail).catch((err) => { console.log(err) })
-          delete output.paymail
         }))
+        outputs = outputs.filter(o => !o.paymail).concat(resolvedOutputs)
         await loader.dismiss()
       } catch (err) {
         await loader.dismiss()
@@ -261,10 +264,13 @@ export class SendPage {
     }
 
     if (this.wallet.isWatchOnly()) {
+      if (paymentRefs.length > 0) {
+        await this.wallet.savePaymentRefs(paymentRefs)
+      }
       await this.makeUnsignedTx(outputs)
       return false
     } else {
-      let txid: string = await this.signAndBroadcast(outputs, m)
+      let txid: string = await this.signAndBroadcast(outputs, m, paymentRefs)
       if (!txid) {
         return false
       }
@@ -426,7 +432,7 @@ export class SendPage {
     }
   }
 
-  async signAndBroadcast(outputs: any[], m: string): Promise<string> {
+  async signAndBroadcast(outputs: any[], m: string, paymentRefs: any[]): Promise<string> {
     let drain: boolean = this.myAmountEl.getSatoshis() === this.wallet.getCacheBalance()
 
     if (drain && !(await this.confirmDrain())) {
@@ -471,11 +477,20 @@ export class SendPage {
       return
     }
 
+    let txid: string = this.wallet.getTxidFromHex(hex)
     let txComplete: boolean = false
     if (this.info.bip70) {
       txComplete = await this.sendBIP70(hex, loader)
     } else {
-      txComplete = await this.wallet.broadcastTx(hex, loader)
+      let metadata: any
+      if (paymentRefs.length > 0 && this.wallet.getHandle()) {
+        metadata = {
+          sender: this.wallet.getPaymail(),
+          pubkey: this.wallet.getIdentityPublicKey().toString(),
+          signature: this.wallet.signMessage(txid, this.wallet.getIdentityPrivateKey(m))
+        }
+      }
+      txComplete = await this.wallet.broadcastTx(hex, loader, paymentRefs, metadata)
     }
 
     if (txComplete) {
@@ -484,7 +499,7 @@ export class SendPage {
       })
     }
 
-    return txComplete ? this.wallet.getTxidFromHex(hex) : undefined
+    return txComplete ? txid : undefined
 
   }
 

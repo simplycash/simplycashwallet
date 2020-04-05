@@ -94,10 +94,18 @@ interface IPreference {
   lastAnnouncement: string
 }
 
+interface IPaymentRef {
+  paymail: string,
+  reference: string,
+  outputs?: IOutput[],
+  expires?: number
+}
+
 interface IStorage {
-  version: string
+  version: string,
   wallets: IWallet[],
-  preference: IPreference
+  preference: IPreference,
+  paymentRefs: IPaymentRef[]
 }
 
 interface IRecoveryInfo {
@@ -619,7 +627,8 @@ export class Wallet {
     let obj: IStorage = {
       version: this.VERSION,
       wallets: [],
-      preference: this.getDefaultPreference()
+      preference: this.getDefaultPreference(),
+      paymentRefs: []
     }
     let value: IStorage = await this.updateStorage(obj)
     console.log('successfully created new storage')
@@ -746,6 +755,7 @@ export class Wallet {
 
   async startWallet(): Promise<void> {
     await this.loadWalletFromStorage()
+    this.deleteExpiredPaymentRefs()
     this.showAnnouncement()
     this.tryToConnectAndSync()
   }
@@ -868,6 +878,11 @@ export class Wallet {
         value.wallets.forEach((wallet: any) => {
           wallet.handle = ''
         })
+        willUpdate = true
+      }
+      // introduce handle in 0.0.98
+      if (ver[0] === 0 && ver[1] === 0 && ver[2] < 98) {
+        value.paymentRefs = []
         willUpdate = true
       }
       // ensure no missing preferences
@@ -2160,12 +2175,12 @@ export class Wallet {
     })
   }
 
-  async _broadcastTx(signedTx: string): Promise<string> {
-    let txid: any = await this.apiWS('broadcast', { tx: signedTx })
+  async _broadcastTx(signedTx: string, paymentRefs: IPaymentRef[], metadata: any): Promise<string> {
+    let txid: any = await this.apiWS('broadcast', { tx: signedTx, refs: paymentRefs, meta: metadata })
     return txid
   }
 
-  async broadcastTx(hex: string, loader?: any): Promise<boolean> {
+  async broadcastTx(hex: string, loader?: any, paymentRefs?: IPaymentRef[], metadata?: any): Promise<boolean> {
     if (!loader) {
       loader = this.loadingCtrl.create({
         content: this.translate.instant('BROADCASTING')+'...'
@@ -2175,7 +2190,26 @@ export class Wallet {
       loader.setContent(this.translate.instant('BROADCASTING')+'...')
     }
     try {
-      await this._broadcastTx(hex)
+      let deleteRefs: boolean = false
+      if (!paymentRefs) {
+        if (this.stored.paymentRefs.length > 0) {
+          paymentRefs = this.findPaymentRefs(hex) // used by deletePaymentRefs
+          if (paymentRefs.length > 0) {
+            deleteRefs = true
+          }
+        } else {
+          paymentRefs = []
+        }
+      }
+      let _paymentRefs: IPaymentRef[] = paymentRefs.map(r => ({
+        paymail: r.paymail,
+        reference: r.reference
+      }))
+      metadata = metadata || {}
+      await this._broadcastTx(hex, _paymentRefs, metadata)
+      if (deleteRefs) {
+        await this.deletePaymentRefs(paymentRefs) // from findPaymentRefs
+      }
       await loader.dismiss()
       return true
     } catch (err) {
@@ -2469,24 +2503,77 @@ export class Wallet {
     return text.match(/^[^@:]+@[^@]+\.[^@]+$/g) ? true : false
   }
 
-  lookupPaymail(paymail: string, senderPaymail: string, signingKey: bitcoincash.PrivateKey): Promise<string> {
+  async savePaymentRefs(paymentRefs: IPaymentRef[]): Promise<void> {
+    paymentRefs.forEach(paymentRef => {
+      paymentRef.expires = Date.now() + 3600 * 1000
+    })
+    this.stored.paymentRefs.unshift(...paymentRefs)
+    await this.updateStorage()
+  }
+
+  async deletePaymentRefs(targetPaymentRefs: IPaymentRef[]): Promise<void> {
+    this.stored.paymentRefs = this.stored.paymentRefs.filter(existing => {
+      return targetPaymentRefs.every(target => target !== existing)
+    })
+    await this.updateStorage()
+  }
+
+  deleteExpiredPaymentRefs(): void {
+    let now: number = Date.now()
+    this.stored.paymentRefs = this.stored.paymentRefs.filter(paymentRef => paymentRef.expires > now)
+  }
+
+  findPaymentRefs(hex: string): IPaymentRef[] {
+    let tx: bitcoincash.Transaction = new bitcoincash.Transaction(hex)
+    let targets: IOutput[] = tx.outputs.map(o => o.toObject())
+    let matched: IOutput[] = []
+    let found: IPaymentRef[] = this.stored.paymentRefs.filter(paymentRef => {
+      return paymentRef.outputs.every(output => {
+        return targets.some(target => {
+          if (target.script === output.script && target.satoshis === output.satoshis && matched.indexOf(target) === -1) {
+            matched.push(target)
+            return true
+          } else {
+            return false
+          }
+        })
+      })
+    })
+    return found
+  }
+
+  signMessage(message: string, signingKey: bitcoincash.PrivateKey): string {
+    return bitcoincash_Message.sign(message, signingKey)
+  }
+
+  async lookupPaymail(paymail: string, amount: number, senderPaymail: string, signingKey: bitcoincash.PrivateKey): Promise<IPaymentRef> {
     if (!senderPaymail) {
       senderPaymail = 'someone@simply.cash'
       signingKey = new bitcoincash.PrivateKey('KyWGFe4Xy2eotn8uVmA3YMVp3HsGdzvqpteZAt7Ax7WQf1SFRREN')
     }
     let dt: string = JSON.parse(JSON.stringify({'now': new Date()})).now
-    // follow mb signature implementation, not bsvalias.org ¯\_(ツ)_/¯
-    let hashed: string = bitcoincash.crypto.Hash.sha256(Buffer.from(senderPaymail + '0' + dt + '')).toString('hex')
+    let hashed: string = bitcoincash.crypto.Hash.sha256(Buffer.from(senderPaymail + amount + dt + '')).toString('hex')
     let signature: string = bitcoincash_Message.sign(hashed, signingKey)
-    return this.apiWS('paymail.lookup', {
+    let result: { outputs: IOutput[], reference: string } = await this.apiWS('paymail.destination', {
       paymail: paymail,
       senderRequest: {
         senderHandle: senderPaymail,
         senderPaymail: senderPaymail,
         dt: dt,
+        amount: amount,
         signature: signature
       }
     })
+    let outputs: IOutput[] = result.outputs.map(o => ({
+      script: o.script,
+      satoshis: o.satoshis
+    }))
+    let reference: string = result.reference
+    return {
+      paymail: paymail,
+      reference: reference,
+      outputs: outputs
+    }
   }
 
   getHandle(): string {
