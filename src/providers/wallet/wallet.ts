@@ -190,6 +190,7 @@ export class Wallet {
   public socketRequestId: number = 0
 
   public state: EState = EState.CLOSED
+  public syncAddressesLock: Promise<void>
   public syncTaskId: number = 0
   public pendingAddresses: string[] = []
   public notificationId: number = 0
@@ -916,6 +917,7 @@ export class Wallet {
       this.stored.preference.defaultWallet = this.currentWallet.name
       await this.updateStorage()
     }
+    this.syncAddressesLock = Promise.resolve() // works within current wallet
     this.changeState(EState.OFFLINE)
     console.log('default wallet loaded')
   }
@@ -1247,6 +1249,27 @@ export class Wallet {
   }
 
   async syncAddresses(currentWallet: IWallet, pair: { receive: number, change: number }): Promise<IAddresses> {
+    let previousLock: Promise<void> = this.syncAddressesLock
+    let release
+    this.syncAddressesLock = new Promise((resolve, reject) => {
+      release = resolve
+    })
+    await previousLock
+    let result: IAddresses
+    let error: any
+    try {
+      result = await this._syncAddresses(currentWallet, pair)
+    } catch (err) {
+      error = err
+    }
+    release()
+    if (error) {
+      throw error
+    }
+    return result
+  }
+
+  async _syncAddresses(currentWallet: IWallet, pair: { receive: number, change: number }): Promise<IAddresses> {
     let newAddresses: IAddresses = { receive: [], change: [] }
 
     currentWallet.addresses.receive.length = Math.min(pair.receive + 1, currentWallet.addresses.receive.length)
@@ -1259,6 +1282,13 @@ export class Wallet {
     let d: bitcoincash.HDPublicKey[] = [hdPublicKey.deriveChild(0), hdPublicKey.deriveChild(1)]
     // let hdPrivateKey: bitcoincash.HDPrivateKey = this.getHDPrivateKeyFromRecoveryString(this.getRecoveryString())
     // let d: bitcoincash.HDPrivateKey[] = [hdPrivateKey.deriveChild(0), hdPrivateKey.deriveChild(1)]
+    let loader: any
+    if (pair.receive - currentWallet.addresses.receive.length + pair.change - currentWallet.addresses.change.length > 10) {
+      loader = this.loadingCtrl.create({
+        content: this.translate.instant('PLEASE_WAIT')
+      })
+      await loader.present()
+    }
     for (let i: number = currentWallet.addresses.receive.length; i <= pair.receive; i++) {
       await this.delay(0)
       newAddresses.receive.push(d[0].deriveChild(i).publicKey.toAddress().toString())
@@ -1266,6 +1296,9 @@ export class Wallet {
     for (let i: number = currentWallet.addresses.change.length; i <= pair.change; i++) {
       await this.delay(0)
       newAddresses.change.push(d[1].deriveChild(i).publicKey.toAddress().toString())
+    }
+    if (loader) {
+      await loader.dismiss()
     }
     Array.prototype.push.apply(currentWallet.addresses.receive, newAddresses.receive)
     Array.prototype.push.apply(currentWallet.addresses.change, newAddresses.change)
