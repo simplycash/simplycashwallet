@@ -2597,6 +2597,9 @@ export class Wallet {
         signature: signature
       }
     })
+    if (amount !== result.outputs.map(o => o.satoshis).reduce((a, b) => a + b, 0)) {
+      throw new Error('invalid amount')
+    }
     let outputs: IOutput[] = result.outputs.map(o => ({
       script: o.script,
       satoshis: o.satoshis
