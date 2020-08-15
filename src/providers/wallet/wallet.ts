@@ -17,9 +17,7 @@ import * as bitcoincash_Message from 'bsv/message'
 import * as bchaddr from 'bchaddrjs'
 import * as bs58check from 'bs58check'
 import io from 'socket.io-client'
-import * as protobuf from 'protobufjs'
 import * as crypto from 'crypto-browserify'
-import * as jsrsasign from 'jsrsasign'
 import { Buffer } from 'buffer/'
 import * as BN from 'bn.js'
 
@@ -133,12 +131,12 @@ interface IOutput {
 
 interface IRequest {
   outputs: IOutput[],
-  url?: string,
+  r?: string,
   label?: string,
   message?: string,
   purpose?: string,
   isPaymail: boolean,
-  isBitcoinOut: boolean
+  isBIP270: boolean
 }
 
 interface IWifInfo {
@@ -155,16 +153,15 @@ interface ITransaction {
   outputs: IOutput[]
 }
 
-interface IBIP70Request {
+interface IBIP270Request {
   outputs: IOutput[],
-  expires: number,
+  creationTimestamp: number,
+  expirationTimestamp: number,
   memo: string,
   paymentUrl: string,
-  merchantData: Uint8Array,
-  merchantName: string,
+  merchantData: string,
   r: string,
-  verified: boolean,
-  bip70: boolean
+  bip270: boolean
 }
 
 @Injectable()
@@ -1718,12 +1715,12 @@ export class Wallet {
 
   getRequestFromURL(text: string): IRequest {
     let isPaymail: boolean = false
-    let isBitcoinOut: boolean = false
+    let isBIP270: boolean = false
     let outputs: IOutput[]
     let params: any = {}
     let address: string
     let satoshis: number
-    let url: string
+    let r: string
     let label: string
     let message: string
     let purpose: string
@@ -1741,9 +1738,8 @@ export class Wallet {
     } else if (text.match(/^payto:/gi)) {
       text = text.slice(6)
       isPaymail = true
-    } else if (text.match(/^bitcoin-out:/gi)) {
-      isBitcoinOut = true
-      text = text.slice(12)
+    } else if (text.match(/^pay:/gi)) {
+      text = text.slice(4)
     } else {
       return
     }
@@ -1762,30 +1758,6 @@ export class Wallet {
         return
       }
       address = path.trim().toLowerCase()
-    } else if (isBitcoinOut) {
-      try {
-        let a = JSON.parse(decodeURIComponent(path).toLowerCase())
-        if (!Array.isArray(a) || a.length === 0) {
-          throw new Error()
-        }
-        a.forEach((o) => {
-          if (!(typeof o.v === 'number' && o.v >= 0)) {
-            throw new Error()
-          }
-          if (!o.s.match(/^([a-f0-9]{2})+$/)) {
-            throw new Error()
-          }
-        })
-        outputs = a.map(o => ({
-          script: o.s,
-          satoshis: parseInt((o.v * 1e8).toFixed(0))
-        }))
-      } catch (err) {
-        console.log(err)
-        return
-      }
-    } else {
-      return
     }
 
     let kvs: string[] = text.slice(i + 1).split('&')
@@ -1800,6 +1772,17 @@ export class Wallet {
       let s: string[] = kv.split('=')
       params[s[0]] = s.slice(1).join('=')
     })
+
+    if (typeof params.r !== 'undefined') {
+      let decoded = decodeURIComponent(params.r)
+      if (decoded.match(/^https:\/\/.+$/g)) {
+        r = decoded
+        isBIP270 = true
+      }
+    }
+    if (typeof address === 'undefined' && !isBIP270) {
+      return
+    }
     if (typeof params.amount !== 'undefined') {
       if (isPaymail) {
         let amount: number = parseInt(params.amount)
@@ -1812,9 +1795,6 @@ export class Wallet {
           satoshis = parseFloat(this.convertUnit('BSV', 'SATS', amount.toString()))
         }
       }
-    }
-    if (typeof address === 'undefined' && !isBitcoinOut) {
-      return
     }
     if (typeof params.label !== 'undefined') {
       label = decodeURIComponent(params.label)
@@ -1835,12 +1815,12 @@ export class Wallet {
 
     return {
       outputs: outputs,
-      url: url,
+      r: r,
       label: label,
       message: message,
       purpose: purpose,
       isPaymail: isPaymail,
-      isBitcoinOut: isBitcoinOut
+      isBIP270: isBIP270,
     }
   }
 
@@ -2249,9 +2229,9 @@ export class Wallet {
       await loader.dismiss()
       console.log(err)
       let message: string
-      if (err.message == 'not connected') {
+      if (err.message === 'not connected') {
         message = this.translate.instant('ERR_NOT_CONNECTED')
-      } else if (err.message == 'timeout') {
+      } else if (err.message === 'timeout') {
         message = this.translate.instant('ERR_TIMEOUT')
       } else {
         message = this.translate.instant('ERR_INVALID_TX')
@@ -2266,212 +2246,79 @@ export class Wallet {
     }
   }
 
-  // BIP70
+  // BIP270
 
-  getCommonNameFromCert(cert: Uint8Array): string {
-    let certificate: jsrsasign.X509 = new jsrsasign.X509()
-    certificate.readCertHex(Buffer.from(cert).toString('hex'))
-    let cn = certificate.getSubjectString().split(/\s*[^\\]?\/\s*/).find(s => {
-      return s.match(/^CN=/gi)
-    })
-    if (typeof cn !== 'undefined') {
-      return cn.slice(3).trim()
-    }
-  }
-
-  verifySignature(dataHash: Uint8Array, cert: Uint8Array, signature: Uint8Array): boolean {
-    return jsrsasign.X509.getPublicKeyFromCertHex(Buffer.from(cert).toString('hex')).verifyWithMessageHash(Buffer.from(dataHash).toString('hex'), Buffer.from(signature).toString('hex'))
-  }
-
-  async verifyCertificateChain(chainData: Uint8Array[]): Promise<boolean> {
-    // trusted
-    let trustedCertificates: string[] = (await this.http.get('assets/cacerts.txt', {
-      responseType: 'text'
-    }).toPromise() as string).trim().split(/\r?\n/g).map((s: string) => {
-      return Buffer.from(s, 'base64').toString('hex')
-    })
-    // chain
-    let certificates: string[] = chainData.map((b: Uint8Array) => {
-      return Buffer.from(b).toString('hex')
-    })
-    // chain validation
-    for (let i = 0; i < certificates.length; i++) {
-      // cert
-      let certificateHex: string = certificates[i]
-      let certificate: jsrsasign.X509 = new jsrsasign.X509()
-      certificate.readCertHex(certificateHex)
-      // check time
-      let now: number = new Date().getTime()
-      let notBefore: number = convertToTime(certificate.getNotBefore())
-      let notAfter: number = convertToTime(certificate.getNotAfter())
-      if (now < notBefore || now > notAfter) {
-        return false
-      }
-      // ca
-      let caCertificateHex: string
-      if (i + 1 < certificates.length) {
-        caCertificateHex = certificates[i + 1]
-      } else {
-        let issuerHex: string = certificate.getIssuerHex()
-        caCertificateHex = trustedCertificates.find(hex => {
-          let tc: jsrsasign.X509 = new jsrsasign.X509()
-          tc.readCertHex(hex)
-          return tc.getSubjectHex() === issuerHex
-        })
-        if (typeof caCertificateHex === 'undefined') {
-          return false
-        }
-      }
-      // Verify against CA
-      let certStruct = jsrsasign.ASN1HEX.getTLVbyList(certificate.hex, 0, [0])
-      let algorithm = certificate.getSignatureAlgorithmField()
-      let signatureHex = certificate.getSignatureValueHex()
-      let signature = new jsrsasign.crypto.Signature({ alg: algorithm })
-      signature.init('-----BEGIN CERTIFICATE-----\r\n' + Buffer.from(caCertificateHex, 'hex').toString('base64').match(/.{1,64}/g).join('\r\n') + '\r\n-----END CERTIFICATE-----')
-      signature.updateHex(certStruct)
-      if (!signature.verify(signatureHex)) {
-        return false
-      }
-    }
-    return true
-
-    function convertToTime(s: string): number {
-      if (s.length === 13) {
-        let yy = parseInt(s.slice(0, 2))
-        if (yy >= 50) {
-          s = '19' + s
-        } else {
-          s = '20' + s
-        }
-      } else if (s.length !== 15) {
-        throw new Error('invalid time string')
-      }
-      let arr = s.match(/\d\d/g)
-      let t = new Date(
-        parseInt(arr[0] + arr[1]),
-        parseInt(arr[2]) - 1,
-        parseInt(arr[3]),
-        parseInt(arr[4]),
-        parseInt(arr[5]),
-        parseInt(arr[6]),
-        0
-      ).getTime()
-      if (isNaN(t)) {
-        throw new Error('invalid time string')
-      }
-      return t
-    }
-  }
-
-  async getRequestFromMerchant(url: string): Promise<IBIP70Request> {
-    if (1 + 1 === 2) {
-      throw new Error('suspended')
-    }
-    let p0: Promise<ArrayBuffer> = this.http.get(url, {
+  async getRequestFromMerchant(r: string): Promise<IBIP270Request> {
+    let paymentRequest: any = await this.http.get(r, {
       headers: {
-        'Accept': 'application/bitcoincash-paymentrequest'
+        'Accept': 'application/bitcoinsv-paymentrequest, application/json'
       },
-      responseType: 'arraybuffer'
+      responseType: 'json'
     }).toPromise()
-    let p1: Promise<protobuf.Root> = protobuf.load('assets/paymentrequest.proto')
-    let results: any[] = await Promise.all([p0, p1])
 
-    let response: Uint8Array = new Uint8Array(results[0])
-    let root: any = results[1]
-    let PaymentRequest: any = root.lookupType("payments.PaymentRequest")
-    let PaymentDetails: any = root.lookupType("payments.PaymentDetails")
-    let paymentRequest: any = PaymentRequest.decode(response)
-    let paymentDetails: any = PaymentDetails.decode(paymentRequest.serializedPaymentDetails)
+    if (
+      typeof paymentRequest.network !== 'string'
+      || !Array.isArray(paymentRequest.outputs) || paymentRequest.outputs.length === 0
+      || !Number.isInteger(paymentRequest.creationTimestamp)
+      || !Number.isInteger(paymentRequest.expirationTimestamp) && typeof paymentRequest.expirationTimestamp !== 'undefined'
+      || typeof paymentRequest.memo !== 'string' && typeof paymentRequest.memo !== 'undefined'
+      || typeof paymentRequest.paymentUrl !== 'string'
+      || typeof paymentRequest.merchantData !== 'string' && typeof paymentRequest.merchantData !== 'undefined'
+    ) {
+      throw new Error('invalid payment request')
+    }
 
-    if (paymentDetails.network !== 'main') {
+    if (!paymentRequest.network.match(/^bitcoin([-_]?sv)?$/g)) {
       throw new Error('unsupported network')
     }
-    if (paymentDetails.expires > 0 && new Date().getTime() > paymentDetails.expires * 1000) {
+    if (Number.isInteger(paymentRequest.expirationTimestamp) && new Date().getTime() > paymentRequest.expirationTimestamp * 1000) {
       throw new Error('expired')
     }
 
-    // validate
-    let cname: string
-    let verified: boolean = false
-    if (paymentRequest.pkiType !== 'none') {
-      try {
-        if (paymentRequest.pkiType !== 'x509+sha256' && paymentRequest.pkiType !== 'x509+sha1') {
-          throw new Error('unsupported pki')
-        }
-        let X509Certificates: any = root.lookupType("payments.X509Certificates")
-        let chainData: Uint8Array[] = X509Certificates.decode(paymentRequest.pkiData).certificate
-        let signature: Uint8Array = paymentRequest.signature
-        paymentRequest.signature = new Uint8Array(0)
-        let dataHash: Uint8Array = crypto.createHash(paymentRequest.pkiType.split('+')[1]).update(PaymentRequest.encode(paymentRequest).finish()).digest()
-        paymentRequest.signature = signature
-        if (await this.verifyCertificateChain(chainData) && this.verifySignature(dataHash, chainData[0], signature)) {
-          verified = true
-          cname = this.getCommonNameFromCert(chainData[0])
-        }
-      } catch (err) {
-        console.log(err)
+    let outputs: IOutput[] = paymentRequest.outputs.map((output) => {
+      if (
+        !Number.isInteger(output.amount)
+        || typeof output.script != 'string'
+        || !output.script.match(/^([0-9a-fA-F]{2})+$/g)
+        || typeof output.description !== 'string' && typeof output.description !== 'undefined'
+      ) {
+        throw new Error('invalid payment request')
       }
-    }
-
-    // return data
-    let outputs: IOutput[] = paymentDetails.outputs.map((output) => {
       return {
         satoshis: output.amount,
-        script: Buffer.from(output.script).toString('hex')
+        script: output.script.toLowerCase()
       }
     })
-    let expires: number = paymentDetails.expires
-    let memo: string = paymentDetails.memo
-    let paymentUrl: string = paymentDetails.paymentUrl
-    let merchantData: Uint8Array = paymentDetails.merchantData
-    let merchantName: string = cname || 'unknown'
 
     return {
-      outputs: outputs,
-      expires: expires,
-      memo: memo,
-      paymentUrl: paymentUrl,
-      merchantData: merchantData,
-      merchantName: merchantName,
-      r: url,
-      verified: verified,
-      bip70: true
+      outputs,
+      creationTimestamp: paymentRequest.creationTimestamp,
+      expirationTimestamp: paymentRequest.expirationTimestamp,
+      memo: paymentRequest.memo,
+      paymentUrl: paymentRequest.paymentUrl,
+      merchantData: paymentRequest.merchantData,
+      r,
+      bip270: true
     }
   }
 
-  async sendPaymentToMerchant(url: string, tx: string, refundAddress: string, merchantData?: Uint8Array): Promise<string> {
-    let root: protobuf.Root = await protobuf.load('assets/paymentrequest.proto')
-    let Output: any = root.lookupType("payments.Output")
-    let Payment: any = root.lookupType("payments.Payment")
-    let output: any = Output.create({
-      amount: 0,
-      script: bitcoincash.Script.buildPublicKeyHashOut(new bitcoincash.Address(refundAddress)).toBuffer()
-    })
-    let payment: any = Payment.create({
+  async sendPaymentToMerchant(url: string, tx: string, merchantData: string): Promise<string> {
+    let payment = {
       merchantData: merchantData,
-      // transactions: [new Uint8Array(tx.match(/.{1,2}/g).map(x => parseInt(x, 16)))],
-      transactions: [Buffer.from(tx, 'hex')],
-      refundTo: [output],
+      transaction: tx,
+      refundTo: this.getHandle() ? this.getPaymail() : undefined,
       memo: undefined
-    })
-
-    let paymentMessageBuffer: any = Payment.encode(payment).finish()
-    let ab: ArrayBuffer = new ArrayBuffer(paymentMessageBuffer.length)
-    let abView: Uint8Array = new Uint8Array(ab)
-    paymentMessageBuffer.forEach((x, i) => {
-      abView[i] = x
-    })
-
-    let response: Uint8Array = new Uint8Array(await this.http.post(url, ab, {
+    }
+    let paymentACK: any = await this.http.post(url, payment, {
       headers: {
-        'Content-Type': 'application/bitcoincash-payment',
-        'Accept': 'application/bitcoincash-paymentack'
+        'Content-Type': 'application/bitcoinsv-payment',
+        'Accept': 'application/bitcoinsv-paymentack, application/json'
       },
-      responseType: 'arraybuffer'
-    }).toPromise())
-    let PaymentACK: any = root.lookupType("payments.PaymentACK")
-    let paymentACK: any = PaymentACK.decode(response)
-
+      responseType: 'json'
+    }).toPromise()
+    if (Number.isInteger(paymentACK.error) && paymentACK.error > 0) {
+      throw new Error("payment error")
+    }
     return paymentACK.memo
   }
 

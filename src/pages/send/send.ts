@@ -93,7 +93,7 @@ export class SendPage {
   }
 
   ionViewDidLoad() {
-    if (this.outputSum > 0 || this.info.isBitcoinOut) {
+    if (this.outputSum > 0 || this.info.bip270) {
       this.myAmountEl.setFixedAmount(this.outputSum.toString())
     } else {
       this.myAmountEl.setFixedAmount(undefined)
@@ -115,7 +115,7 @@ export class SendPage {
   }
 
   ionViewDidEnter() {
-    if (!this.addressValue || this.outputSum > 0 || this.info.isBitcoinOut) {
+    if (!this.addressValue || this.outputSum > 0 || this.info.bip270) {
       return
     }
     window.setTimeout(() => {
@@ -284,9 +284,9 @@ export class SendPage {
       let message: string
       try {
         let unit: string = this.wallet.getPreferredUnit()
-        let recipient: string = this.info.isBitcoinOut ? (this.labelValue || 'Script') : this.addressEl.value
+        let recipient: string = this.info.bip270 ? this.memoValue : this.addressEl.value
         let amount: string = this.wallet.convertUnit('SATS', unit, this.myAmountEl.getSatoshis().toString(), true)
-        message = `${recipient}<br>${amount} ${unit}`
+        message = `${recipient ? recipient + '<br>' : ''}${amount} ${unit}`
       } catch (err) {
         console.log(err)
       }
@@ -332,7 +332,7 @@ export class SendPage {
   validateSendDetails(): any[] {
     try {
       let satoshis: number = this.myAmountEl.getSatoshis()
-      if (!(this.outputSum > 0 || this.info.isBitcoinOut || satoshis > 0)) { //predefined or input > 0
+      if (!(this.outputSum > 0 || this.info.bip270 || satoshis > 0)) { //predefined or input > 0
         throw new Error('invalid amount')
       }
       let cacheBalance: number = this.wallet.getCacheBalance()
@@ -340,7 +340,7 @@ export class SendPage {
         throw new Error('not enough fund')
       }
       let outputs: any[]
-      if (this.info.isBitcoinOut) {
+      if (this.info.bip270) {
         outputs = this.info.outputs.map(o => Object.assign({}, o))
       } else if (this.outputSum > 0) { //if amount is predefined
         outputs = this.info.outputs.map(o => Object.assign({}, o))
@@ -479,8 +479,8 @@ export class SendPage {
 
     let txid: string = this.wallet.getTxidFromHex(hex)
     let txComplete: boolean = false
-    if (this.info.bip70) {
-      txComplete = await this.sendBIP70(hex, loader)
+    if (this.info.bip270) {
+      txComplete = await this.sendBIP270(hex, loader)
     } else {
       let metadata: any
       if (paymentRefs.length > 0 && this.wallet.getHandle()) {
@@ -503,35 +503,25 @@ export class SendPage {
 
   }
 
-  async sendBIP70(hex: string, loader: any) {
+  async sendBIP270(hex: string, loader: any) {
     try {
-      if (this.info.expires > 0 && new Date().getTime() > this.info.expires * 1000) {
+      if (Number.isInteger(this.info.expirationTimestamp) && new Date().getTime() > this.info.expirationTimestamp * 1000) {
         throw new Error('expired')
       }
       loader.setContent(this.translate.instant('SENDING')+'...')
       let memo: string = await this.wallet.sendPaymentToMerchant(
         this.info.paymentUrl,
         hex,
-        this.wallet.getCacheChangeAddress(),
         this.info.merchantData
       )
       await loader.dismiss()
-      let successAlert = this.alertCtrl.create({
-        enableBackdropDismiss: false,
-        title: this.translate.instant('TX_COMPLETE'),
-        message: memo,
-        buttons: [this.translate.instant('OK')]
-      })
-      await successAlert.present()
       return true
     } catch (err) {
       await loader.dismiss()
       console.log(err)
       let message: string
-      if (err.message == 'expired') {
+      if (err.message === 'expired') {
         message = this.translate.instant('ERR_EXPIRED')
-      } else if (err.status === 400) {
-        message = this.translate.instant('ERR_REJECTED')
       } else {
         message = this.translate.instant('ERR_SEND_FAILED')
       }
@@ -604,8 +594,8 @@ export class SendPage {
     if (typeof info === 'undefined') {
       return false
     }
-    if (typeof info.url !== 'undefined') {
-      info = await this.sp_handleBIP70(info.url)
+    if (typeof info.r !== 'undefined') {
+      info = await this.sp_handleBIP270(info.r)
       if (typeof info === 'undefined') {
         return false
       }
@@ -619,7 +609,7 @@ export class SendPage {
     return true
   }
 
-  async sp_handleBIP70(url: string) {
+  async sp_handleBIP270(r: string) {
     let loader = this.loadingCtrl.create({
       content: this.translate.instant('LOADING')+'...'
     })
@@ -627,7 +617,7 @@ export class SendPage {
     let request: any
     let errMessage: string
     try {
-      request = await this.wallet.getRequestFromMerchant(url)
+      request = await this.wallet.getRequestFromMerchant(r)
     } catch (err) {
       console.log(err)
       if (err.message === 'unsupported network') {

@@ -424,8 +424,8 @@ export class HomePage {
     if (typeof info === 'undefined') {
       return false
     }
-    if (typeof info.url !== 'undefined') {
-      info = await this.handleBIP70(info.url)
+    if (info.isBIP270) {
+      info = await this.handleBIP270(info.r)
       if (typeof info === 'undefined') {
         return false
       }
@@ -439,7 +439,7 @@ export class HomePage {
     return true
   }
 
-  async handleBIP70(url: string) {
+  async handleBIP270(r: string) {
     let loader = this.loadingCtrl.create({
       content: this.translate.instant('LOADING')+'...'
     })
@@ -447,7 +447,7 @@ export class HomePage {
     let request: any
     let errMessage: string
     try {
-      request = await this.wallet.getRequestFromMerchant(url)
+      request = await this.wallet.getRequestFromMerchant(r)
     } catch (err) {
       console.log(err)
       if (err.message === 'unsupported network') {
@@ -559,7 +559,7 @@ export class HomePage {
 
     // Check if app was resume by custom url scheme
     (window as any).handleOpenURL = (url: string) => {
-      if (this.platform.is('ios') && !url.match(/^bitcoin([-_]?(sv|cash))?:.+$/gi) && !url.match(/^payto:.+$/gi) && !url.match(/^bitcoin-out:.+$/gi)) {
+      if (this.platform.is('ios') && !url.match(/^bitcoin([-_]?(sv|cash))?:.+$/gi) && !url.match(/^payto:.+$/gi) && !url.match(/^pay:.+$/gi)) {
         return
       }
       if (

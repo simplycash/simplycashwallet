@@ -38,7 +38,7 @@
         type="text"
         readonly></ion-input>
     </ion-item>
-    <ion-item *ngIf="!info || !info.bip70 && !info.isBitcoinOut">
+    <ion-item *ngIf="!info.bip270">
       <ion-label stacked color="primary">{{ 'BITCOIN_CASH_ADDRESS' | translate }}</ion-label>
       <ion-input
         #address
@@ -75,18 +75,12 @@
   </ion-list>
 
   <div text-center>
-    <button ion-button clear icon-left *ngIf="!canLeave || !wallet.isOnline()" disabled>
+    <button ion-button clear icon-left
+      [disabled]="!canLeave || !wallet.isOnline() || wallet.isWatchOnly() && info.bip270"
+      (click)="send()">
       <ion-icon name="paper-plane"></ion-icon>
       {{ 'SEND' | translate }}
     </button>
-    <button ion-button clear icon-left (click)="send()" *ngIf="canLeave && wallet.isOnline()">
-      <ion-icon name="paper-plane"></ion-icon>
-      {{ 'SEND' | translate }}
-    </button>
-  </div>
-
-  <div *ngIf="info.bip70 && !info.verified" class="warn-bip70-unverified" padding>
-    {{ 'WARN_BIP70_UNVERIFIED' | translate }}
   </div>
 
   <div *ngIf="showQuickSendHint" class="quick-send-hint" padding>
