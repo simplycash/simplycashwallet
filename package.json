@@ -57,7 +57,7 @@
     "cordova-plugin-globalization": "1.11.0",
     "cordova-plugin-inappbrowser": "3.0.0",
     "cordova-plugin-ionic-keyboard": "2.0.5",
-    "cordova-plugin-ionic-webview": "1.2.1",
+    "cordova-plugin-ionic-webview": "2.2.0",
     "cordova-plugin-local-notification": "0.9.0-beta.2",
     "cordova-plugin-qrscanner": "2.6.1",
     "cordova-plugin-splashscreen": "5.0.2",
