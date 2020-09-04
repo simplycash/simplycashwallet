@@ -55,7 +55,7 @@
     "cordova-plugin-device": "2.0.2",
     "cordova-plugin-fingerprint-aio": "^2.0.0",
     "cordova-plugin-globalization": "1.11.0",
-    "cordova-plugin-inappbrowser": "3.0.0",
+    "cordova-plugin-inappbrowser": "3.1.0",
     "cordova-plugin-ionic-keyboard": "2.0.5",
     "cordova-plugin-ionic-webview": "1.2.1",
     "cordova-plugin-local-notification": "0.9.0-beta.2",
