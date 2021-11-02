@@ -32,6 +32,9 @@ export class XprvPage {
         },
         paste: () => {
           return Promise.reject(new Error('unsupported'))
+        },
+        clear:() =>{
+          return Promise.reject(new Error('unsupported'))
         }
       }
     }

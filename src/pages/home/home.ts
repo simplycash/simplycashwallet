@@ -1,7 +1,7 @@
 import { ChangeDetectorRef, Component, NgZone, ViewChild } from '@angular/core'
 import { ActionSheetController, AlertController, App, IonicPage, LoadingController, NavController, Platform, PopoverController, ToastController } from 'ionic-angular'
 import { QRScanner, QRScannerStatus } from '@ionic-native/qr-scanner'
-import { SocialSharing } from '@ionic-native/social-sharing'
+// import { SocialSharing } from '@ionic-native/social-sharing'
 import { StatusBar } from '@ionic-native/status-bar'
 import { Clipboard } from '@ionic-native/clipboard'
 import * as webClipboard from 'clipboard-polyfill'
@@ -67,7 +67,7 @@ export class HomePage {
     public platform: Platform,
     public popoverCtrl: PopoverController,
     public qrScanner: QRScanner,
-    public socialSharing: SocialSharing,
+    // public socialSharing: SocialSharing,
     public statusBar: StatusBar,
     public toastCtrl: ToastController,
     public translate: TranslateService,
@@ -94,6 +94,9 @@ export class HomePage {
           return webClipboard.writeText(text)
         },
         paste: () => {
+          return Promise.reject(new Error('unsupported'))
+        },
+        clear:() =>{
           return Promise.reject(new Error('unsupported'))
         }
       }
@@ -218,7 +221,7 @@ export class HomePage {
     }
     this.isSharing = true
     try {
-      await this.socialSharing.share(content)
+      // await this.socialSharing.share(content)
     } catch (err) {
       console.log(err)
     }

@@ -30,10 +30,13 @@ export class AddressPage {
   ) {
     if (!this.platform.is('cordova')) {
       this.clipboard = {
-        copy: (text) => {
+        copy: (text) =>  {
           return webClipboard.writeText(text)
         },
         paste: () => {
+          return Promise.reject(new Error('unsupported'))
+        },
+        clear:() =>{
           return Promise.reject(new Error('unsupported'))
         }
       }

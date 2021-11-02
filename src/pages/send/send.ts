@@ -58,6 +58,9 @@ export class SendPage {
         },
         paste: () => {
           return Promise.reject(new Error('unsupported'))
+        },
+        clear:() =>{
+          return Promise.reject(new Error('unsupported'))
         }
       }
     }

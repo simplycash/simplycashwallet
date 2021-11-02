@@ -991,7 +991,7 @@ export class Wallet {
         let x: string = ''
         let i: number = 0
         while (i < 4294967296) {
-          response.writeUInt32LE(i)
+          response.writeUInt32LE(i, 0, false)
           x = crypto.createHash('sha256').update(challengeBuffer).update(response).digest('hex').slice(0, challenge.target.length)
           if (x <= challenge.target) {
             break

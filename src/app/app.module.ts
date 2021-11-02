@@ -8,7 +8,7 @@ import { InAppBrowser } from '@ionic-native/in-app-browser';
 import { LocalNotifications } from '@ionic-native/local-notifications';
 import { FingerprintAIO } from '@ionic-native/fingerprint-aio';
 import { QRScanner } from '@ionic-native/qr-scanner';
-import { SocialSharing } from '@ionic-native/social-sharing';
+// import { SocialSharing } from '@ionic-native/social-sharing';
 import { SplashScreen } from '@ionic-native/splash-screen';
 import { StatusBar } from '@ionic-native/status-bar';
 import { Keyboard } from '@ionic-native/keyboard';
@@ -57,7 +57,7 @@ export function createTranslateLoader(http: HttpClient) {
     Keyboard,
     LocalNotifications,
     QRScanner,
-    SocialSharing,
+    // SocialSharing,
     SplashScreen,
     StatusBar,
     // Keep this to enable Ionic's runtime error handling during development
